@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -6,6 +7,7 @@ import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/widgets/app_network_image.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/circle_icon_button.dart';
+import '../../../communication/communication_routes.dart';
 import '../../models/courier.dart';
 
 /// Carte du livreur : photo, note, véhicule, boutons message et appel.
@@ -13,55 +15,6 @@ class CourierCard extends StatelessWidget {
   const CourierCard({super.key, required this.courier});
 
   final Courier courier;
-
-  void _showMessages(BuildContext context) {
-    const messages = [
-      'Je descends tout de suite 🏃',
-      'Merci de laisser la commande devant la porte',
-      "Le digicode est 4521B",
-      "J'arrive dans 2 minutes",
-    ];
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSizes.pagePadding,
-            0,
-            AppSizes.pagePadding,
-            AppSizes.md,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Message rapide à ${courier.name}',
-                style: context.text.titleMedium,
-              ),
-              const SizedBox(height: AppSizes.sm),
-              for (final message in messages)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(
-                    Icons.chat_bubble_outline_rounded,
-                    color: AppColors.primary,
-                  ),
-                  title: Text(message),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    AppSnackbar.success(
-                      context,
-                      'Message envoyé à ${courier.name}',
-                    );
-                  },
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Future<void> _call(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -144,7 +97,7 @@ class CourierCard extends StatelessWidget {
           CircleIconButton(
             icon: Icons.chat_bubble_outline_rounded,
             tooltip: 'Envoyer un message',
-            onTap: () => _showMessages(context),
+            onTap: () => context.push(CommunicationRoutes.chat('conv-courier')),
           ),
           const SizedBox(width: 8),
           CircleIconButton(

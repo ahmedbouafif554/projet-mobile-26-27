@@ -6,6 +6,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/page_title.dart';
 import '../../../catalog/presentation/widgets/catalog_shimmers.dart';
 import '../../models/order.dart';
 import '../controllers/orders_controller.dart';
@@ -49,10 +50,7 @@ class _OrdersPageState extends State<OrdersPage> {
                   AppSizes.pagePadding,
                   AppSizes.md,
                 ),
-                child: Text(
-                  'Mes commandes',
-                  style: context.text.headlineMedium,
-                ),
+                child: const PageTitle('Mes commandes'),
               ),
               // Sélecteur segmenté animé
               Container(

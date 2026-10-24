@@ -243,14 +243,14 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-/// Fausse barre de recherche : ouvre l'onglet Recherche.
+/// Fausse barre de recherche : ouvre l'écran Recherche.
 class _SearchBarButton extends StatelessWidget {
   const _SearchBarButton();
 
   @override
   Widget build(BuildContext context) {
     return Pressable(
-      onTap: () => context.go(AppRoutes.search),
+      onTap: () => context.push(AppRoutes.search),
       scale: 0.98,
       child: Container(
         height: 56,

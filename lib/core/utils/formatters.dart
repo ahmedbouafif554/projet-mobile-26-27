@@ -22,6 +22,16 @@ class Formatters {
   static String price(double value) =>
       '${value.toStringAsFixed(2).replaceAll('.', ',')} €';
 
+  /// 1240 -> « 1 240 »
+  static String count(int value) => value.toString().replaceAllMapped(
+    RegExp(r'(\d)(?=(\d{3})+$)'),
+    (m) => '${m[1]} ',
+  );
+
+  /// 4.66 -> « 4,7 »
+  static String rating(double value) =>
+      value.toStringAsFixed(1).replaceAll('.', ',');
+
   /// 2.4 -> « 2,4 km »
   static String distance(double km) =>
       '${km.toStringAsFixed(1).replaceAll('.', ',')} km';

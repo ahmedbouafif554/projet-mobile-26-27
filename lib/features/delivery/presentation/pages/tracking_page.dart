@@ -14,6 +14,7 @@ import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/circle_icon_button.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../communication/communication_routes.dart';
 import '../../../orders/models/order.dart';
 import '../../../orders/presentation/controllers/cart_controller.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
@@ -95,7 +96,19 @@ class _TrackingPageState extends State<TrackingPage>
 
     if (next == OrderStatus.delivered) {
       _ride.value = 1;
-      AppSnackbar.success(context, 'Commande livrée. Bon appétit ! 🎉');
+      final order = _order;
+      final router = GoRouter.of(context);
+      AppSnackbar.success(
+        context,
+        'Commande livrée. Bon appétit ! 🎉',
+        actionLabel: order?.restaurantId == null ? null : 'Noter',
+        onAction: () => router.push(
+          CommunicationRoutes.writeReview(
+            restaurantId: order!.restaurantId!,
+            orderId: order.id,
+          ),
+        ),
+      );
     } else {
       _scheduleNextStep();
     }
@@ -312,8 +325,22 @@ class _TrackingPageState extends State<TrackingPage>
                     label:
                         'Total : ${Formatters.price(order.total)} • ${order.paymentLabel}',
                   ),
-                  if (!_status.isActive && order.type == OrderType.food) ...[
+                  if (_status == OrderStatus.delivered &&
+                      order.restaurantId != null) ...[
                     const SizedBox(height: AppSizes.lg),
+                    PrimaryButton(
+                      label: 'Noter la commande',
+                      icon: Icons.star_rounded,
+                      onPressed: () => context.push(
+                        CommunicationRoutes.writeReview(
+                          restaurantId: order.restaurantId!,
+                          orderId: order.id,
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (!_status.isActive && order.type == OrderType.food) ...[
+                    const SizedBox(height: AppSizes.md),
                     PrimaryButton(
                       label: 'Re-commander',
                       icon: Icons.replay_rounded,

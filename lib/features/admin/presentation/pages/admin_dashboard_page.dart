@@ -12,6 +12,7 @@ import '../../../../core/widgets/circle_icon_button.dart';
 import '../../../../core/widgets/pressable.dart';
 import '../../../../core/widgets/section_header.dart';
 import '../../../catalog/data/catalog_mock_data.dart';
+import '../../../communication/communication_routes.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../../orders/presentation/widgets/order_status_chip.dart';
 import '../../data/admin_mock_data.dart';
@@ -59,13 +60,17 @@ class AdminDashboardPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.md),
-              GridView.count(
-                crossAxisCount: columns,
+              GridView(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.15,
+                // Hauteur fixe (suit la taille du texte) : le contenu de la
+                // carte tient aussi sur les petits écrans.
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  mainAxisExtent: MediaQuery.textScalerOf(context).scale(136),
+                ),
                 children: [
                   for (final (i, stat) in AdminMockData.stats.indexed)
                     StatCard(stat: stat)
@@ -84,6 +89,11 @@ class AdminDashboardPage extends StatelessWidget {
                     labels: AdminMockData.weekDays,
                   )
                   .animate(delay: 300.ms)
+                  .fadeIn(duration: 400.ms)
+                  .slideY(begin: 0.1, end: 0),
+              const SizedBox(height: AppSizes.lg),
+              const _ModerationShortcut()
+                  .animate(delay: 350.ms)
                   .fadeIn(duration: 400.ms)
                   .slideY(begin: 0.1, end: 0),
               const SizedBox(height: AppSizes.lg),
@@ -219,6 +229,60 @@ class AdminDashboardPage extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// Accès à la modération des avis (module 5).
+class _ModerationShortcut extends StatelessWidget {
+  const _ModerationShortcut();
+
+  @override
+  Widget build(BuildContext context) {
+    return Pressable(
+      onTap: () => context.push(CommunicationRoutes.moderation),
+      scale: 0.98,
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.md),
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.shield_rounded, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Modération des avis',
+                    style: context.text.titleSmall?.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    'Avis en attente, signalements, réponses',
+                    style: context.text.bodySmall?.copyWith(
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white),
+          ],
+        ),
       ),
     );
   }

@@ -10,6 +10,7 @@ import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/pressable.dart';
+import '../../../../core/widgets/page_title.dart';
 import '../../data/catalog_mock_data.dart';
 import '../widgets/catalog_shimmers.dart';
 import '../widgets/category_item.dart';
@@ -87,7 +88,7 @@ class _SearchPageState extends State<SearchPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Recherche', style: context.text.headlineMedium),
+                  const PageTitle('Recherche'),
                   const SizedBox(height: AppSizes.md),
                   AppTextField(
                     controller: _controller,

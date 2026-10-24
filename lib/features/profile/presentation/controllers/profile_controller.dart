@@ -16,10 +16,6 @@ class ProfileController extends ChangeNotifier {
   String _selectedAddressId = ProfileMockData.addresses.first.id;
   String _selectedPaymentId = ProfileMockData.paymentMethods.first.id;
   String _languageCode = 'fr';
-  final Map<String, bool> _notificationPrefs = {
-    for (final entry in ProfileMockData.notificationPrefs.entries)
-      entry.key: entry.value.$3,
-  };
 
   UserProfile get user => _user;
   List<Address> get addresses => List.unmodifiable(_addresses);
@@ -35,8 +31,6 @@ class ProfileController extends ChangeNotifier {
     (p) => p.id == _selectedPaymentId,
     orElse: () => _payments.first,
   );
-
-  bool notificationEnabled(String key) => _notificationPrefs[key] ?? false;
 
   void updateUser(UserProfile user) {
     _user = user;
@@ -76,11 +70,6 @@ class ProfileController extends ChangeNotifier {
 
   void setLanguage(String code) {
     _languageCode = code;
-    notifyListeners();
-  }
-
-  void setNotification(String key, bool value) {
-    _notificationPrefs[key] = value;
     notifyListeners();
   }
 }

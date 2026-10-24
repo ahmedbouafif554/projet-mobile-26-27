@@ -18,6 +18,9 @@ class AppColors {
   static const Color info = Color(0xFF3B82F6);
   static const Color favorite = Color(0xFFFF3B5C);
 
+  /// Pastilles de compteur (onglets de la barre de navigation).
+  static const Color badge = Color(0xFFFF3B5C);
+
   // Mode clair
   static const Color background = Color(0xFFF8F8FA);
   static const Color surface = Color(0xFFFFFFFF);

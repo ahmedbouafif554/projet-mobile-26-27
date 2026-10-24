@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:superfaster/core/config/modules_config.dart';
 import 'package:superfaster/core/routes/app_router.dart';
+import 'package:superfaster/core/routes/app_routes.dart';
+import 'package:superfaster/core/session/app_session.dart';
 import 'package:superfaster/core/theme/theme_controller.dart';
 import 'package:superfaster/features/catalog/data/catalog_mock_data.dart';
+import 'package:superfaster/features/communication/communication_routes.dart';
 import 'package:superfaster/features/orders/models/cart_item.dart';
 import 'package:superfaster/features/orders/presentation/controllers/cart_controller.dart';
 import 'package:superfaster/main.dart';
@@ -15,39 +19,29 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(setUpAppTestEnvironment);
 
-  const routes = [
-    '/',
-    '/onboarding',
-    '/login',
-    '/register',
-    '/otp?phone=0612345678',
-    '/forgot-password',
-    '/home',
-    '/search',
-    '/orders',
-    '/profile',
-    '/restaurants',
-    '/restaurants?category=courses',
-    '/restaurants?filter=popular',
-    '/restaurant/r1?hero=list',
-    '/restaurant/r8?hero=list',
-    '/product/r1-classic?hero=menu',
-    '/product/r8-fruits?hero=menu',
-    '/favorites',
-    '/cart',
-    '/checkout',
-    '/order-confirmation/SF1046',
-    '/tracking/SF1046',
-    '/tracking/SF1045',
-    '/tracking/SF1031',
-    '/parcel',
-    '/edit-profile',
-    '/addresses',
-    '/payment-methods',
-    '/notification-settings',
-    '/language',
-    '/notifications',
-    '/admin',
+  final routes = [
+    // Tous les écrans prévus (vrais écrans ou placeholders), générés depuis
+    // modules_config.dart ; l'écran principal est sur la route du module.
+    for (final module in ModulesConfig.modules)
+      for (final screen in module.screens) module.routeOf(screen.id),
+    // Écrans avec paramètres
+    AppRoutes.otpFor('0612345678'),
+    AppRoutes.restaurantsWith(category: 'courses'),
+    AppRoutes.restaurantsWith(filter: 'popular'),
+    AppRoutes.restaurantDetail('r1'),
+    AppRoutes.restaurantDetail('r8'),
+    AppRoutes.productDetail('r1-classic'),
+    AppRoutes.productDetail('r8-fruits'),
+    AppRoutes.confirmationOf('SF1046'),
+    AppRoutes.trackingOf('SF1046'),
+    AppRoutes.trackingOf('SF1045'),
+    AppRoutes.trackingOf('SF1031'),
+    CommunicationRoutes.chat('conv-courier'),
+    CommunicationRoutes.chat('conv-r5'),
+    CommunicationRoutes.restaurantReviews('r1'),
+    CommunicationRoutes.restaurantReviews('r3'),
+    CommunicationRoutes.writeReview(restaurantId: 'r3', orderId: 'SF1045'),
+    CommunicationRoutes.editReview('rev-me-1'),
   ];
 
   const sizes = {'petit': Size(320, 640), 'grand': Size(412, 915)};
@@ -58,6 +52,8 @@ void main() {
     await tester.pump();
     // Laisse passer transitions, shimmer et chargements simulés.
     await tester.pump(const Duration(seconds: 2));
+    // Cascades d'apparition lancées après le chargement (délais flutter_animate).
+    await tester.pump(const Duration(seconds: 1));
     expect(tester.takeException(), isNull, reason: 'Exception sur $location');
     // Démonte l'arbre : annule les minuteurs encore actifs.
     await tester.pumpWidget(const SizedBox());
@@ -70,6 +66,7 @@ void main() {
       ) async {
         useScreenSize(tester, size.value);
         ThemeController.instance.setMode(mode);
+        AppSession.instance.login();
         final restoreErrors = ignoreOfflineImageErrors();
 
         for (final route in routes) {
@@ -88,9 +85,9 @@ void main() {
             ),
           )
           ..applyPromo('BIENVENUE30');
-        await showRoute(tester, '/cart');
-        await showRoute(tester, '/checkout');
-        await showRoute(tester, '/restaurant/r1?hero=list');
+        await showRoute(tester, AppRoutes.cart);
+        await showRoute(tester, AppRoutes.checkout);
+        await showRoute(tester, AppRoutes.restaurantDetail('r1'));
         CartController.instance.clear();
 
         restoreErrors();

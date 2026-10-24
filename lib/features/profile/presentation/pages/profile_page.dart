@@ -8,10 +8,14 @@ import '../../../../core/routes/app_routes.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/widgets/app_network_image.dart';
 import '../../../../core/widgets/pressable.dart';
+import '../../../../core/session/app_session.dart';
+import '../../../../core/widgets/page_title.dart';
 import '../../../catalog/presentation/controllers/favorites_controller.dart';
+import '../../../communication/communication_routes.dart';
+import '../../../communication/presentation/controllers/conversations_controller.dart';
+import '../../../communication/presentation/controllers/notification_center_controller.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../data/profile_mock_data.dart';
-import '../controllers/notifications_controller.dart';
 import '../controllers/profile_controller.dart';
 import '../widgets/profile_menu_tile.dart';
 import '../widgets/theme_selector.dart';
@@ -49,7 +53,10 @@ class ProfilePage extends StatelessWidget {
         ],
       ),
     );
-    if (confirmed == true && context.mounted) context.go(AppRoutes.login);
+    if (confirmed == true && context.mounted) {
+      AppSession.instance.logout();
+      context.go(AppRoutes.login);
+    }
   }
 
   @override
@@ -57,7 +64,8 @@ class ProfilePage extends StatelessWidget {
     final profile = ProfileController.instance;
     final favorites = FavoritesController.instance;
     final orders = OrdersController.instance;
-    final notifications = NotificationsController.instance;
+    final notifications = NotificationCenterController.instance;
+    final conversations = ConversationsController.instance;
 
     return Scaffold(
       body: SafeArea(
@@ -68,6 +76,7 @@ class ProfilePage extends StatelessWidget {
             favorites,
             orders,
             notifications,
+            conversations,
           ]),
           builder: (context, _) {
             final user = profile.user;
@@ -86,7 +95,7 @@ class ProfilePage extends StatelessWidget {
               ),
               children:
                   [
-                        Text('Profil', style: context.text.headlineMedium),
+                        const PageTitle('Profil'),
                         const SizedBox(height: AppSizes.lg),
                         // Carte utilisateur
                         Pressable(
@@ -230,41 +239,54 @@ class ProfilePage extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSizes.lg),
                         ProfileMenuSection(
-                          title: 'Préférences',
+                          title: 'Communication',
                           children: [
+                            ProfileMenuTile(
+                              icon: Icons.forum_outlined,
+                              title: 'Messages',
+                              subtitle: 'Restaurants, livreurs et support',
+                              color: AppColors.info,
+                              onTap: () =>
+                                  context.push(CommunicationRoutes.chats),
+                              trailing: _CountBadge(
+                                count: conversations.totalUnread,
+                              ),
+                            ),
                             ProfileMenuTile(
                               icon: Icons.notifications_none_rounded,
                               title: 'Notifications',
                               subtitle: 'Centre de notifications',
                               color: AppColors.warning,
-                              onTap: () =>
-                                  context.push(AppRoutes.notifications),
-                              trailing: notifications.unreadCount == 0
-                                  ? null
-                                  : Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 3,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.favorite,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Text(
-                                        '${notifications.unreadCount}',
-                                        style: context.text.labelMedium
-                                            ?.copyWith(color: Colors.white),
-                                      ),
-                                    ),
+                              onTap: () => context.push(
+                                CommunicationRoutes.notifications,
+                              ),
+                              trailing: _CountBadge(
+                                count: notifications.unreadCount,
+                              ),
                             ),
                             ProfileMenuTile(
                               icon: Icons.tune_rounded,
                               title: 'Réglages des notifications',
-                              subtitle: 'Commandes, promotions, e-mails…',
+                              subtitle: 'Par type, bannières, ne pas déranger',
                               color: AppColors.warning,
-                              onTap: () =>
-                                  context.push(AppRoutes.notificationSettings),
+                              onTap: () => context.push(
+                                CommunicationRoutes.notificationSettings,
+                              ),
                             ),
+                            ProfileMenuTile(
+                              icon: Icons.rate_review_outlined,
+                              title: 'Mes avis',
+                              subtitle: 'Notes et commentaires publiés',
+                              color: AppColors.primary,
+                              onTap: () =>
+                                  context.push(CommunicationRoutes.myReviews),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSizes.lg),
+                        ProfileMenuSection(
+                          title: 'Préférences',
+                          children: [
                             ProfileMenuTile(
                               icon: Icons.language_rounded,
                               title: 'Langue',
@@ -417,5 +439,40 @@ class _StatTile extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Pastille de compteur (rien si zéro), qui rebondit quand le nombre change.
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    if (count == 0) {
+      return Icon(
+        Icons.chevron_right_rounded,
+        color: context.palette.textSecondary,
+      );
+    }
+    return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: AppColors.favorite,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            '$count',
+            style: context.text.labelMedium?.copyWith(color: Colors.white),
+          ),
+        )
+        .animate(key: ValueKey(count))
+        .scaleXY(
+          begin: 0.4,
+          end: 1,
+          duration: 500.ms,
+          curve: Curves.elasticOut,
+        );
   }
 }

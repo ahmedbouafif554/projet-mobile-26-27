@@ -6,6 +6,14 @@ import '../constants/app_colors.dart';
 class AppSnackbar {
   AppSnackbar._();
 
+  /// Messager des pages d'onglet (sous la barre de navigation, voir
+  /// MainShell) : leurs messages s'affichent au-dessus de leur propre barre
+  /// du bas (panier, validation…) et non sur la barre de navigation.
+  static final GlobalKey<ScaffoldMessengerState> shellMessengerKey =
+      GlobalKey<ScaffoldMessengerState>(debugLabel: 'shell-messenger');
+
+  /// [keepAfterPop] : la page plein écran se ferme juste après ; le message
+  /// s'affiche sur la page d'onglet qui réapparaît en dessous.
   static void show(
     BuildContext context,
     String message, {
@@ -13,8 +21,11 @@ class AppSnackbar {
     Color iconColor = Colors.white,
     String? actionLabel,
     VoidCallback? onAction,
+    bool keepAfterPop = false,
   }) {
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger =
+        (keepAfterPop ? shellMessengerKey.currentState : null) ??
+        ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
@@ -38,6 +49,7 @@ class AppSnackbar {
     String message, {
     String? actionLabel,
     VoidCallback? onAction,
+    bool keepAfterPop = false,
   }) => show(
     context,
     message,
@@ -45,6 +57,7 @@ class AppSnackbar {
     iconColor: AppColors.success,
     actionLabel: actionLabel,
     onAction: onAction,
+    keepAfterPop: keepAfterPop,
   );
 
   static void error(BuildContext context, String message) => show(

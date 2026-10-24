@@ -21,6 +21,8 @@ dependencies:
   shimmer: ^3.0.0
   # Animations Lottie (bienvenue, commande confirmée, panier vide)
   lottie: ^3.3.1
+  # Client HTTP des dépôts « API » (le mode mock reste activé par défaut)
+  dio: ^5.11.1
 
 dev_dependencies:
   flutter_test:

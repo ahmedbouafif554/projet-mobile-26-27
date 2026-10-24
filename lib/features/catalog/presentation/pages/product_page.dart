@@ -98,6 +98,8 @@ class _ProductPageState extends State<ProductPage> {
       '${_product.name} ajouté au panier',
       actionLabel: 'Voir',
       onAction: () => router.push(AppRoutes.cart),
+      // La page se ferme : le message reste visible sur le menu.
+      keepAfterPop: true,
     );
 
     // Laisse le temps d'apprécier l'animation, puis revient au menu.

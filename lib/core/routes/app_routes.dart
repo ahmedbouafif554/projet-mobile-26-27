@@ -1,45 +1,43 @@
 /// Chemins de toutes les routes de l'application.
 /// Toujours passer par ces constantes/fonctions plutôt que des chaînes en dur.
+///
+/// Chaque écran vit sous la route de son module (voir modules_config.dart) :
+/// `/auth`, `/explore`, `/orders`, `/delivery` et `/communication`.
+/// L'écran principal d'un module est servi sur la route du module.
 class AppRoutes {
   AppRoutes._();
 
-  // Authentification
-  static const splash = '/';
-  static const onboarding = '/onboarding';
-  static const login = '/login';
-  static const register = '/register';
-  static const otp = '/otp';
-  static const forgotPassword = '/forgot-password';
+  // Module 1 : authentification et utilisateurs
+  static const splash = '/auth/splash';
+  static const onboarding = '/auth/onboarding';
+  static const login = '/auth/login';
+  static const register = '/auth/register';
+  static const otp = '/auth/otp';
+  static const forgotPassword = '/auth/forgot-password';
+  static const profile = '/auth';
+  static const editProfile = '/auth/edit-profile';
+  static const addresses = '/auth/addresses';
+  static const language = '/auth/language';
+  static const admin = '/auth/admin-dashboard';
 
-  // Onglets de la barre de navigation
-  static const home = '/home';
-  static const search = '/search';
+  // Module 2 : restaurants et catalogue
+  static const home = '/explore';
+  static const search = '/explore/search';
+  static const restaurants = '/explore/restaurants';
+  static const restaurant = '/explore/restaurant';
+  static const product = '/explore/product';
+  static const favorites = '/explore/favorites';
+
+  // Module 3 : panier et commandes
+  static const cart = '/orders/cart';
+  static const checkout = '/orders/checkout';
+  static const paymentMethods = '/orders/payment';
+  static const orderConfirmation = '/orders/confirmation';
   static const orders = '/orders';
-  static const profile = '/profile';
+  static const tracking = '/orders/tracking';
 
-  // Catalogue
-  static const restaurants = '/restaurants';
-  static const restaurant = '/restaurant';
-  static const product = '/product';
-  static const favorites = '/favorites';
-
-  // Commandes & livraison
-  static const cart = '/cart';
-  static const checkout = '/checkout';
-  static const orderConfirmation = '/order-confirmation';
-  static const tracking = '/tracking';
-  static const parcel = '/parcel';
-
-  // Profil
-  static const editProfile = '/edit-profile';
-  static const addresses = '/addresses';
-  static const paymentMethods = '/payment-methods';
-  static const notificationSettings = '/notification-settings';
-  static const language = '/language';
-  static const notifications = '/notifications';
-
-  // Administration
-  static const admin = '/admin';
+  // Module 4 : livraison
+  static const parcel = '/delivery';
 
   // --- Constructeurs de chemins avec paramètres ---
 

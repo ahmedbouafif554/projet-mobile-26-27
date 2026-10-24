@@ -127,7 +127,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         ),
                       ),
                     const _SectionTitle(title: 'Heure de livraison'),
-                    Row(
+                    // Passe à la ligne sur les petits écrans.
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
                       children: [
                         SelectableChip(
                           label: 'Dès que possible',
@@ -135,7 +138,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           selected: _asap,
                           onTap: () => setState(() => _asap = true),
                         ),
-                        const SizedBox(width: 10),
                         SelectableChip(
                           label: 'Planifier',
                           icon: Icons.event_rounded,

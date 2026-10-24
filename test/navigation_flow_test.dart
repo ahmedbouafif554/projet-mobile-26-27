@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:superfaster/core/routes/app_router.dart';
+import 'package:superfaster/core/routes/app_routes.dart';
 import 'package:superfaster/core/theme/theme_controller.dart';
-import 'package:superfaster/core/widgets/animated_bottom_nav.dart';
 import 'package:superfaster/core/widgets/selectable_chip.dart';
 import 'package:superfaster/features/catalog/presentation/pages/product_page.dart';
 import 'package:superfaster/features/catalog/presentation/pages/restaurant_page.dart';
@@ -50,7 +50,7 @@ void main() {
     CartController.instance.clear();
 
     await tester.pumpWidget(const SuperFasterApp());
-    AppRouter.router.go('/home');
+    AppRouter.router.go(AppRoutes.home);
     await settle(tester, 2000);
 
     // Restaurant populaire (animation Hero de l'image)
@@ -106,8 +106,8 @@ void main() {
     // Changement d'onglet via la barre du bas
     await tester.tap(
       find.descendant(
-        of: find.byType(AnimatedBottomNav),
-        matching: find.byIcon(Icons.person_outline_rounded),
+        of: find.byType(NavigationBar),
+        matching: find.text('Compte'),
       ),
     );
     await settle(tester);
@@ -123,8 +123,9 @@ void main() {
     final restoreErrors = ignoreOfflineImageErrors();
 
     await tester.pumpWidget(const SuperFasterApp());
-    AppRouter.router.go('/restaurants?category=courses');
-    await settle(tester, 1500);
+    AppRouter.router.go(AppRoutes.restaurantsWith(category: 'courses'));
+    // L'accueil (sous la liste) finit aussi son chargement et ses cascades.
+    await settle(tester, 2500);
 
     // La puce « Courses » (dernière de la liste) doit être dans l'écran.
     final chip = tester.getRect(find.widgetWithText(SelectableChip, 'Courses'));

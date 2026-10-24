@@ -6,11 +6,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/routes/app_routes.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/shake_widget.dart';
+import '../../../../core/config/modules_config.dart';
+import '../../../../core/session/app_session.dart';
 import '../../data/auth_mock_data.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/otp_input.dart';
@@ -82,7 +83,9 @@ class _OtpPageState extends State<OtpPage> {
       _verified = true;
     });
     await Future.delayed(const Duration(milliseconds: 1400));
-    if (mounted) context.go(AppRoutes.home);
+    if (!mounted) return;
+    AppSession.instance.login();
+    context.go(ModulesConfig.homeRoute);
   }
 
   @override

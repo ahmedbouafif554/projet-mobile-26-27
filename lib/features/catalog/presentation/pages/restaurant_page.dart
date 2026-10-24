@@ -12,6 +12,7 @@ import '../../../../core/widgets/app_network_image.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/circle_icon_button.dart';
 import '../../../../core/widgets/pressable.dart';
+import '../../../communication/communication_routes.dart';
 import '../../../orders/presentation/controllers/cart_controller.dart';
 import '../../data/catalog_mock_data.dart';
 import '../../models/product.dart';
@@ -246,13 +247,19 @@ class _RestaurantInfo extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: _StatBox(
-                          icon: Icons.star_rounded,
-                          iconColor: context.palette.warning,
-                          value: r.rating
-                              .toStringAsFixed(1)
-                              .replaceAll('.', ','),
-                          label: '${r.reviewCount}+ avis',
+                        // Ouvre les avis clients (module 5).
+                        child: Pressable(
+                          onTap: () => context.push(
+                            CommunicationRoutes.restaurantReviews(r.id),
+                          ),
+                          child: _StatBox(
+                            icon: Icons.star_rounded,
+                            iconColor: context.palette.warning,
+                            value: r.rating
+                                .toStringAsFixed(1)
+                                .replaceAll('.', ','),
+                            label: 'Voir les avis ›',
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),

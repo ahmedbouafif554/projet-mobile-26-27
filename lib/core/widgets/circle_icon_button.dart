@@ -69,6 +69,8 @@ class AppBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Écran principal d'un onglet : rien à dépiler, pas de bouton retour.
+    if (!Navigator.of(context).canPop()) return const SizedBox.shrink();
     return CircleIconButton(
       icon: icon ?? Icons.arrow_back_ios_new_rounded,
       elevated: elevated,
