@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../constants/app_sizes.dart';
+import '../theme/app_sizes.dart';
 
 /// Conteneur des onglets (branches go_router) avec un fondu enchaîné
 /// lors du changement d'onglet. Chaque onglet garde son état.

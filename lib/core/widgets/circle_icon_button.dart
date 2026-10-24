@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../routes/app_routes.dart';
 import '../theme/theme_extensions.dart';
 import 'pressable.dart';
 
@@ -53,29 +52,31 @@ class CircleIconButton extends StatelessWidget {
   }
 }
 
-/// Bouton retour standard : revient à la page précédente,
-/// ou à [fallbackRoute] s'il n'y a rien à dépiler (ex. : lien direct).
+/// Bouton retour standard : revient à la page précédente, ou à
+/// [fallbackRoute] s'il n'y a rien à dépiler (page ouverte par un lien
+/// direct, rafraîchissement du navigateur…). Sans [fallbackRoute], il est
+/// invisible quand il n'y a rien à dépiler (écran principal d'un onglet).
 class AppBackButton extends StatelessWidget {
   const AppBackButton({
     super.key,
     this.elevated = false,
     this.icon,
-    this.fallbackRoute = AppRoutes.home,
+    this.fallbackRoute,
   });
 
   final bool elevated;
   final IconData? icon;
-  final String fallbackRoute;
+  final String? fallbackRoute;
 
   @override
   Widget build(BuildContext context) {
-    // Écran principal d'un onglet : rien à dépiler, pas de bouton retour.
-    if (!Navigator.of(context).canPop()) return const SizedBox.shrink();
+    final canPop = Navigator.of(context).canPop();
+    if (!canPop && fallbackRoute == null) return const SizedBox.shrink();
     return CircleIconButton(
       icon: icon ?? Icons.arrow_back_ios_new_rounded,
       elevated: elevated,
       tooltip: 'Retour',
-      onTap: () => context.canPop() ? context.pop() : context.go(fallbackRoute),
+      onTap: () => canPop ? context.pop() : context.go(fallbackRoute!),
     );
   }
 }

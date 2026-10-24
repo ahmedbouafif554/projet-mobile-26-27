@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../constants/app_colors.dart';
-import '../constants/app_sizes.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_sizes.dart';
 import '../theme/theme_extensions.dart';
 import 'shake_widget.dart';
 

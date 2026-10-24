@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../constants/app_colors.dart';
+import '../theme/app_colors.dart';
 import '../theme/theme_extensions.dart';
 
 /// Logo SuperFaster : éclair blanc dans un carré arrondi orange,

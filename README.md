@@ -1,169 +1,137 @@
-# SuperFaster
+# SuperFaster — plateforme (front office + back office)
 
-Application mobile de livraison (restaurants, courses, colis) — **frontend**.
-Aucun backend, aucun Firebase : les données sont des mocks écrits en dur dans les dossiers
-`data/` de chaque module. Le module communication suit déjà le pattern repository :
-il peut basculer sur une vraie API REST (Dio) sans toucher aux écrans.
+Un seul projet Flutter, deux applications qui partagent le même code :
 
-L'application est découpée en **5 modules** (un par membre de l'équipe), chacun avec son
-onglet dans la barre de navigation et ses écrans : voir « Navigation : 5 modules ».
+| Application | Public | Lancement |
+| --- | --- | --- |
+| **Front office** (mobile) | clients et livreurs | `flutter run -t lib/main_front.dart` |
+| **Back office** « Espace Pro » (web) | admin et restaurants | `flutter run -t lib/main_back.dart -d chrome` |
 
-## Lancer le projet
+Pas de backend pour l'instant : chaque entité a un dépôt **mock** (données en mémoire,
+délai réseau simulé de 300 à 800 ms) et un dépôt **API** (Dio) prêt à être branché :
 
 ```bash
-flutter pub get
-flutter run            # téléphone / émulateur Android ou iOS
-flutter run -d chrome  # aperçu rapide dans le navigateur
+flutter run -t lib/main_front.dart --dart-define=USE_MOCK=false --dart-define=API_BASE_URL=https://mon-api/v1
 ```
 
-Une connexion Internet est nécessaire au premier lancement : les polices (Google Fonts)
-et les photos (Unsplash) sont chargées depuis le réseau.
+Build web : `flutter build web -t lib/main_back.dart -o build/web_back` (idem avec
+`main_front.dart`).
 
-> **Windows :** si `flutter run` affiche « Building with plugins requires symlink support »,
-> activez le *Mode développeur* (`start ms-settings:developers`).
+## Comptes de démonstration
 
-### Données de démonstration
+Mot de passe : n'importe lequel de 6 caractères ou plus (ex. `demo1234`).
 
-| Élément | Valeur |
-| --- | --- |
-| Connexion | champs pré-remplis (n'importe quel e-mail valide + 6 caractères) |
-| Code OTP | `1234` |
-| Codes promo | `BIENVENUE30` (-30 %), `FAST5` (5 € offerts), `LIVRAISON` (livraison offerte) |
-| Commande en cours | `#SF1046` : son suivi avance automatiquement (préparation → en route → livrée) |
-| Notification push | bouton 📣 du centre de notifications, ou « Tester une notification » dans les réglages |
-| Messagerie | chaque message reçoit une réponse automatique (statuts lu, « écrit… ») |
+| Rôle | E-mail | Application |
+| --- | --- | --- |
+| Client | `alex.martin@exemple.fr` | front office |
+| Livreur | `karim.benali@superfaster.fr` | front office |
+| Restaurant | `contact@burgerfactory.fr` | back office (boutons « démo » sur la connexion) |
+| Admin | `admin@superfaster.fr` | back office |
 
-## Dépendances
+Codes promo : `SUPER10` (-10 %), `BIENVENUE` (5 € dès 15 €), `LIVRAISON` (livraison
+offerte). Code OTP de l'inscription : `1234`.
 
-| Package | Rôle |
-| --- | --- |
-| `go_router` | navigation, barre du bas (StatefulShellRoute), transitions personnalisées |
-| `google_fonts` | Poppins (titres) et Inter (texte) |
-| `flutter_animate` | cascades d'apparition, micro-interactions |
-| `shimmer` | squelettes de chargement |
-| `lottie` | animations bienvenue / commande confirmée / panier vide |
-| `dio` | client HTTP des dépôts « API » du module 5 (Messages) |
+## Les 5 modules
 
-Les animations Lottie (`assets/lottie/`) sont générées par `tool/generate_lottie.py` ;
-vous pouvez les remplacer par des fichiers LottieFiles portant les mêmes noms.
+| Module | Front office (mobile) | Back office (web) |
+| --- | --- | --- |
+| **1 · Utilisateurs** | splash, onboarding, inscription + OTP, connexion (client / livreur), mot de passe oublié, profil, modifier le profil, adresses (CRUD), paramètres | utilisateurs : tableau (recherche, filtres, tri, pagination), fiche détaillée, création / modification, blocage, changement de rôle, suppression, export |
+| **2 · Catalogue** | accueil (offres, catégories, populaires), liste filtrable des restaurants, fiche restaurant (menu par onglets, panier flottant), fiche produit (options, quantité, note), recherche, favoris | restaurants (validation des inscriptions, suspension, CRUD, fiche), catégories (glisser-déposer, CRUD), produits / « Mon menu » (disponibilité en un clic, CRUD), « Mon restaurant » (ouverture, informations) |
+| **3 · Commandes** | panier (quantités, balayage + annuler), paiement (adresse, moyen de paiement, code promo), confirmation animée, historique, détail, suivi en temps réel (plan animé, la commande avance seule), annulation, « recommander » | commandes (filtres, étapes, annulation avec motif, remboursement, commande manuelle), fiche commande (progression, historique, livraison), cuisine du restaurateur (Kanban avec glisser-déposer) |
+| **4 · Livraison** | tableau de bord livreur (en ligne / hors ligne, chiffres du jour, gains de la semaine), courses proposées (accepter / refuser), course en cours étape par étape, gains, documents et véhicule | livreurs (validation des justificatifs, CRUD, fiche), livraisons (assignation d'un livreur, étapes, annulation), carte en direct (livreurs qui bougent, trajets animés) |
+| **5 · Communication** | avis (étoiles animées, notes détaillées, photos), avis d'un restaurant (répartition, filtres, « utile »), mes avis (modifier / supprimer), notifications groupées par date (balayage), préférences, messagerie (bulles animées, « en train d'écrire… », support) | avis (modération, réponses avec modèles), campagnes push (aperçu, programmation, envoi, duplication), conversations (supervision, signalement, intervention du support ; le restaurateur répond à ses clients) |
 
-## Navigation : 5 modules
-
-Parcours : Splash → Onboarding → Connexion → Accueil (onglet **Explorer**).
-
-| # | Onglet | Route (écran principal) | Dossier | Fichier de routes |
-| --- | --- | --- | --- | --- |
-| 1 | Compte | `/auth` (profil) | `features/auth` (+ `profile`, `admin`) | `auth/auth_routes.dart` |
-| 2 | Explorer | `/explore` (accueil) | `features/catalog` | `catalog/catalog_routes.dart` |
-| 3 | Commandes | `/orders` (mes commandes) | `features/orders` | `orders/orders_routes.dart` |
-| 4 | Livraison | `/delivery` (envoi de colis) | `features/delivery` | `delivery/delivery_routes.dart` |
-| 5 | Messages | `/communication` (conversations) | `features/communication` | `communication/communication_routes.dart` |
-
-- **Configuration centrale** : `lib/core/config/modules_config.dart` décrit chaque module
-  (numéro, nom, label, icônes, route, couleur, écran principal) et ses écrans prévus.
-  La barre de navigation et les routes en sont générées.
-- **Barre de navigation** (Material 3) : icône qui rebondit, trait coloré qui glisse,
-  badges animés (articles du panier sur Commandes, messages non lus sur Messages).
-  Chaque onglet s'ouvre sur l'écran principal de son module et garde son historique.
-- **Plein écran** (`fullScreen: true`) : splash, connexion, détail produit, confirmation,
-  suivi, chat… s'ouvrent par-dessus la barre. Les autres écrans restent dans leur onglet.
-- **Écrans prévus non développés** (ex. `/orders/order-detail`, espace livreur) :
-  ils affichent « En cours de développement par le Module X » avec la route et le
-  fichier à modifier.
-
-### Remplacer un placeholder par un vrai écran
-
-Déclarez la page dans le fichier de routes du module, avec l'identifiant de l'écran
-défini dans `modules_config.dart` :
-
-```dart
-// lib/features/orders/orders_routes.dart
-screens: {
-  'order-detail': (context, state) => const OrderDetailPage(),
-},
-```
-
-La route du placeholder ouvre alors la vraie page.
-Une route avec paramètre (ex. `tracking/:id`) se déclare dans `extraRoutes` avec
-`ModuleRoutes.route(...)`. Pour ajouter un écran prévu, ajoutez un `PlannedScreen`
-dans `modules_config.dart` ; `test/modules_config_test.dart` vérifie la cohérence.
-
-Les chemins utilisés dans le code passent toujours par `AppRoutes`
-(`core/routes/app_routes.dart`) ou `CommunicationRoutes`, jamais par des chaînes en dur.
+Les deux applications partagent les mêmes dépôts : une commande passée dans le
+front office, un restaurant validé ou une course assignée dans le back office suivent
+les mêmes règles métier (une commande « prête » crée sa course, une livraison terminée
+libère le livreur et augmente ses gains, valider un restaurant active son compte…).
 
 ## Architecture
 
 ```
 lib/
-├── core/
-│   ├── config/      modules_config.dart (les 5 modules), AppConfig (mock ou API)
-│   ├── constants/   couleurs, tailles, durées, chemins d'assets
-│   ├── network/     client Dio partagé, ApiException
-│   ├── routes/      app_router (assemblage), module_routes, app_routes, transitions
-│   ├── session/     session simulée (connecté / déconnecté)
-│   ├── theme/       thème Material 3 clair/sombre, palette, ThemeController
-│   ├── utils/       formatage (prix, dates), validateurs de formulaires
-│   └── widgets/     main_shell (barre des modules), placeholder_page,
-│                    et composants réutilisables (boutons, champs, shimmer…)
-├── features/        chaque module déclare ses écrans dans <dossier>_routes.dart
-│   ├── auth/        module 1 : splash, onboarding, connexion, inscription, OTP
-│   ├── profile/     module 1 : profil, adresses, paiements, langue
-│   ├── admin/       module 1 : tableau de bord admin (démo)
-│   ├── catalog/     module 2 : accueil, recherche, restaurants, menu, produit, favoris
-│   ├── orders/      module 3 : panier, validation, confirmation, historique
-│   ├── delivery/    modules 3 et 4 : suivi (carte simulée), envoi de colis
-│   └── communication/  module 5 : avis, notifications, messagerie
-└── main.dart
+├── main_front.dart / main_back.dart   points d'entrée
+├── core/                              commun aux deux apps
+│   ├── app/          bootstrap (ProviderScope, intl), localisation française
+│   ├── auth/         AuthService (session mock) et permissions.dart
+│   ├── config/       AppConfig (mock ou API, délai simulé)
+│   ├── network/      client Dio (provider), ApiException
+│   ├── routing/      transitions de pages, SafeGoRouter
+│   ├── theme/        couleurs, tailles, thème Material 3 clair/sombre, mode du thème
+│   ├── utils/        formatage intl (prix, dates), validateurs, debouncer
+│   └── widgets/      composants génériques (voir ci-dessous)
+├── shared/
+│   ├── models/       User, Address, Restaurant, Category, Product, CartItem, Order,
+│   │                 Courier, Delivery, Review, AppNotification (+ campagnes), Chat,
+│   │                 Message — fromJson / toJson / copyWith
+│   ├── repositories/ <entité>_repository.dart (interface) + mock_ + api_
+│   │                 repository_providers.dart (un provider Riverpod par dépôt)
+│   ├── providers/    messagerie partagée (messages, « en train d'écrire… »)
+│   ├── mock/         données de démonstration
+│   └── widgets/      pastilles de statut des entités (mêmes couleurs partout)
+├── front_office/
+│   ├── front_app.dart, router/ (chemins, redirect, routeur), shell/ (onglets, badges)
+│   ├── shared/       cartes de restaurants, plats, étoiles, quantité
+│   └── modules/
+│       ├── auth/            module 1
+│       ├── catalog/         module 2
+│       ├── orders/          module 3
+│       ├── courier/         module 4
+│       └── communication/   module 5
+│       (chaque module : providers/, presentation/pages|widgets/, <module>_routes.dart)
+├── back_office/
+│   ├── back_app.dart, back_theme.dart
+│   ├── router/       chemins, règles d'accès par rôle, routeur (ShellRoute)
+│   ├── shell/        sidebar (groupes, compteurs, repliable), topbar (recherche
+│   │                 globale, thème, alertes, compte), BoPage (fil d'Ariane)
+│   ├── auth/         connexion Espace Pro, inscription d'un restaurant
+│   ├── dashboard/    tableau de bord admin / restaurateur
+│   ├── account/      mon compte
+│   ├── shared/       contrôleur CRUD générique, blocs de mise en page
+│   └── modules/      users, catalog, orders, delivery, communication
+└── dev/              catalogue des composants (étape 1)
 ```
 
-Chaque module suit la même organisation : `data/` (mocks), `models/`,
-`presentation/` (`pages/`, `widgets/`, `controllers/`).
+### Back office
 
-L'état partagé (panier, commandes, favoris, profil, thème) repose sur de simples
-`ChangeNotifier` écoutés avec `ListenableBuilder`, sans package externe. Pour brancher
-un vrai backend, il suffira de remplacer les classes `*MockData` par des repositories
-et, si besoin, ces contrôleurs par Provider, Riverpod ou Bloc.
+- **Coque** : sidebar 264 px (80 px repliée, animée, groupée par module, compteurs en
+  direct), Drawer sous 600 px, repliée par défaut sur tablette. Topbar : recherche
+  globale (commandes, produits, restaurants, utilisateurs, livreurs selon le rôle),
+  thème clair / sombre, cloche des alertes, menu du compte.
+- **Rôles** : l'admin voit tout ; le restaurateur ne voit que son restaurant (tableau de
+  bord, « Mon menu », « Mon restaurant », commandes reçues, cuisine, avis, conversations).
+  Les règles d'accès (`back_office/router/back_redirect.dart`) reprennent la définition
+  du menu (`shell/back_nav.dart`) : une seule source de vérité.
+- **Tableau de bord** : indicateurs avec tendance, ventes sur 7 jours, commandes par
+  statut, top restaurants (admin) ou top produits (restaurateur), alertes à traiter,
+  dernières commandes. Tout se recalcule après une action (mêmes contrôleurs).
 
-## Module 5 (Messages) : avis, notifications, messagerie
+### Composants génériques (`core/widgets`)
 
-Toutes les routes commencent par `/communication` (voir `communication_routes.dart`) :
-
-| Écran | Route |
+| Composant | Usage |
 | --- | --- |
-| Avis d'un restaurant (résumé, filtres, tri) | `/communication/reviews/:restaurantId` |
-| Donner un avis | `/communication/write-review?restaurantId=…&orderId=…` |
-| Modifier un avis | `/communication/write-review?reviewId=…` |
-| Mes avis | `/communication/my-reviews` |
-| Modération (admin) | `/communication/moderation` |
-| Centre de notifications | `/communication/notifications` |
-| Réglages des notifications | `/communication/notification-settings` |
-| Conversations (écran principal de l'onglet) | `/communication` |
-| Conversation (plein écran) | `/communication/chat/:conversationId` |
+| `AppDataTable<T>` | tableau : recherche, filtres, tri, pagination, actions (voir / modifier / supprimer avec confirmation), shimmer, état vide, cartes sur mobile |
+| `AppForm` + `showAppForm` / `showAppFormDialog` / `showAppFormPanel` | formulaire de création / modification avec validation, en dialogue ou panneau latéral |
+| `AppFormSection`, `AppFormRow`, `AppDropdownField`, `AppSwitchField`, `AppTextField` | champs de formulaire |
+| `ConfirmDeleteDialog.show` | confirmation avant suppression |
+| `StatusChip` (+ `shared/widgets/status_chips.dart`) | statut coloré |
+| `StatCard`, `AnimatedCounter` | statistique avec compteur animé et tendance |
+| `ChartCard`, `AppLineChart`, `AppPieChart`, `AppBarChart` | graphiques fl_chart qui se dessinent |
+| `PageHeader`, `Breadcrumbs` | titre de page, fil d'Ariane, bouton « Ajouter » |
+| `EmptyState`, `AsyncValueView`, `ErrorView` | états vide, chargement, erreur |
+| `AppSearchField`, `AppSnackbar`, `AppCard`, `Avatar`, `CityMapPainter` | recherche temporisée, messages, carte, photo ou initiales, plan stylisé |
 
-Organisation (pattern repository) :
+> **Riverpod 3 :** les widgets non visibles (onglet inactif, page recouverte) sont mis en
+> pause. Un widget doit lire directement un `FutureProvider` / `AsyncNotifier` (ou un
+> `select` dessus) plutôt qu'un `Provider` intermédiaire qui le « watch », sinon la
+> reprise déclenche l'erreur « setState() called during build » (voir
+> `front_office/shell/tab_badges.dart`).
 
-```
-features/communication/
-├── data/
-│   ├── reviews/, notifications/, chat/   interface + implémentation API (Dio) + mock
-│   ├── mock/communication_mock_data.dart réponses « serveur » au format JSON
-│   └── communication_repositories.dart  choisit mock ou API selon AppConfig
-├── models/          Review, RatingSummary, AppNotification, NotificationSettings,
-│                    Conversation, ChatMessage, ChatEvent (fromJson / toJson)
-└── presentation/    controllers/, pages/, widgets/
-```
+### Données mock
 
-Passer sur l'API réelle :
-
-```bash
-flutter run --dart-define=USE_MOCK=false --dart-define=API_BASE_URL=https://votre-api/v1
-```
-
-Les dépôts API acceptent une réponse brute (`[...]`) ou enveloppée (`{"data": ...}`).
-Le temps réel (notifications, messages) se fait par polling (`/notifications?since=`,
-`/chat/events?since=`) ; il peut être remplacé par Firebase Cloud Messaging ou un WebSocket
-sans modifier les écrans. Les photos d'avis passent par une galerie simulée, à remplacer
-par `image_picker` quand le téléversement sera disponible.
+27 utilisateurs (tous rôles), 10 restaurants dont 2 demandes d'inscription, 10 catégories,
+41 produits avec options, 32 commandes sur 7 jours, 6 livreurs, 27 livraisons, 24 avis,
+18 notifications, 5 campagnes, 6 conversations, générés de façon déterministe.
 
 ## Tests
 
@@ -172,17 +140,14 @@ flutter analyze
 flutter test
 ```
 
-- `cart_controller_test.dart` : calculs du panier et codes promo ;
-- `lottie_assets_test.dart` : les 3 animations se chargent ;
-- `modules_config_test.dart` : cohérence de `modules_config.dart`, des fichiers de
-  routes des modules et des chemins `AppRoutes` / `CommunicationRoutes` ;
-- `module_shell_test.dart` : démarrage, écran principal de chaque onglet, badge du
-  panier, écrans plein écran, placeholder ;
-- `screens_smoke_test.dart` : toutes les routes (pages de module, écrans prévus,
-  écrans avec paramètres) s'affichent sans erreur ni débordement
-  (petit et grand téléphone, clair et sombre) ;
-- `navigation_flow_test.dart` : parcours complet accueil → restaurant → produit →
-  panier → paiement → confirmation → suivi ;
-- `communication_models_test.dart` : aller-retour JSON des modèles du module communication ;
-- `communication_repositories_test.dart` : dépôts mock et dépôt API (Dio simulé) ;
-- `communication_flow_test.dart` : chat, notifications (bannière, glisser, annuler) et avis.
+86 tests : modèles (JSON), données mock, dépôts mock et API (Dio simulé),
+authentification et permissions, formatage, composants, catalogue des composants ;
+front office : règles d'accès, parcours (connexion, inscription + OTP, compte, panier →
+paiement → confirmation, favoris, recherche, annulation, avis, notifications, messages,
+livreur) et test de fumée de tous les écrans ; back office : règles d'accès et menu par
+rôle, parcours (connexion, utilisateurs, validation d'un restaurant, rupture de produit,
+cuisine, étapes d'une commande, assignation, modération, conversation) et test de fumée
+de toutes les pages (admin et restaurateur, 1440 / 820 / 390 px, clair et sombre).
+
+> **Flutter 3.32 :** `fl_chart` est limité à `<1.1.0` (les versions suivantes demandent
+> une version plus récente de Flutter).

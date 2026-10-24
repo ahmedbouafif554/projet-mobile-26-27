@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../constants/app_sizes.dart';
+import '../theme/app_sizes.dart';
 import '../theme/theme_extensions.dart';
 import 'circle_icon_button.dart';
 

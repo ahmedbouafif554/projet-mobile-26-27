@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../constants/app_colors.dart';
-import '../constants/app_sizes.dart';
+import 'app_colors.dart';
+import 'app_sizes.dart';
 import 'app_palette.dart';
 
 /// Thème centralisé de l'application (Material 3, clair et sombre).
@@ -144,23 +144,6 @@ class AppTheme {
         ),
         showCheckmark: false,
       ),
-      // Barre de navigation des modules (Material 3).
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surface,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        height: 74,
-        labelTextStyle: WidgetStateProperty.resolveWith(
-          (states) => textTheme.labelSmall?.copyWith(
-            color: states.contains(WidgetState.selected)
-                ? textPrimary
-                : palette.textSecondary,
-            fontWeight: states.contains(WidgetState.selected)
-                ? FontWeight.w700
-                : FontWeight.w500,
-          ),
-        ),
-      ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
@@ -220,6 +203,61 @@ class AppTheme {
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.primary,
+      ),
+      // Barre de navigation du front office (Material 3)
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        height: 72,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.14),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? AppColors.primary
+                : palette.textSecondary,
+          ),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => textTheme.labelSmall?.copyWith(
+            color: states.contains(WidgetState.selected)
+                ? textPrimary
+                : palette.textSecondary,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w500,
+          ),
+        ),
+      ),
+      // Menu latéral du back office sur petit écran
+      drawerTheme: DrawerThemeData(
+        backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.horizontal(
+            right: Radius.circular(AppSizes.radiusXl),
+          ),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        ),
+        textStyle: textTheme.bodyMedium,
+      ),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurfaceMuted : AppColors.secondary,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        textStyle: textTheme.labelSmall?.copyWith(color: Colors.white),
+      ),
+      listTileTheme: ListTileThemeData(
+        shape: RoundedRectangleBorder(borderRadius: radius),
+        iconColor: palette.textSecondary,
       ),
     );
   }

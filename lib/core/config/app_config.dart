@@ -1,13 +1,14 @@
-/// Configuration globale de l'application.
+/// Configuration globale, commune au front office et au back office.
 ///
 /// Les valeurs peuvent être changées au lancement, sans toucher au code :
 /// ```
-/// flutter run --dart-define=USE_MOCK=false --dart-define=API_BASE_URL=https://mon-api/v1
+/// flutter run -t lib/main_front.dart --dart-define=USE_MOCK=false \
+///   --dart-define=API_BASE_URL=https://mon-api/v1
 /// ```
 class AppConfig {
   AppConfig._();
 
-  /// `true` : les dépôts utilisent les données mock (aucun appel réseau).
+  /// `true` : les dépôts utilisent les données mock en mémoire.
   /// `false` : les dépôts appellent l'API REST avec Dio.
   static const bool useMockData = bool.fromEnvironment(
     'USE_MOCK',
@@ -20,13 +21,8 @@ class AppConfig {
     defaultValue: 'https://api.superfaster.dev/v1',
   );
 
-  /// Identifiant de l'utilisateur connecté (session simulée).
-  static const String currentUserId = 'u-me';
-
-  /// Latence simulée des dépôts mock (modifiable dans les tests).
-  static Duration mockLatency = const Duration(milliseconds: 600);
-
-  /// Délai des réactions simulées du « serveur » en mode mock
-  /// (ex. : le restaurant répond à un avis). Modifiable dans les tests.
-  static Duration mockServerDelay = const Duration(seconds: 6);
+  /// Délai réseau simulé par les dépôts mock (tiré entre ces deux bornes).
+  /// Les tests le passent à zéro.
+  static Duration mockLatencyMin = const Duration(milliseconds: 300);
+  static Duration mockLatencyMax = const Duration(milliseconds: 800);
 }

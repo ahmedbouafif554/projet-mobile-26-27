@@ -1,19 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../constants/app_colors.dart';
+import '../theme/app_colors.dart';
 
-/// Affichage uniforme des messages éphémères (snackbars).
+/// Messages éphémères homogènes (succès, erreur, information).
 class AppSnackbar {
   AppSnackbar._();
 
-  /// Messager des pages d'onglet (sous la barre de navigation, voir
-  /// MainShell) : leurs messages s'affichent au-dessus de leur propre barre
-  /// du bas (panier, validation…) et non sur la barre de navigation.
-  static final GlobalKey<ScaffoldMessengerState> shellMessengerKey =
-      GlobalKey<ScaffoldMessengerState>(debugLabel: 'shell-messenger');
-
-  /// [keepAfterPop] : la page plein écran se ferme juste après ; le message
-  /// s'affiche sur la page d'onglet qui réapparaît en dessous.
   static void show(
     BuildContext context,
     String message, {
@@ -21,15 +13,14 @@ class AppSnackbar {
     Color iconColor = Colors.white,
     String? actionLabel,
     VoidCallback? onAction,
-    bool keepAfterPop = false,
   }) {
-    final messenger =
-        (keepAfterPop ? shellMessengerKey.currentState : null) ??
-        ScaffoldMessenger.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
-        duration: const Duration(milliseconds: 2600),
+        duration: const Duration(milliseconds: 2800),
+        // Largeur limitée sur grand écran (back office).
+        width: MediaQuery.sizeOf(context).width > 600 ? 440 : null,
         content: Row(
           children: [
             Icon(icon, color: iconColor, size: 20),
@@ -49,7 +40,6 @@ class AppSnackbar {
     String message, {
     String? actionLabel,
     VoidCallback? onAction,
-    bool keepAfterPop = false,
   }) => show(
     context,
     message,
@@ -57,13 +47,15 @@ class AppSnackbar {
     iconColor: AppColors.success,
     actionLabel: actionLabel,
     onAction: onAction,
-    keepAfterPop: keepAfterPop,
   );
 
-  static void error(BuildContext context, String message) => show(
+  static void error(BuildContext context, Object error) => show(
     context,
-    message,
+    error.toString(),
     icon: Icons.error_rounded,
     iconColor: AppColors.error,
   );
+
+  static void info(BuildContext context, String message) =>
+      show(context, message);
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../constants/app_colors.dart';
+import '../theme/app_colors.dart';
 import 'shimmer_box.dart';
 
 /// Image réseau avec shimmer pendant le chargement, apparition en fondu

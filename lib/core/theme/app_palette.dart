@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../constants/app_colors.dart';
+import 'app_colors.dart';
 
 /// Couleurs complémentaires non couvertes par [ColorScheme]
 /// (statuts, textes secondaires, shimmer, ombres...).

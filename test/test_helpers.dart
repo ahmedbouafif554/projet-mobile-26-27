@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:superfaster/core/config/app_config.dart';
 import 'package:superfaster/core/theme/app_theme.dart';
+import 'package:superfaster/core/utils/formatters.dart';
 
-/// Polices larges utilisées à la place de Poppins/Inter (non disponibles
-/// hors réseau). Verdana est plus large que les deux : marge de sécurité.
+/// Polices larges utilisées à la place de Poppins/Inter (hors réseau) :
+/// Verdana est plus large que les deux, ce qui donne une marge de sécurité.
 const _wideFonts = [
   'C:/Windows/Fonts/verdana.ttf',
   '/System/Library/Fonts/Supplemental/Verdana.ttf',
@@ -24,18 +26,17 @@ Future<void> _loadFont(String family) async {
   }
 }
 
-/// Prépare l'environnement de test : pas de téléchargement google_fonts,
-/// et des polices réalistes (sinon flutter_test dessine des glyphes carrés
-/// bien plus larges que la réalité).
+/// Pas de google_fonts ni de délai réseau simulé dans les tests.
 Future<void> setUpAppTestEnvironment() async {
   AppTheme.useGoogleFonts = false;
+  AppConfig.mockLatencyMin = Duration.zero;
+  AppConfig.mockLatencyMax = Duration.zero;
+  await Formatters.init();
   await _loadFont('Poppins');
   await _loadFont('Inter');
 }
 
-/// Hors réseau, flutter_test répond 400 à toutes les requêtes HTTP :
-/// on ignore uniquement les échecs de chargement d'images Unsplash.
-/// Retourne la fonction qui restaure le gestionnaire d'origine.
+/// Hors réseau, les photos ne se chargent pas : on ignore ces erreurs-là.
 VoidCallback ignoreOfflineImageErrors() {
   final original = FlutterError.onError;
   FlutterError.onError = (details) {
@@ -45,9 +46,16 @@ VoidCallback ignoreOfflineImageErrors() {
   return () => FlutterError.onError = original;
 }
 
-/// Taille d'écran logique simulée (densité 3x comme un téléphone récent).
-void useScreenSize(WidgetTester tester, Size size) {
-  tester.view.physicalSize = size * 3;
-  tester.view.devicePixelRatio = 3;
+/// Taille d'écran logique simulée.
+void useScreenSize(WidgetTester tester, Size size, {double ratio = 2}) {
+  tester.view.physicalSize = size * ratio;
+  tester.view.devicePixelRatio = ratio;
   addTearDown(tester.view.reset);
+}
+
+/// Fait avancer le temps image par image (animations enchaînées).
+Future<void> settle(WidgetTester tester, [int ms = 1500]) async {
+  for (var t = 0; t <= ms; t += 50) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
 }

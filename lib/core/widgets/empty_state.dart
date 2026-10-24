@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lottie/lottie.dart';
 
-import '../constants/app_colors.dart';
-import '../constants/app_sizes.dart';
+import '../constants/app_assets.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_sizes.dart';
 import '../theme/theme_extensions.dart';
 import 'primary_button.dart';
 
-/// État vide générique (panier vide, aucun favori, aucun résultat...).
-/// Affiche soit une animation Lottie, soit une icône dans un cercle.
+/// État vide générique (panier vide, aucun favori, tableau sans résultat…).
+/// Affiche une icône dans un cercle si [icon] est fourni, sinon une animation
+/// Lottie ([lottieAsset], par défaut l'animation « vide »).
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
@@ -18,7 +20,8 @@ class EmptyState extends StatelessWidget {
     this.lottieAsset,
     this.actionLabel,
     this.onAction,
-  }) : assert(icon != null || lottieAsset != null);
+    this.compact = false,
+  });
 
   final String title;
   final String message;
@@ -27,18 +30,26 @@ class EmptyState extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
 
+  /// Version réduite (dans un tableau, une carte…).
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
-    final illustration = lottieAsset != null
-        ? Lottie.asset(lottieAsset!, width: 220, height: 220)
+    final size = compact ? 140.0 : 220.0;
+    final illustration = icon == null
+        ? Lottie.asset(
+            lottieAsset ?? AppAssets.lottieEmpty,
+            width: size,
+            height: size,
+          )
         : Container(
-                width: 120,
-                height: 120,
+                width: size * 0.55,
+                height: size * 0.55,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 52, color: AppColors.primary),
+                child: Icon(icon, size: size * 0.24, color: AppColors.primary),
               )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .moveY(
@@ -50,16 +61,18 @@ class EmptyState extends StatelessWidget {
 
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSizes.xl),
+        padding: EdgeInsets.all(compact ? AppSizes.md : AppSizes.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children:
               [
                     illustration,
-                    const SizedBox(height: AppSizes.lg),
+                    SizedBox(height: compact ? AppSizes.sm : AppSizes.lg),
                     Text(
                       title,
-                      style: context.text.headlineSmall,
+                      style: compact
+                          ? context.text.titleMedium
+                          : context.text.headlineSmall,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSizes.sm),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../constants/app_sizes.dart';
+import '../theme/app_sizes.dart';
 import '../theme/theme_extensions.dart';
 
 /// Applique un seul effet shimmer synchronisé à tout un squelette de page.

@@ -1,45 +1,49 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_config.dart';
 
-/// Client HTTP partagé (Dio) : URL de base, délais, en-têtes,
-/// jeton d'authentification et journalisation en mode debug.
-class ApiClient {
-  ApiClient._();
+/// Jeton renvoyé par l'API après connexion (renseigné par l'AuthService).
+final authTokenProvider = NotifierProvider<AuthTokenNotifier, String?>(
+  AuthTokenNotifier.new,
+);
 
-  /// Instance unique, créée seulement si un dépôt « API » est utilisé.
-  static final Dio dio = create();
+class AuthTokenNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
 
-  /// Jeton renvoyé par l'API après connexion (à renseigner par le module auth).
-  static String? authToken;
+  void set(String? token) => state = token;
+}
 
-  static Dio create({String baseUrl = AppConfig.apiBaseUrl}) {
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 15),
-        headers: {'Accept': 'application/json', 'Accept-Language': 'fr'},
-      ),
-    );
+/// Client HTTP partagé par tous les dépôts « API ».
+final dioProvider = Provider<Dio>((ref) => createDio(ref));
 
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          final token = authToken;
-          if (token != null) options.headers['Authorization'] = 'Bearer $token';
-          handler.next(options);
-        },
-      ),
-    );
-    if (kDebugMode) {
-      dio.interceptors.add(
-        LogInterceptor(requestBody: true, responseBody: false),
-      );
-    }
-    return dio;
+/// Crée le client Dio : URL de base, délais, en-têtes, jeton d'authentification
+/// et journalisation en mode debug.
+Dio createDio(Ref ref, {String baseUrl = AppConfig.apiBaseUrl}) {
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 15),
+      headers: {'Accept': 'application/json', 'Accept-Language': 'fr'},
+    ),
+  );
+
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        final token = ref.read(authTokenProvider);
+        if (token != null) options.headers['Authorization'] = 'Bearer $token';
+        handler.next(options);
+      },
+    ),
+  );
+  if (kDebugMode) {
+    dio.interceptors.add(LogInterceptor(requestBody: true));
   }
+  return dio;
 }
 
 /// Extrait la charge utile d'une réponse, qu'elle soit renvoyée directement
