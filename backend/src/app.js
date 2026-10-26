@@ -8,8 +8,7 @@ const userRoutes = require('./routes/user.routes');
 const addressRoutes = require('./routes/address.routes');
 const courierRoutes = require('./routes/courier.routes');
 const restaurantRoutes = require('./routes/restaurant.routes');
-const orderRoutes = require('./routes/order.routes');
-const deliveryRoutes = require('./routes/delivery.routes');
+const oussemaModule = require('./oussema_livraison_commande');
 const productRoutes = require('./routes/product.routes');
 
 const app = express();
@@ -26,9 +25,12 @@ app.use('/api/users', userRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/couriers', courierRoutes);
 app.use('/api/restaurants', restaurantRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/deliveries', deliveryRoutes);
 app.use('/api/products', productRoutes);
+
+// ── Module Oussema : Livraison & Commande ──────────────────────────────────
+app.use('/api/oussema', oussemaModule.router);
+app.use('/api/orders', oussemaModule.commandeRoutes);
+app.use('/api/deliveries', oussemaModule.livraisonRoutes);
 
 // ── Health check ────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok', app: 'SuperFaster API' }));

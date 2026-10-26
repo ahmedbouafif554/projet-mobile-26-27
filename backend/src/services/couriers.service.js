@@ -32,9 +32,10 @@ function mapCourier(row, documents) {
 
 async function documentsOf(courierIds) {
   if (courierIds.length === 0) return new Map();
+  const placeholders = courierIds.map(() => '?').join(',');
   const rows = await query(
-    'SELECT courier_id, type, status, image_data, uploaded_at FROM courier_documents WHERE courier_id IN (?) ORDER BY id',
-    [courierIds],
+    `SELECT courier_id, type, status, image_data, uploaded_at FROM courier_documents WHERE courier_id IN (${placeholders}) ORDER BY id`,
+    courierIds,
   );
   const grouped = new Map();
   for (const row of rows) {

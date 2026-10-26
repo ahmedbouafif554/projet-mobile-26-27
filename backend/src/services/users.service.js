@@ -154,7 +154,7 @@ async function create(body, actor) {
       ],
     );
   } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') {
+    if (error.code === 'ER_DUP_ENTRY' || (error.message && error.message.includes('UNIQUE constraint failed'))) {
       throw new HttpError(409, MESSAGES.duplicateEmail);
     }
     throw error;
@@ -308,7 +308,7 @@ async function addFavorite(actor, userId, restaurantId) {
   const id = text(restaurantId);
   if (!id) throw new HttpError(422, 'restaurantId est obligatoire');
   await query(
-    'INSERT IGNORE INTO favorites (user_id, restaurant_id) VALUES (?, ?)',
+    'INSERT OR IGNORE INTO favorites (user_id, restaurant_id) VALUES (?, ?)',
     [userId, id],
   );
 }

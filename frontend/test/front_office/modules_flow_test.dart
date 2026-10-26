@@ -77,6 +77,8 @@ void main() {
     app.go(FrontRoutes.cart);
     await settle(tester, 1200);
     expect(find.text('Mon panier'), findsOneWidget);
+    ScaffoldMessenger.of(tester.element(find.text('Mon panier'))).clearSnackBars();
+    await settle(tester, 500);
     await tester.tap(find.text('Commander'));
     await settle(tester, 1200);
     expect(app.path, FrontRoutes.checkout);
