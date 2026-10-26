@@ -19,8 +19,8 @@ import '../widgets/auth_header.dart';
 import '../widgets/role_toggle.dart';
 import '../widgets/social_buttons.dart';
 
-/// Connexion : choix du rôle (client ou livreur), e-mail et mot de passe.
-/// Une fois connecté, le routeur ouvre l'accueil du rôle.
+/// Connexion unique : client, livreur ou admin, e-mail et mot de passe.
+/// Une fois connecté, l'accueil du rôle s'ouvre dans la même fenêtre.
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -49,6 +49,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     const demo = {
       UserRole.client: DemoAccounts.client,
       UserRole.courier: DemoAccounts.courier,
+      UserRole.admin: DemoAccounts.admin,
     };
     setState(() {
       if (demo.containsValue(_email.text.trim())) _email.text = demo[role]!;
@@ -78,7 +79,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           .login(
             email: _email.text.trim(),
             password: _password.text,
-            space: AppSpace.frontOffice,
+            space: Permissions.spaceOf(_role),
             role: _role,
           ),
     );
@@ -90,7 +91,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isCourier = _role == UserRole.courier;
+    final subtitle = switch (_role) {
+      UserRole.courier => 'Connectez-vous pour recevoir des courses.',
+      UserRole.admin => 'Connectez-vous pour administrer la plateforme.',
+      _ => 'Connectez-vous pour commander vos plats préférés.',
+    };
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -107,14 +112,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     [
                           AuthHeader(
                             title: 'Bon retour 👋',
-                            subtitle: isCourier
-                                ? 'Connectez-vous pour recevoir des courses.'
-                                : 'Connectez-vous pour commander vos plats préférés.',
+                            subtitle: subtitle,
                           ),
                           const SizedBox(height: AppSizes.lg),
                           Text('Je suis', style: context.text.labelLarge),
                           const SizedBox(height: AppSizes.sm),
-                          RoleToggle(value: _role, onChanged: _changeRole),
+                          RoleToggle(
+                            value: _role,
+                            roles: const [
+                              UserRole.client,
+                              UserRole.courier,
+                              UserRole.admin,
+                            ],
+                            onChanged: _changeRole,
+                          ),
                           const SizedBox(height: AppSizes.lg),
                           AppTextField(
                             controller: _email,

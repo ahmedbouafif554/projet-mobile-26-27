@@ -6,6 +6,7 @@ import '../../core/auth/auth_service.dart';
 import '../../core/routing/safe_go_router.dart';
 import '../../core/widgets/animated_branch_container.dart';
 import '../modules/auth/auth_routes.dart';
+import '../modules/auth/providers/onboarding_provider.dart';
 import '../modules/catalog/catalog_routes.dart';
 import '../modules/communication/communication_routes.dart';
 import '../modules/courier/courier_routes.dart';
@@ -18,7 +19,7 @@ import 'front_routes.dart';
 /// Routeur du front office : parcours public, deux coques à onglets (client
 /// et livreur) et pages du compte en plein écran. Il se réévalue à chaque
 /// connexion / déconnexion (redirect selon le rôle).
-final frontRouterProvider = Provider<GoRouter>((ref) {
+final frontRouterProvider = Provider.autoDispose<GoRouter>((ref) {
   // Réévalue les redirections à la connexion, à la déconnexion ou au
   // changement de rôle — pas quand le profil est modifié (un rafraîchissement
   // relit l'URL et refermerait les pages ouvertes par-dessus).
@@ -29,7 +30,9 @@ final frontRouterProvider = Provider<GoRouter>((ref) {
   );
 
   final router = SafeGoRouter(
-    initialLocation: FrontRoutes.splash,
+    initialLocation: ref.read(onboardingSeenProvider)
+        ? FrontRoutes.login
+        : FrontRoutes.splash,
     refreshListenable: authChanges,
     redirect: (_, state) =>
         frontRedirect(ref.read(authServiceProvider), state.uri.path),

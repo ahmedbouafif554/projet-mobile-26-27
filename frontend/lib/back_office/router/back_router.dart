@@ -21,7 +21,7 @@ import 'bo_route.dart';
 
 /// Routeur du back office : connexion, puis toutes les pages dans la coque
 /// (sidebar + topbar). Les accès dépendent du rôle (voir back_redirect).
-final backRouterProvider = Provider<GoRouter>((ref) {
+final backRouterProvider = Provider.autoDispose<GoRouter>((ref) {
   // Réévalue les redirections à la connexion / déconnexion uniquement.
   final authChanges = ValueNotifier(0);
   ref.listen(

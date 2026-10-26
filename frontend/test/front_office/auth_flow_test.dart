@@ -107,7 +107,7 @@ void main() {
     restore();
   });
 
-  testWidgets('inscription → vérification OTP → accueil', (tester) async {
+  testWidgets('inscription → accueil', (tester) async {
     final restore = ignoreOfflineImageErrors();
     final app = await pumpFront(tester, location: FrontRoutes.login);
 
@@ -127,16 +127,6 @@ void main() {
     await tester.ensureVisible(find.text('Créer mon compte'));
     await tester.tap(find.text('Créer mon compte'));
     await settle(tester);
-    expect(app.path, FrontRoutes.otp);
-
-    // Mauvais code, puis le bon (1234).
-    await tester.enterText(find.byType(TextField), '0000');
-    await settle(tester, 1000);
-    expect(find.text('Code incorrect, veuillez réessayer.'), findsOneWidget);
-    await tester.enterText(find.byType(TextField), AuthService.demoOtpCode);
-    await settle(tester, 1000);
-    expect(find.text('Numéro vérifié !'), findsOneWidget);
-    await settle(tester, 2000);
 
     expect(app.path, FrontRoutes.explore);
     final user = app.container.read(authServiceProvider).user;

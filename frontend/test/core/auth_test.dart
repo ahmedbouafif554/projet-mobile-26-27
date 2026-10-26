@@ -82,13 +82,6 @@ void main() {
       password: 'secret12',
     );
     expect(created.role, UserRole.client);
-    // La session s'ouvre après la vérification du numéro.
-    auth().logout();
-    await expectLater(
-      auth().verifyOtp(userId: created.id, code: '0000'),
-      throwsA(isA<ApiException>()),
-    );
-    await auth().verifyOtp(userId: created.id, code: AuthService.demoOtpCode);
     expect(container.read(authServiceProvider).user?.id, created.id);
   });
 
@@ -124,6 +117,22 @@ void main() {
         .read(courierRepositoryProvider)
         .findByUser(user.id);
     expect(courier?.documentStatus, DocumentStatus.pending);
+    expect(container.read(authServiceProvider).isLoggedIn, isFalse);
+    await expectLater(
+      auth().login(
+        email: 'sami.kaci@exemple.fr',
+        password: 'secret12',
+        role: UserRole.courier,
+        space: AppSpace.frontOffice,
+      ),
+      throwsA(
+        isA<ApiException>().having(
+          (error) => error.message,
+          'message',
+          contains('attente de validation'),
+        ),
+      ),
+    );
   });
 
   test('permissions par rôle', () {

@@ -15,10 +15,17 @@ class AppConfig {
     defaultValue: true,
   );
 
+  /// `true` : connexion et inscription simulées en mémoire (tests).
+  /// `false` : le mot de passe est vérifié et le compte est écrit dans MySQL.
+  static bool useApiAuth = const bool.fromEnvironment(
+    'USE_API_AUTH',
+    defaultValue: true,
+  );
+
   /// URL de base de l'API REST.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://api.superfaster.dev/v1',
+    defaultValue: 'http://localhost:3001/api',
   );
 
   /// Délai réseau simulé par les dépôts mock (tiré entre ces deux bornes).

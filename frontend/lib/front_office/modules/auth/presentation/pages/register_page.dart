@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/auth/auth_service.dart';
 import '../../../../../core/theme/app_colors.dart';
@@ -12,13 +16,15 @@ import '../../../../../core/widgets/app_form_fields.dart';
 import '../../../../../core/widgets/app_snackbar.dart';
 import '../../../../../core/widgets/app_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
+import '../../../../../shared/models/courier.dart';
 import '../../../../../shared/models/user.dart';
 import '../../../../router/front_routes.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/role_toggle.dart';
 
-/// Inscription d'un client ou d'un livreur partenaire, puis vérification
-/// du numéro de téléphone (OTP).
+/// Inscription d'un client ou d'un livreur partenaire.
+/// Le client est connecté tout de suite. Le livreur attend qu'un admin
+/// accepte son compte avant de pouvoir se connecter.
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
 
@@ -35,6 +41,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _password = TextEditingController();
   final _confirm = TextEditingController();
   UserRole _role = UserRole.client;
+  final Map<DocumentType, Uint8List> _photos = {};
   bool _accepted = false;
   bool _submitted = false;
   bool _loading = false;
@@ -58,10 +65,18 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     FocusScope.of(context).unfocus();
     setState(() => _submitted = true);
     if (!_formKey.currentState!.validate()) return;
+    if (_role == UserRole.courier &&
+        DocumentType.values.any((type) => _photos[type] == null)) {
+      AppSnackbar.error(
+        context,
+        'Ajoutez les photos de la pièce d\'identité, du permis et de l\'assurance.',
+      );
+      return;
+    }
 
     setState(() => _loading = true);
     try {
-      final user = await ref
+      await ref
           .read(authServiceProvider.notifier)
           .register(
             firstName: _firstName.text.trim(),
@@ -70,11 +85,25 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             phone: _phone.text.trim(),
             password: _password.text,
             role: _role,
+            documents: _role == UserRole.courier
+                ? [
+                    for (final type in DocumentType.values)
+                      {
+                        'type': type.name,
+                        'imageData':
+                            'data:image/jpeg;base64,${base64Encode(_photos[type]!)}',
+                      },
+                  ]
+                : null,
           );
       if (!mounted) return;
-      context.push(
-        FrontRoutes.otpFor(phone: _phone.text.trim(), userId: user.id),
-      );
+      if (!ref.read(authServiceProvider).isLoggedIn) {
+        AppSnackbar.info(
+          context,
+          'Votre compte livreur est en attente de validation par un administrateur.',
+        );
+        context.go(FrontRoutes.login);
+      }
     } catch (error) {
       if (mounted) AppSnackbar.error(context, error);
     } finally {
@@ -117,8 +146,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               ? Padding(
                                   padding: const EdgeInsets.only(top: 10),
                                   child: Text(
-                                    'Vos justificatifs seront vérifiés par '
-                                    'notre équipe avant votre première course.',
+                                    'Ajoutez les photos de vos justificatifs. '
+                                    'Un administrateur doit les accepter avant '
+                                    'que vous puissiez vous connecter.',
                                     style: context.text.bodySmall?.copyWith(
                                       color: context.palette.textSecondary,
                                     ),
@@ -161,6 +191,25 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           keyboardType: TextInputType.phone,
                           validator: Validators.phone,
                         ),
+                        if (_role == UserRole.courier) ...[
+                          const SizedBox(height: AppSizes.lg),
+                          Text('Justificatifs', style: context.text.labelLarge),
+                          const SizedBox(height: AppSizes.sm),
+                          for (final type in DocumentType.values) ...[
+                            _DocumentPhotoField(
+                              label: type.label,
+                              icon: switch (type) {
+                                DocumentType.idCard => Icons.badge_rounded,
+                                DocumentType.license => Icons.credit_card_rounded,
+                                DocumentType.insurance => Icons.shield_outlined,
+                              },
+                              bytes: _photos[type],
+                              onChanged: (bytes) =>
+                                  setState(() => _photos[type] = bytes),
+                            ),
+                            const SizedBox(height: AppSizes.sm),
+                          ],
+                        ],
                         const SizedBox(height: 18),
                         AppTextField(
                           controller: _password,
@@ -247,6 +296,132 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DocumentPhotoField extends StatelessWidget {
+  const _DocumentPhotoField({
+    required this.label,
+    required this.icon,
+    required this.bytes,
+    required this.onChanged,
+  });
+
+  final String label;
+  final IconData icon;
+  final Uint8List? bytes;
+  final ValueChanged<Uint8List> onChanged;
+
+  Future<void> _pick(BuildContext context, FormFieldState<Uint8List> field) async {
+    try {
+      final file = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        imageQuality: 72,
+      );
+      if (file == null || !context.mounted) return;
+      final picked = await file.readAsBytes();
+      if (!context.mounted) return;
+      if (picked.length > 1500000) {
+        AppSnackbar.error(context, 'Photo trop lourde (1,5 Mo maximum).');
+        return;
+      }
+      field.didChange(picked);
+      onChanged(picked);
+    } catch (error) {
+      if (context.mounted) {
+        AppSnackbar.error(context, 'Impossible de lire cette photo.');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FormField<Uint8List>(
+      initialValue: bytes,
+      validator: (value) =>
+          value == null || value.isEmpty ? 'Photo obligatoire' : null,
+      builder: (field) {
+        final shown = field.value ?? bytes;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Material(
+              color: context.palette.surfaceMuted,
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                onTap: () => _pick(context, field),
+                child: Container(
+                  padding: const EdgeInsets.all(AppSizes.sm),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                    border: Border.all(
+                      color: field.hasError
+                          ? AppColors.error
+                          : context.palette.border,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                        child: shown == null
+                            ? Container(
+                                width: 56,
+                                height: 56,
+                                color: context.colors.surface,
+                                child: Icon(icon, color: AppColors.primary),
+                              )
+                            : Image.memory(
+                                shown,
+                                width: 56,
+                                height: 56,
+                                fit: BoxFit.cover,
+                              ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(label, style: context.text.titleSmall),
+                            Text(
+                              shown == null
+                                  ? 'Ajouter une photo'
+                                  : 'Photo ajoutée · modifier',
+                              style: context.text.bodySmall?.copyWith(
+                                color: context.palette.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        shown == null
+                            ? Icons.add_a_photo_outlined
+                            : Icons.check_circle_rounded,
+                        color: shown == null
+                            ? context.palette.textSecondary
+                            : AppColors.success,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (field.hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 12),
+                child: Text(
+                  field.errorText!,
+                  style: context.text.bodySmall?.copyWith(color: AppColors.error),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

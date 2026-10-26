@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -297,22 +300,7 @@ class _DocumentsCard extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Row(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: context.palette.surfaceMuted,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      switch (doc.type) {
-                        DocumentType.idCard => Icons.badge_rounded,
-                        DocumentType.license => Icons.credit_card_rounded,
-                        DocumentType.insurance => Icons.shield_outlined,
-                      },
-                      color: context.palette.textSecondary,
-                    ),
-                  ),
+                  _DocumentThumb(imageData: doc.imageData),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -436,6 +424,52 @@ class _CurrentDelivery extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _DocumentThumb extends StatelessWidget {
+  const _DocumentThumb({required this.imageData});
+
+  final String? imageData;
+
+  Uint8List? get _bytes {
+    final data = imageData;
+    if (data == null || data.isEmpty) return null;
+    final payload = data.contains(',') ? data.split(',').last : data;
+    try {
+      return base64Decode(payload);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = _bytes;
+    final thumb = ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: bytes == null
+          ? Container(
+              width: 56,
+              height: 56,
+              color: context.palette.surfaceMuted,
+              child: Icon(
+                Icons.hide_image_outlined,
+                color: context.palette.textSecondary,
+              ),
+            )
+          : Image.memory(bytes, width: 56, height: 56, fit: BoxFit.cover),
+    );
+    if (bytes == null) return thumb;
+    return InkWell(
+      onTap: () => showDialog<void>(
+        context: context,
+        builder: (context) => Dialog(
+          child: InteractiveViewer(child: Image.memory(bytes)),
+        ),
+      ),
+      child: thumb,
     );
   }
 }

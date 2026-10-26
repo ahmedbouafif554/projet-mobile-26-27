@@ -1,6 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/auth/auth_service.dart';
+import '../../../../core/config/app_config.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../shared/models/user.dart';
 import '../../../../shared/repositories/repository_providers.dart';
 
@@ -52,7 +55,25 @@ class ProfileController {
 
   /// Enregistre le profil et met à jour la session affichée partout.
   Future<User> save(User updated) async {
-    final saved = await _ref.read(userRepositoryProvider).update(updated);
+    if (!AppConfig.useApiAuth) {
+      final saved = await _ref.read(userRepositoryProvider).update(updated);
+      _ref.read(authServiceProvider.notifier).updateUser(saved);
+      return saved;
+    }
+    final token = _ref.read(authTokenProvider);
+    final dio = _ref.read(dioProvider);
+    final response = await dio.put<Map<String, dynamic>>(
+      '/auth/me',
+      data: {
+        'firstName': updated.firstName,
+        'lastName': updated.lastName,
+        'email': updated.email,
+        'phone': updated.phone,
+        'avatarUrl': updated.avatarUrl,
+      },
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+    final saved = User.fromJson(Map<String, dynamic>.from(response.data as Map));
     _ref.read(authServiceProvider.notifier).updateUser(saved);
     return saved;
   }

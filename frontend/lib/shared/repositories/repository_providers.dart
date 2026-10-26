@@ -114,7 +114,7 @@ final orderRepositoryProvider = Provider<OrderRepository>(
 
 // --- Module 4 : livraison -----------------------------------------------------------
 final courierRepositoryProvider = Provider<CourierRepository>(
-  (ref) => _mock
+  (ref) => _mock && !AppConfig.useApiAuth
       ? MockCourierRepository(MockDelivery.couriers)
       : ApiCourierRepository(ref.watch(dioProvider)),
 );

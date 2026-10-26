@@ -43,11 +43,15 @@ class CourierDocument {
   const CourierDocument({
     required this.type,
     this.status = DocumentStatus.pending,
+    this.imageData,
     required this.uploadedAt,
   });
 
   final DocumentType type;
   final DocumentStatus status;
+
+  /// Photo envoyée à l'inscription (`data:image/...;base64,...`).
+  final String? imageData;
   final DateTime uploadedAt;
 
   factory CourierDocument.fromJson(Map<String, dynamic> json) =>
@@ -58,20 +62,24 @@ class CourierDocument {
           json['status'],
           DocumentStatus.pending,
         ),
+        imageData: json['imageData'] as String?,
         uploadedAt: parseDate(json['uploadedAt']),
       );
 
   Map<String, dynamic> toJson() => {
     'type': type.name,
     'status': status.name,
+    'imageData': imageData,
     'uploadedAt': uploadedAt.toIso8601String(),
   };
 
-  CourierDocument copyWith({DocumentStatus? status}) => CourierDocument(
-    type: type,
-    status: status ?? this.status,
-    uploadedAt: uploadedAt,
-  );
+  CourierDocument copyWith({DocumentStatus? status, String? imageData}) =>
+      CourierDocument(
+        type: type,
+        status: status ?? this.status,
+        imageData: imageData ?? this.imageData,
+        uploadedAt: uploadedAt,
+      );
 }
 
 /// Livreur partenaire.

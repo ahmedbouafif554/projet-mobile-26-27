@@ -29,6 +29,7 @@ Future<void> _loadFont(String family) async {
 /// Pas de google_fonts ni de délai réseau simulé dans les tests.
 Future<void> setUpAppTestEnvironment() async {
   AppTheme.useGoogleFonts = false;
+  AppConfig.useApiAuth = false;
   AppConfig.mockLatencyMin = Duration.zero;
   AppConfig.mockLatencyMax = Duration.zero;
   await Formatters.init();

@@ -5,21 +5,36 @@ import '../../../../../core/theme/app_sizes.dart';
 import '../../../../../core/theme/theme_extensions.dart';
 import '../../../../../shared/models/user.dart';
 
-/// Choix du rôle à la connexion / à l'inscription : Client ou Livreur.
+/// Choix du rôle à la connexion ou à l'inscription.
 /// Une pastille glisse sous l'option choisie.
+/// L'inscription reste sur Client / Livreur ; la connexion peut ajouter Admin.
 class RoleToggle extends StatelessWidget {
   const RoleToggle({
     super.key,
     required this.value,
     required this.onChanged,
+    this.roles = const [UserRole.client, UserRole.courier],
     this.courierLabel = 'Livreur',
   });
 
   final UserRole value;
   final ValueChanged<UserRole> onChanged;
+  final List<UserRole> roles;
   final String courierLabel;
 
-  static const _roles = [UserRole.client, UserRole.courier];
+  String _label(UserRole role) => switch (role) {
+    UserRole.client => 'Client',
+    UserRole.courier => courierLabel,
+    UserRole.admin => 'Admin',
+    UserRole.restaurant => 'Restaurant',
+  };
+
+  IconData _icon(UserRole role) => switch (role) {
+    UserRole.client => Icons.person_rounded,
+    UserRole.courier => Icons.delivery_dining_rounded,
+    UserRole.admin => Icons.admin_panel_settings_rounded,
+    UserRole.restaurant => Icons.storefront_rounded,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -32,16 +47,19 @@ class RoleToggle extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final half = constraints.maxWidth / 2;
+          final count = roles.isEmpty ? 1 : roles.length;
+          final index = roles.indexOf(value);
+          final selected = index < 0 ? 0 : index;
+          final slot = constraints.maxWidth / count;
           return Stack(
             children: [
               AnimatedPositioned(
                 duration: AppDurations.medium,
                 curve: Curves.easeOutBack,
-                left: value == UserRole.client ? 0 : half,
+                left: slot * selected,
                 top: 0,
                 bottom: 0,
-                width: half,
+                width: slot,
                 child: Container(
                   decoration: BoxDecoration(
                     color: context.colors.surface,
@@ -52,7 +70,7 @@ class RoleToggle extends StatelessWidget {
               ),
               Row(
                 children: [
-                  for (final role in _roles)
+                  for (final role in roles)
                     Expanded(
                       child: Semantics(
                         button: true,
@@ -63,12 +81,8 @@ class RoleToggle extends StatelessWidget {
                           ),
                           onTap: () => onChanged(role),
                           child: _Option(
-                            icon: role == UserRole.client
-                                ? Icons.person_rounded
-                                : Icons.delivery_dining_rounded,
-                            label: role == UserRole.client
-                                ? 'Client'
-                                : courierLabel,
+                            icon: _icon(role),
+                            label: _label(role),
                             selected: role == value,
                           ),
                         ),
