@@ -1,0 +1,1770 @@
+{
+  "restaurants": [
+    {
+      "id": "r1",
+      "ownerId": "u-resto-1",
+      "name": "Burger Factory",
+      "description": "Des burgers smashés minute avec du bœuf français, un pain brioché toasté et des frites maison.",
+      "cuisine": "Burgers • Américain",
+      "categoryIds": [
+        "burger"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80",
+      "rating": 4.8,
+      "reviewCount": 1240,
+      "deliveryMinutes": 25,
+      "deliveryFee": 0,
+      "minOrder": 10,
+      "distanceKm": 1.2,
+      "address": "18 rue Oberkampf, Paris 11e",
+      "phone": "01 43 17 23 45",
+      "menuSections": [
+        "Burgers",
+        "Accompagnements",
+        "Boissons"
+      ],
+      "isOpen": true,
+      "isPopular": true,
+      "promo": "-20 %",
+      "status": "approved"
+    },
+    {
+      "id": "r2",
+      "ownerId": "u-resto-2",
+      "name": "Pizza Napoli",
+      "description": "Pâte maturée 48 h, cuisson au feu de bois et produits importés directement de Naples.",
+      "cuisine": "Pizza • Italien",
+      "categoryIds": [
+        "pizza"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80",
+      "rating": 4.7,
+      "reviewCount": 980,
+      "deliveryMinutes": 30,
+      "deliveryFee": 1.99,
+      "minOrder": 10,
+      "distanceKm": 2.4,
+      "address": "5 rue des Martyrs, Paris 9e",
+      "phone": "01 43 24 26 45",
+      "menuSections": [
+        "Pizzas",
+        "Pâtes",
+        "Desserts"
+      ],
+      "isOpen": true,
+      "isPopular": true,
+      "promo": "1 achetée = 1 offerte",
+      "status": "approved"
+    },
+    {
+      "id": "r3",
+      "ownerId": "u-resto-3",
+      "name": "Sakura Sushi",
+      "description": "Sushis, makis et plateaux préparés à la commande par nos chefs japonais.",
+      "cuisine": "Sushi • Japonais",
+      "categoryIds": [
+        "sushi"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=800&q=80",
+      "rating": 4.9,
+      "reviewCount": 2104,
+      "deliveryMinutes": 35,
+      "deliveryFee": 2.49,
+      "minOrder": 10,
+      "distanceKm": 3.1,
+      "address": "42 rue Sainte-Anne, Paris 2e",
+      "phone": "01 43 31 29 45",
+      "menuSections": [
+        "Plateaux",
+        "Entrées",
+        "Boissons"
+      ],
+      "isOpen": true,
+      "isPopular": true,
+      "promo": null,
+      "status": "approved"
+    },
+    {
+      "id": "r4",
+      "ownerId": "u-resto-4",
+      "name": "Green Bowl",
+      "description": "Bowls gourmands et équilibrés, légumes de saison et sauces maison.",
+      "cuisine": "Healthy • Bowls",
+      "categoryIds": [
+        "healthy"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80",
+      "rating": 4.6,
+      "reviewCount": 640,
+      "deliveryMinutes": 20,
+      "deliveryFee": 0,
+      "minOrder": 10,
+      "distanceKm": 0.8,
+      "address": "9 boulevard Voltaire, Paris 11e",
+      "phone": "01 43 38 32 45",
+      "menuSections": [
+        "Bowls",
+        "Salades",
+        "Boissons"
+      ],
+      "isOpen": true,
+      "isPopular": false,
+      "promo": "Livraison offerte",
+      "status": "approved"
+    },
+    {
+      "id": "r5",
+      "ownerId": "u-resto-5",
+      "name": "Ramen Ichiban",
+      "description": "Bouillons mijotés 12 heures, nouilles fraîches et gyozas grillés à la minute.",
+      "cuisine": "Ramen • Japonais",
+      "categoryIds": [
+        "asian"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80",
+      "rating": 4.7,
+      "reviewCount": 870,
+      "deliveryMinutes": 30,
+      "deliveryFee": 1.49,
+      "minOrder": 10,
+      "distanceKm": 1.9,
+      "address": "27 rue Saint-Augustin, Paris 2e",
+      "phone": "01 43 45 35 45",
+      "menuSections": [
+        "Ramen",
+        "Entrées",
+        "Boissons"
+      ],
+      "isOpen": true,
+      "isPopular": true,
+      "promo": null,
+      "status": "approved"
+    },
+    {
+      "id": "r6",
+      "ownerId": "u-resto-6",
+      "name": "Taco Loco",
+      "description": "Tacos généreux, tortillas de maïs pressées maison et salsas fraîches.",
+      "cuisine": "Tacos • Mexicain",
+      "categoryIds": [
+        "tacos"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=800&q=80",
+      "rating": 4.5,
+      "reviewCount": 410,
+      "deliveryMinutes": 25,
+      "deliveryFee": 1.99,
+      "minOrder": 10,
+      "distanceKm": 2.8,
+      "address": "61 rue de Charonne, Paris 11e",
+      "phone": "01 43 52 38 45",
+      "menuSections": [
+        "Tacos",
+        "Accompagnements",
+        "Boissons"
+      ],
+      "isOpen": true,
+      "isPopular": false,
+      "promo": "-15 %",
+      "status": "approved"
+    },
+    {
+      "id": "r7",
+      "ownerId": "u-resto-7",
+      "name": "Sweet Corner",
+      "description": "Pâtisseries maison, pancakes moelleux et cafés de spécialité.",
+      "cuisine": "Desserts • Café",
+      "categoryIds": [
+        "dessert"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=800&q=80",
+      "rating": 4.8,
+      "reviewCount": 760,
+      "deliveryMinutes": 20,
+      "deliveryFee": 0.99,
+      "minOrder": 10,
+      "distanceKm": 1.1,
+      "address": "3 rue de Bretagne, Paris 3e",
+      "phone": "01 43 59 41 45",
+      "menuSections": [
+        "Pâtisseries",
+        "Glaces",
+        "Boissons"
+      ],
+      "isOpen": true,
+      "isPopular": false,
+      "promo": null,
+      "status": "approved"
+    },
+    {
+      "id": "r8",
+      "ownerId": "u-resto-8",
+      "name": "Le Petit Marché",
+      "description": "Fruits, légumes et épicerie fine de producteurs locaux, livrés en 30 minutes.",
+      "cuisine": "Épicerie • Produits frais",
+      "categoryIds": [
+        "courses"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80",
+      "rating": 4.6,
+      "reviewCount": 530,
+      "deliveryMinutes": 30,
+      "deliveryFee": 2.99,
+      "minOrder": 20,
+      "distanceKm": 1.6,
+      "address": "120 rue du Faubourg Saint-Antoine, Paris 12e",
+      "phone": "01 43 66 44 45",
+      "menuSections": [
+        "Fruits & légumes",
+        "Épicerie",
+        "Boissons"
+      ],
+      "isOpen": true,
+      "isPopular": false,
+      "promo": null,
+      "status": "approved"
+    },
+    {
+      "id": "r9",
+      "ownerId": "u-resto-9",
+      "name": "Wok Express",
+      "description": "Nouilles sautées au wok, riz cantonais et bao maison.",
+      "cuisine": "Wok • Asiatique",
+      "categoryIds": [
+        "asian"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=800&q=80",
+      "rating": 0,
+      "reviewCount": 0,
+      "deliveryMinutes": 25,
+      "deliveryFee": 1.49,
+      "minOrder": 10,
+      "distanceKm": 2.1,
+      "address": "7 rue Saint-Maur, Paris 11e",
+      "phone": "01 43 73 47 45",
+      "menuSections": [
+        "Ramen",
+        "Entrées",
+        "Boissons"
+      ],
+      "isOpen": true,
+      "isPopular": false,
+      "promo": null,
+      "status": "pending"
+    },
+    {
+      "id": "r10",
+      "ownerId": "u-resto-10",
+      "name": "La Crêperie Bretonne",
+      "description": "Galettes de sarrasin et crêpes au beurre salé, comme à Saint-Malo.",
+      "cuisine": "Crêpes • Breton",
+      "categoryIds": [
+        "dessert"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1519676867240-f03562e64548?auto=format&fit=crop&w=800&q=80",
+      "rating": 0,
+      "reviewCount": 0,
+      "deliveryMinutes": 30,
+      "deliveryFee": 1.99,
+      "minOrder": 10,
+      "distanceKm": 2.6,
+      "address": "15 rue du Montparnasse, Paris 6e",
+      "phone": "01 43 80 50 45",
+      "menuSections": [
+        "Pâtisseries",
+        "Glaces",
+        "Boissons"
+      ],
+      "isOpen": true,
+      "isPopular": false,
+      "promo": null,
+      "status": "pending"
+    }
+  ],
+  "products": [
+    {
+      "id": "r1-classic",
+      "restaurantId": "r1",
+      "categoryId": "burger",
+      "name": "Classic Cheeseburger",
+      "description": "Bœuf 150 g, cheddar, pickles, oignons, sauce maison.",
+      "price": 9.9,
+      "imageUrl": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+      "section": "Burgers",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "normal",
+              "name": "Normal",
+              "price": 0
+            },
+            {
+              "id": "large",
+              "name": "Grand",
+              "price": 2
+            },
+            {
+              "id": "xl",
+              "name": "XL",
+              "price": 3.5
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 3,
+          "options": [
+            {
+              "id": "cheddar",
+              "name": "Cheddar affiné",
+              "price": 1
+            },
+            {
+              "id": "bacon",
+              "name": "Bacon croustillant",
+              "price": 1.5
+            },
+            {
+              "id": "onions",
+              "name": "Oignons caramélisés",
+              "price": 0.8
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 720
+    },
+    {
+      "id": "r1-bacon",
+      "restaurantId": "r1",
+      "categoryId": "burger",
+      "name": "Double Bacon",
+      "description": "Double steak, double cheddar, bacon croustillant, sauce BBQ.",
+      "price": 12.5,
+      "imageUrl": "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80",
+      "section": "Burgers",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "normal",
+              "name": "Normal",
+              "price": 0
+            },
+            {
+              "id": "large",
+              "name": "Grand",
+              "price": 2
+            },
+            {
+              "id": "xl",
+              "name": "XL",
+              "price": 3.5
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 3,
+          "options": [
+            {
+              "id": "cheddar",
+              "name": "Cheddar affiné",
+              "price": 1
+            },
+            {
+              "id": "bacon",
+              "name": "Bacon croustillant",
+              "price": 1.5
+            },
+            {
+              "id": "onions",
+              "name": "Oignons caramélisés",
+              "price": 0.8
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 980
+    },
+    {
+      "id": "r1-chicken",
+      "restaurantId": "r1",
+      "categoryId": "burger",
+      "name": "Chicken Crispy",
+      "description": "Poulet pané croustillant, salade, tomate, mayo épicée.",
+      "price": 10.9,
+      "imageUrl": "https://images.unsplash.com/photo-1571091718767-18b5b1457add?auto=format&fit=crop&w=600&q=80",
+      "section": "Burgers",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "normal",
+              "name": "Normal",
+              "price": 0
+            },
+            {
+              "id": "large",
+              "name": "Grand",
+              "price": 2
+            },
+            {
+              "id": "xl",
+              "name": "XL",
+              "price": 3.5
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 3,
+          "options": [
+            {
+              "id": "cheddar",
+              "name": "Cheddar affiné",
+              "price": 1
+            },
+            {
+              "id": "bacon",
+              "name": "Bacon croustillant",
+              "price": 1.5
+            },
+            {
+              "id": "onions",
+              "name": "Oignons caramélisés",
+              "price": 0.8
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 760
+    },
+    {
+      "id": "r1-veggie",
+      "restaurantId": "r1",
+      "categoryId": "burger",
+      "name": "Veggie Deluxe",
+      "description": "Galette de légumes, avocat, roquette, sauce yaourt.",
+      "price": 10.5,
+      "imageUrl": "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80",
+      "section": "Burgers",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "normal",
+              "name": "Normal",
+              "price": 0
+            },
+            {
+              "id": "large",
+              "name": "Grand",
+              "price": 2
+            },
+            {
+              "id": "xl",
+              "name": "XL",
+              "price": 3.5
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 3,
+          "options": [
+            {
+              "id": "cheddar",
+              "name": "Cheddar affiné",
+              "price": 1
+            },
+            {
+              "id": "bacon",
+              "name": "Bacon croustillant",
+              "price": 1.5
+            },
+            {
+              "id": "onions",
+              "name": "Oignons caramélisés",
+              "price": 0.8
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 610
+    },
+    {
+      "id": "r1-fries",
+      "restaurantId": "r1",
+      "categoryId": "burger",
+      "name": "Frites maison",
+      "description": "Pommes de terre fraîches, double cuisson, fleur de sel.",
+      "price": 3.5,
+      "imageUrl": "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=600&q=80",
+      "section": "Accompagnements",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "normal",
+              "name": "Normal",
+              "price": 0
+            },
+            {
+              "id": "large",
+              "name": "Grand",
+              "price": 2
+            },
+            {
+              "id": "xl",
+              "name": "XL",
+              "price": 3.5
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 380
+    },
+    {
+      "id": "r1-lemonade",
+      "restaurantId": "r1",
+      "categoryId": "burger",
+      "name": "Limonade maison",
+      "description": "Citron pressé, menthe fraîche, sucre de canne.",
+      "price": 3.2,
+      "imageUrl": "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=600&q=80",
+      "section": "Boissons",
+      "optionGroups": [
+        {
+          "id": "format",
+          "name": "Format",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "33",
+              "name": "33 cl",
+              "price": 0
+            },
+            {
+              "id": "50",
+              "name": "50 cl",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": null
+    },
+    {
+      "id": "r2-margherita",
+      "restaurantId": "r2",
+      "categoryId": "pizza",
+      "name": "Margherita",
+      "description": "Sauce tomate San Marzano, mozzarella fior di latte, basilic.",
+      "price": 10.9,
+      "imageUrl": "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=600&q=80",
+      "section": "Pizzas",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "m",
+              "name": "Moyenne (29 cm)",
+              "price": 0
+            },
+            {
+              "id": "l",
+              "name": "Grande (33 cm)",
+              "price": 3
+            },
+            {
+              "id": "xl",
+              "name": "Familiale (40 cm)",
+              "price": 6
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 3,
+          "options": [
+            {
+              "id": "mozza",
+              "name": "Mozzarella di bufala",
+              "price": 1.5
+            },
+            {
+              "id": "mushrooms",
+              "name": "Champignons",
+              "price": 1
+            },
+            {
+              "id": "ham",
+              "name": "Jambon de Parme",
+              "price": 2
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 820
+    },
+    {
+      "id": "r2-pepperoni",
+      "restaurantId": "r2",
+      "categoryId": "pizza",
+      "name": "Pepperoni",
+      "description": "Sauce tomate, mozzarella, pepperoni épicé, origan.",
+      "price": 12.9,
+      "imageUrl": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=600&q=80",
+      "section": "Pizzas",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "m",
+              "name": "Moyenne (29 cm)",
+              "price": 0
+            },
+            {
+              "id": "l",
+              "name": "Grande (33 cm)",
+              "price": 3
+            },
+            {
+              "id": "xl",
+              "name": "Familiale (40 cm)",
+              "price": 6
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 3,
+          "options": [
+            {
+              "id": "mozza",
+              "name": "Mozzarella di bufala",
+              "price": 1.5
+            },
+            {
+              "id": "mushrooms",
+              "name": "Champignons",
+              "price": 1
+            },
+            {
+              "id": "ham",
+              "name": "Jambon de Parme",
+              "price": 2
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 950
+    },
+    {
+      "id": "r2-4cheese",
+      "restaurantId": "r2",
+      "categoryId": "pizza",
+      "name": "Quatre fromages",
+      "description": "Mozzarella, gorgonzola, parmesan, chèvre, miel.",
+      "price": 13.5,
+      "imageUrl": "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80",
+      "section": "Pizzas",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "m",
+              "name": "Moyenne (29 cm)",
+              "price": 0
+            },
+            {
+              "id": "l",
+              "name": "Grande (33 cm)",
+              "price": 3
+            },
+            {
+              "id": "xl",
+              "name": "Familiale (40 cm)",
+              "price": 6
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 3,
+          "options": [
+            {
+              "id": "mozza",
+              "name": "Mozzarella di bufala",
+              "price": 1.5
+            },
+            {
+              "id": "mushrooms",
+              "name": "Champignons",
+              "price": 1
+            },
+            {
+              "id": "ham",
+              "name": "Jambon de Parme",
+              "price": 2
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 1010
+    },
+    {
+      "id": "r2-carbonara",
+      "restaurantId": "r2",
+      "categoryId": "pizza",
+      "name": "Tagliatelle carbonara",
+      "description": "Pâtes fraîches, guanciale, jaune d'œuf, pecorino.",
+      "price": 12,
+      "imageUrl": "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=600&q=80",
+      "section": "Pâtes",
+      "optionGroups": [],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 870
+    },
+    {
+      "id": "r2-arrabbiata",
+      "restaurantId": "r2",
+      "categoryId": "pizza",
+      "name": "Penne arrabbiata",
+      "description": "Sauce tomate pimentée, ail, persil, parmesan.",
+      "price": 11,
+      "imageUrl": "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=600&q=80",
+      "section": "Pâtes",
+      "optionGroups": [],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 690
+    },
+    {
+      "id": "r2-tiramisu",
+      "restaurantId": "r2",
+      "categoryId": "pizza",
+      "name": "Tiramisu maison",
+      "description": "Mascarpone, café, biscuits, cacao amer.",
+      "price": 5.5,
+      "imageUrl": "https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=600&q=80",
+      "section": "Desserts",
+      "optionGroups": [],
+      "isAvailable": false,
+      "isPopular": false,
+      "calories": 450
+    },
+    {
+      "id": "r3-sakura",
+      "restaurantId": "r3",
+      "categoryId": "sushi",
+      "name": "Plateau Sakura (18 pcs)",
+      "description": "Assortiment de sushis, makis et california du chef.",
+      "price": 22.9,
+      "imageUrl": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=600&q=80",
+      "section": "Plateaux",
+      "optionGroups": [
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 2,
+          "options": [
+            {
+              "id": "soy",
+              "name": "Sauce soja sucrée",
+              "price": 0.5
+            },
+            {
+              "id": "ginger",
+              "name": "Gingembre mariné",
+              "price": 0.5
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 780
+    },
+    {
+      "id": "r3-california",
+      "restaurantId": "r3",
+      "categoryId": "sushi",
+      "name": "California saumon avocat",
+      "description": "8 pièces, saumon frais, avocat, sésame.",
+      "price": 7.9,
+      "imageUrl": "https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?auto=format&fit=crop&w=600&q=80",
+      "section": "Plateaux",
+      "optionGroups": [
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 2,
+          "options": [
+            {
+              "id": "soy",
+              "name": "Sauce soja sucrée",
+              "price": 0.5
+            },
+            {
+              "id": "ginger",
+              "name": "Gingembre mariné",
+              "price": 0.5
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 340
+    },
+    {
+      "id": "r3-salmon",
+      "restaurantId": "r3",
+      "categoryId": "sushi",
+      "name": "Plateau Saumon (12 pcs)",
+      "description": "Sushis et sashimis de saumon norvégien.",
+      "price": 16.9,
+      "imageUrl": "https://images.unsplash.com/photo-1611143669185-af224c5e3252?auto=format&fit=crop&w=600&q=80",
+      "section": "Plateaux",
+      "optionGroups": [
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 2,
+          "options": [
+            {
+              "id": "soy",
+              "name": "Sauce soja sucrée",
+              "price": 0.5
+            },
+            {
+              "id": "ginger",
+              "name": "Gingembre mariné",
+              "price": 0.5
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 560
+    },
+    {
+      "id": "r3-gyoza",
+      "restaurantId": "r3",
+      "categoryId": "sushi",
+      "name": "Gyoza poulet (6 pcs)",
+      "description": "Raviolis grillés, sauce ponzu.",
+      "price": 6.5,
+      "imageUrl": "https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=600&q=80",
+      "section": "Entrées",
+      "optionGroups": [],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 320
+    },
+    {
+      "id": "r3-tea",
+      "restaurantId": "r3",
+      "categoryId": "sushi",
+      "name": "Thé vert glacé",
+      "description": "Thé matcha infusé à froid, légèrement sucré.",
+      "price": 3.5,
+      "imageUrl": "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=600&q=80",
+      "section": "Boissons",
+      "optionGroups": [
+        {
+          "id": "format",
+          "name": "Format",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "33",
+              "name": "33 cl",
+              "price": 0
+            },
+            {
+              "id": "50",
+              "name": "50 cl",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": null
+    },
+    {
+      "id": "r4-poke",
+      "restaurantId": "r4",
+      "categoryId": "healthy",
+      "name": "Poké saumon",
+      "description": "Riz vinaigré, saumon mariné, edamame, mangue, avocat.",
+      "price": 13.9,
+      "imageUrl": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80",
+      "section": "Bowls",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "normal",
+              "name": "Normal",
+              "price": 0
+            },
+            {
+              "id": "large",
+              "name": "Grand",
+              "price": 2
+            },
+            {
+              "id": "xl",
+              "name": "XL",
+              "price": 3.5
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 3,
+          "options": [
+            {
+              "id": "avocado",
+              "name": "Avocat",
+              "price": 1.5
+            },
+            {
+              "id": "egg",
+              "name": "Œuf mollet",
+              "price": 1
+            },
+            {
+              "id": "feta",
+              "name": "Feta",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 640
+    },
+    {
+      "id": "r4-buddha",
+      "restaurantId": "r4",
+      "categoryId": "healthy",
+      "name": "Buddha bowl",
+      "description": "Quinoa, pois chiches rôtis, patate douce, houmous.",
+      "price": 12.5,
+      "imageUrl": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80",
+      "section": "Bowls",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "normal",
+              "name": "Normal",
+              "price": 0
+            },
+            {
+              "id": "large",
+              "name": "Grand",
+              "price": 2
+            },
+            {
+              "id": "xl",
+              "name": "XL",
+              "price": 3.5
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 3,
+          "options": [
+            {
+              "id": "avocado",
+              "name": "Avocat",
+              "price": 1.5
+            },
+            {
+              "id": "egg",
+              "name": "Œuf mollet",
+              "price": 1
+            },
+            {
+              "id": "feta",
+              "name": "Feta",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 590
+    },
+    {
+      "id": "r4-morning",
+      "restaurantId": "r4",
+      "categoryId": "healthy",
+      "name": "Bowl du matin",
+      "description": "Yaourt grec, granola maison, fruits frais, miel.",
+      "price": 8.9,
+      "imageUrl": "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=600&q=80",
+      "section": "Bowls",
+      "optionGroups": [
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 3,
+          "options": [
+            {
+              "id": "avocado",
+              "name": "Avocat",
+              "price": 1.5
+            },
+            {
+              "id": "egg",
+              "name": "Œuf mollet",
+              "price": 1
+            },
+            {
+              "id": "feta",
+              "name": "Feta",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 410
+    },
+    {
+      "id": "r4-caesar",
+      "restaurantId": "r4",
+      "categoryId": "healthy",
+      "name": "Salade César",
+      "description": "Poulet grillé, romaine, parmesan, croûtons, sauce César.",
+      "price": 10.9,
+      "imageUrl": "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=600&q=80",
+      "section": "Salades",
+      "optionGroups": [
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 3,
+          "options": [
+            {
+              "id": "avocado",
+              "name": "Avocat",
+              "price": 1.5
+            },
+            {
+              "id": "egg",
+              "name": "Œuf mollet",
+              "price": 1
+            },
+            {
+              "id": "feta",
+              "name": "Feta",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 520
+    },
+    {
+      "id": "r4-smoothie",
+      "restaurantId": "r4",
+      "categoryId": "healthy",
+      "name": "Smoothie détox",
+      "description": "Épinards, pomme, gingembre, citron.",
+      "price": 5.5,
+      "imageUrl": "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=600&q=80",
+      "section": "Boissons",
+      "optionGroups": [
+        {
+          "id": "format",
+          "name": "Format",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "33",
+              "name": "33 cl",
+              "price": 0
+            },
+            {
+              "id": "50",
+              "name": "50 cl",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": null
+    },
+    {
+      "id": "r5-tonkotsu",
+      "restaurantId": "r5",
+      "categoryId": "asian",
+      "name": "Tonkotsu ramen",
+      "description": "Bouillon de porc 12 h, nouilles fraîches, chashu, œuf.",
+      "price": 13.5,
+      "imageUrl": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80",
+      "section": "Ramen",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "normal",
+              "name": "Normal",
+              "price": 0
+            },
+            {
+              "id": "large",
+              "name": "Grand",
+              "price": 2
+            },
+            {
+              "id": "xl",
+              "name": "XL",
+              "price": 3.5
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 2,
+          "options": [
+            {
+              "id": "egg",
+              "name": "Œuf mariné",
+              "price": 1
+            },
+            {
+              "id": "chashu",
+              "name": "Porc chashu",
+              "price": 2.5
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 890
+    },
+    {
+      "id": "r5-veggie-ramen",
+      "restaurantId": "r5",
+      "categoryId": "asian",
+      "name": "Ramen végétarien",
+      "description": "Bouillon miso, tofu grillé, champignons, maïs.",
+      "price": 12.5,
+      "imageUrl": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80",
+      "section": "Ramen",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "normal",
+              "name": "Normal",
+              "price": 0
+            },
+            {
+              "id": "large",
+              "name": "Grand",
+              "price": 2
+            },
+            {
+              "id": "xl",
+              "name": "XL",
+              "price": 3.5
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 2,
+          "options": [
+            {
+              "id": "egg",
+              "name": "Œuf mariné",
+              "price": 1
+            },
+            {
+              "id": "chashu",
+              "name": "Porc chashu",
+              "price": 2.5
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 640
+    },
+    {
+      "id": "r5-yakitori",
+      "restaurantId": "r5",
+      "categoryId": "asian",
+      "name": "Brochettes yakitori",
+      "description": "4 brochettes de poulet laquées sauce teriyaki.",
+      "price": 8.9,
+      "imageUrl": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80",
+      "section": "Entrées",
+      "optionGroups": [],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 420
+    },
+    {
+      "id": "r5-gyoza",
+      "restaurantId": "r5",
+      "categoryId": "asian",
+      "name": "Gyoza porc (6 pcs)",
+      "description": "Raviolis grillés, sauce soja vinaigrée.",
+      "price": 6.5,
+      "imageUrl": "https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=600&q=80",
+      "section": "Entrées",
+      "optionGroups": [],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 330
+    },
+    {
+      "id": "r5-tea",
+      "restaurantId": "r5",
+      "categoryId": "asian",
+      "name": "Thé glacé yuzu",
+      "description": "Thé noir infusé à froid, yuzu et citron vert.",
+      "price": 3.5,
+      "imageUrl": "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=600&q=80",
+      "section": "Boissons",
+      "optionGroups": [
+        {
+          "id": "format",
+          "name": "Format",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "33",
+              "name": "33 cl",
+              "price": 0
+            },
+            {
+              "id": "50",
+              "name": "50 cl",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": null
+    },
+    {
+      "id": "r6-pastor",
+      "restaurantId": "r6",
+      "categoryId": "tacos",
+      "name": "Tacos al pastor",
+      "description": "Porc mariné à l'ananas, coriandre, oignon, salsa verde.",
+      "price": 9.5,
+      "imageUrl": "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=600&q=80",
+      "section": "Tacos",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "normal",
+              "name": "Normal",
+              "price": 0
+            },
+            {
+              "id": "large",
+              "name": "Grand",
+              "price": 2
+            },
+            {
+              "id": "xl",
+              "name": "XL",
+              "price": 3.5
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 2,
+          "options": [
+            {
+              "id": "guac",
+              "name": "Guacamole",
+              "price": 1.5
+            },
+            {
+              "id": "jalapenos",
+              "name": "Jalapeños",
+              "price": 0.5
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 610
+    },
+    {
+      "id": "r6-pollo",
+      "restaurantId": "r6",
+      "categoryId": "tacos",
+      "name": "Tacos pollo",
+      "description": "Poulet grillé, pico de gallo, crème fraîche, citron vert.",
+      "price": 8.9,
+      "imageUrl": "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=600&q=80",
+      "section": "Tacos",
+      "optionGroups": [
+        {
+          "id": "size",
+          "name": "Taille",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "normal",
+              "name": "Normal",
+              "price": 0
+            },
+            {
+              "id": "large",
+              "name": "Grand",
+              "price": 2
+            },
+            {
+              "id": "xl",
+              "name": "XL",
+              "price": 3.5
+            }
+          ]
+        },
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 2,
+          "options": [
+            {
+              "id": "guac",
+              "name": "Guacamole",
+              "price": 1.5
+            },
+            {
+              "id": "jalapenos",
+              "name": "Jalapeños",
+              "price": 0.5
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 560
+    },
+    {
+      "id": "r6-fries",
+      "restaurantId": "r6",
+      "categoryId": "tacos",
+      "name": "Frites cheddar jalapeños",
+      "description": "Frites maison, cheddar fondu, jalapeños.",
+      "price": 5.5,
+      "imageUrl": "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=600&q=80",
+      "section": "Accompagnements",
+      "optionGroups": [],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 520
+    },
+    {
+      "id": "r6-agua",
+      "restaurantId": "r6",
+      "categoryId": "tacos",
+      "name": "Agua fresca",
+      "description": "Pastèque, citron vert et menthe.",
+      "price": 3.5,
+      "imageUrl": "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=600&q=80",
+      "section": "Boissons",
+      "optionGroups": [
+        {
+          "id": "format",
+          "name": "Format",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "33",
+              "name": "33 cl",
+              "price": 0
+            },
+            {
+              "id": "50",
+              "name": "50 cl",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": null
+    },
+    {
+      "id": "r7-donuts",
+      "restaurantId": "r7",
+      "categoryId": "dessert",
+      "name": "Donuts assortis (x4)",
+      "description": "Glaçage chocolat, fraise, vanille et caramel.",
+      "price": 7.9,
+      "imageUrl": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=600&q=80",
+      "section": "Pâtisseries",
+      "optionGroups": [
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 2,
+          "options": [
+            {
+              "id": "cream",
+              "name": "Chantilly",
+              "price": 0.8
+            },
+            {
+              "id": "choco",
+              "name": "Coulis chocolat",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 980
+    },
+    {
+      "id": "r7-pancakes",
+      "restaurantId": "r7",
+      "categoryId": "dessert",
+      "name": "Pancakes sirop d'érable",
+      "description": "Pile de 3 pancakes moelleux, beurre, sirop d'érable.",
+      "price": 8.5,
+      "imageUrl": "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&w=600&q=80",
+      "section": "Pâtisseries",
+      "optionGroups": [
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 2,
+          "options": [
+            {
+              "id": "cream",
+              "name": "Chantilly",
+              "price": 0.8
+            },
+            {
+              "id": "choco",
+              "name": "Coulis chocolat",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": 640
+    },
+    {
+      "id": "r7-cheesecake",
+      "restaurantId": "r7",
+      "categoryId": "dessert",
+      "name": "Cheesecake New York",
+      "description": "Base biscuitée, crème vanille, coulis de fruits rouges.",
+      "price": 5.9,
+      "imageUrl": "https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=600&q=80",
+      "section": "Pâtisseries",
+      "optionGroups": [
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 2,
+          "options": [
+            {
+              "id": "cream",
+              "name": "Chantilly",
+              "price": 0.8
+            },
+            {
+              "id": "choco",
+              "name": "Coulis chocolat",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 470
+    },
+    {
+      "id": "r7-sundae",
+      "restaurantId": "r7",
+      "categoryId": "dessert",
+      "name": "Coupe glacée",
+      "description": "Trois boules au choix, chantilly, sauce chocolat.",
+      "price": 6.5,
+      "imageUrl": "https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?auto=format&fit=crop&w=600&q=80",
+      "section": "Glaces",
+      "optionGroups": [
+        {
+          "id": "extras",
+          "name": "Suppléments",
+          "isRequired": false,
+          "maxChoices": 2,
+          "options": [
+            {
+              "id": "cream",
+              "name": "Chantilly",
+              "price": 0.8
+            },
+            {
+              "id": "choco",
+              "name": "Coulis chocolat",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": 520
+    },
+    {
+      "id": "r7-cappuccino",
+      "restaurantId": "r7",
+      "categoryId": "dessert",
+      "name": "Cappuccino",
+      "description": "Espresso, lait mousseux, cacao.",
+      "price": 3.9,
+      "imageUrl": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=600&q=80",
+      "section": "Boissons",
+      "optionGroups": [
+        {
+          "id": "format",
+          "name": "Format",
+          "isRequired": true,
+          "maxChoices": 1,
+          "options": [
+            {
+              "id": "33",
+              "name": "33 cl",
+              "price": 0
+            },
+            {
+              "id": "50",
+              "name": "50 cl",
+              "price": 1
+            }
+          ]
+        }
+      ],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": null
+    },
+    {
+      "id": "r8-fruits",
+      "restaurantId": "r8",
+      "categoryId": "courses",
+      "name": "Panier de fruits de saison",
+      "description": "Environ 2 kg de fruits frais sélectionnés.",
+      "price": 12.9,
+      "imageUrl": "https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=600&q=80",
+      "section": "Fruits & légumes",
+      "optionGroups": [],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": null
+    },
+    {
+      "id": "r8-veggies",
+      "restaurantId": "r8",
+      "categoryId": "courses",
+      "name": "Panier de légumes",
+      "description": "Légumes de producteurs locaux, environ 3 kg.",
+      "price": 9.9,
+      "imageUrl": "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=600&q=80",
+      "section": "Fruits & légumes",
+      "optionGroups": [],
+      "isAvailable": true,
+      "isPopular": true,
+      "calories": null
+    },
+    {
+      "id": "r8-pasta",
+      "restaurantId": "r8",
+      "categoryId": "courses",
+      "name": "Kit pâtes & sauce tomate",
+      "description": "Spaghetti 500 g + sauce tomate basilic.",
+      "price": 5.9,
+      "imageUrl": "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=600&q=80",
+      "section": "Épicerie",
+      "optionGroups": [],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": null
+    },
+    {
+      "id": "r8-coffee",
+      "restaurantId": "r8",
+      "categoryId": "courses",
+      "name": "Café en grains 1 kg",
+      "description": "Arabica torréfié artisanalement.",
+      "price": 14.9,
+      "imageUrl": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=600&q=80",
+      "section": "Épicerie",
+      "optionGroups": [],
+      "isAvailable": false,
+      "isPopular": false,
+      "calories": null
+    },
+    {
+      "id": "r8-juice",
+      "restaurantId": "r8",
+      "categoryId": "courses",
+      "name": "Jus d'orange pressé 1 L",
+      "description": "Oranges pressées le jour même.",
+      "price": 3.9,
+      "imageUrl": "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=600&q=80",
+      "section": "Boissons",
+      "optionGroups": [],
+      "isAvailable": true,
+      "isPopular": false,
+      "calories": null
+    }
+  ]
+}

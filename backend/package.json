@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "test": "jest"
+    "test": "jest",
+    "seed:catalogue": "node src/restaurant_catalogue/seed/seed-demo-catalogue.js"
   },
   "jest": {
     "testEnvironment": "node",
@@ -29,8 +30,7 @@
     "express": "^4.19.2",
     "express-validator": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "morgan": "^1.10.0",
-    "mysql2": "^3.24.6"
+    "morgan": "^1.10.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",

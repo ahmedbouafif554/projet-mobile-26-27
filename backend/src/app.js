@@ -7,9 +7,8 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const addressRoutes = require('./routes/address.routes');
 const courierRoutes = require('./routes/courier.routes');
-const restaurantRoutes = require('./routes/restaurant.routes');
 const oussemaModule = require('./oussema_livraison_commande');
-const productRoutes = require('./routes/product.routes');
+const restaurantCatalogue = require('./restaurant_catalogue');
 
 const app = express();
 
@@ -24,8 +23,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/couriers', courierRoutes);
-app.use('/api/restaurants', restaurantRoutes);
-app.use('/api/products', productRoutes);
+
+// ── Module Restaurants & Catalogue ─────────────────────────────────────────
+app.use('/api/restaurants', restaurantCatalogue.restaurantRoutes);
+app.use('/api/products', restaurantCatalogue.productRoutes);
+app.use('/api/categories', restaurantCatalogue.categoryRoutes);
 
 // ── Module Oussema : Livraison & Commande ──────────────────────────────────
 app.use('/api/oussema', oussemaModule.router);
@@ -48,6 +50,7 @@ const { init } = require('./data/db');
 
 if (require.main === module) {
   init()
+    .then(() => restaurantCatalogue.init())
     .then(() => {
       const PORT = process.env.PORT || 3001;
       app.listen(PORT, () => {
@@ -55,7 +58,7 @@ if (require.main === module) {
       });
     })
     .catch((error) => {
-      console.error(`MySQL indisponible : ${error.message}`);
+      console.error(`Base SQLite indisponible : ${error.message}`);
       process.exit(1);
     });
 }

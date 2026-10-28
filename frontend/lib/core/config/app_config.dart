@@ -22,6 +22,14 @@ class AppConfig {
     defaultValue: true,
   );
 
+  /// `true` : le catalogue (restaurants, catégories, produits, favoris) vient
+  /// de l'API même quand [useMockData] est vrai. Front office et back office
+  /// partagent alors les mêmes données, les autres modules restent en mock.
+  static const bool useApiCatalogue = bool.fromEnvironment(
+    'USE_API_CATALOGUE',
+    defaultValue: false,
+  );
+
   /// URL de base de l'API REST.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',

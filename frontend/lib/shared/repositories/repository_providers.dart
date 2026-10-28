@@ -76,26 +76,28 @@ final addressRepositoryProvider = Provider<AddressRepository>(
 );
 
 // --- Module 2 : catalogue -------------------------------------------------------
+const bool _mockCatalogue = _mock && !AppConfig.useApiCatalogue;
+
 final restaurantRepositoryProvider = Provider<RestaurantRepository>(
-  (ref) => _mock
+  (ref) => _mockCatalogue
       ? MockRestaurantRepository(MockCatalog.restaurants)
       : ApiRestaurantRepository(ref.watch(dioProvider)),
 );
 
 final categoryRepositoryProvider = Provider<CategoryRepository>(
-  (ref) => _mock
+  (ref) => _mockCatalogue
       ? MockCategoryRepository(MockCatalog.categories)
       : ApiCategoryRepository(ref.watch(dioProvider)),
 );
 
 final productRepositoryProvider = Provider<ProductRepository>(
-  (ref) => _mock
+  (ref) => _mockCatalogue
       ? MockProductRepository(MockCatalog.products)
       : ApiProductRepository(ref.watch(dioProvider)),
 );
 
 final favoriteRepositoryProvider = Provider<FavoriteRepository>(
-  (ref) => _mock
+  (ref) => _mockCatalogue
       ? MockFavoriteRepository(MockCatalog.favorites)
       : ApiFavoriteRepository(ref.watch(dioProvider)),
 );

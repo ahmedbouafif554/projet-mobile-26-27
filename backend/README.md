@@ -4,7 +4,7 @@ REST API for the **SuperFaster** delivery platform (food, groceries & parcels).
 
 ## Stack
 - **Node.js** + **Express**
-- **MySQL 8** (WAMP en local)
+- **SQLite** (one local database file, no server or password)
 - **JWT** authentication, passwords hashed with bcrypt
 
 ## Getting Started
@@ -12,7 +12,7 @@ REST API for the **SuperFaster** delivery platform (food, groceries & parcels).
 ```bash
 cd backend
 npm install
-cp .env.example .env   # fill in your values
+cp .env.example .env   # JWT secret and database name
 npm run dev            # starts on http://localhost:3001
 ```
 
@@ -22,9 +22,9 @@ The JSON shapes match the Flutter models (`User`, `Courier`, `Address`).
 Public registration accepts **client** and **courier** only. A courier also gets a profile whose documents stay `pending` until an admin reviews them.
 
 Demo password for the seeded accounts: `demo1234`.
-Database `superfaster` is created on startup if it does not exist (`superfaster_test` is used by the tests).
+The SQLite database `superfaster` is created on startup if it does not exist (`superfaster_test` is used by the tests).
 
-Copy `.env.example` to `.env`. Default local account is WAMP's `root` with an empty password.
+Copy `.env.example` to `.env`. SQLite needs no host, user or password: `DB_NAME` is the database file name.
 
 | Method | Route | Description |
 |--------|-------|-------------|
@@ -62,10 +62,12 @@ backend/
 │   ├── routes/                # HTTP routes
 │   ├── services/              # Auth, users, couriers, addresses
 │   ├── domain/                # Roles, validation, JSON shapes
-│   ├── data/db.js             # Pool MySQL, schéma et jeu de démo
+│   ├── data/db.js             # Connexion SQLite, schéma et jeu de démo
 │   ├── data/schema.js         # Tables users, couriers, addresses, favorites
-│   └── middleware/            # JWT + mock-token
-├── tests/auth-profile.test.js
+│   ├── middleware/            # JWT + mock-token
+│   ├── oussema_livraison_commande/  # Module Commandes & Livraisons (voir son README)
+│   └── restaurant_catalogue/  # Module Restaurants & Catalogue (voir son README)
+├── tests/                     # Un fichier de tests par module
 ├── .env.example
 └── package.json
 ```
