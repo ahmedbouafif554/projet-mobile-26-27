@@ -30,11 +30,13 @@ router.get('/:id/tracking', asyncHandler(livraisonCtrl.getTracking));
 // Assignation automatique du livreur le plus proche
 router.post('/:id/auto-dispatch', asyncHandler(livraisonCtrl.autoDispatch));
 
-// Assignation manuelle d'un livreur
+// Assignation manuelle d'un livreur (POST & PATCH pour compatibilité Flutter ApiDeliveryRepository)
 router.post('/:id/assign', asyncHandler(livraisonCtrl.assign));
+router.patch('/:id/assign', asyncHandler(livraisonCtrl.assign));
 
 // Mise à jour du statut de la course (pris en charge, en route, livrée)
 router.patch('/:id/status', asyncHandler(livraisonCtrl.updateStatus));
+router.put('/:id/status', asyncHandler(livraisonCtrl.updateStatus));
 router.put('/:id', asyncHandler(livraisonCtrl.updateStatus));
 
 module.exports = router;

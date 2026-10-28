@@ -12,6 +12,20 @@ const { haversineDistance, estimateDurationMinutes } = require('./geo.utils');
 
 function mapDelivery(row) {
   if (!row) return null;
+  const statusMap = {
+    waiting: 'waiting',
+    assigned: 'assigned',
+    picked_up: 'pickedUp',
+    pickedUp: 'pickedUp',
+    on_the_way: 'inTransit',
+    in_transit: 'inTransit',
+    inTransit: 'inTransit',
+    delivered: 'delivered',
+    cancelled: 'cancelled',
+    failed: 'cancelled',
+  };
+  const status = statusMap[row.status] || row.status || 'waiting';
+
   return {
     id: row.id,
     orderId: row.order_id,
@@ -22,7 +36,8 @@ function mapDelivery(row) {
     courierVehicle: row.courier_vehicle || 'scooter',
     courierLat: row.courier_lat ? Number(row.courier_lat) : null,
     courierLng: row.courier_lng ? Number(row.courier_lng) : null,
-    status: row.status || 'waiting',
+    status,
+    rawStatus: row.status,
     statusLabel: DELIVERY_STATUS_LABELS[row.status] || row.status,
     pickupName: row.pickup_name || 'Restaurant',
     pickupAddress: row.pickup_address || '',
@@ -34,19 +49,25 @@ function mapDelivery(row) {
     dropoffLng: row.dropoff_lng ? Number(row.dropoff_lng) : 2.3312,
     distanceKm: Number(row.distance_km) || 2.5,
     durationMin: Number(row.duration_min) || 25,
+    estimatedMinutes: Number(row.duration_min) || 25,
     fee: Number(row.fee) || 4.5,
     tip: Number(row.tip) || 0.0,
     totalCourierEarnings: Math.round((Number(row.fee || 4.5) * COURIER_FEE_SHARE + Number(row.tip || 0)) * 100) / 100,
     otpCode: row.otp_code || null,
     startedAt: toIso(row.started_at),
+    assignedAt: toIso(row.started_at),
+    pickedUpAt: ['picked_up', 'pickedUp', 'on_the_way', 'in_transit', 'inTransit', 'delivered'].includes(row.status)
+      ? toIso(row.updated_at)
+      : null,
     completedAt: toIso(row.completed_at),
+    deliveredAt: toIso(row.completed_at),
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
   };
 }
 
 /**
- * Récupère une livraison par son ID.
+ * Récupère une livraison par son ID ou l'ID de commande liée.
  */
 async function getDeliveryById(deliveryId) {
   const sql = `
@@ -63,9 +84,9 @@ async function getDeliveryById(deliveryId) {
     LEFT JOIN restaurants r ON r.id = o.restaurant_id
     LEFT JOIN users u ON u.id = o.user_id
     LEFT JOIN couriers c ON c.id = d.courier_id
-    WHERE d.id = ? LIMIT 1
+    WHERE d.id = ? OR d.order_id = ? LIMIT 1
   `;
-  const rows = await query(sql, [deliveryId]);
+  const rows = await query(sql, [deliveryId, deliveryId]);
   if (!rows[0]) throw new HttpError(404, `Livraison introuvable (${deliveryId}).`);
   return mapDelivery(rows[0]);
 }
@@ -225,25 +246,38 @@ async function assignCourier(deliveryId, courierId) {
  * Met à jour le statut de la livraison (suivi de course).
  */
 async function updateDeliveryStatus(deliveryId, nextStatus, { courierId = null, otpCode = null, note = null } = {}) {
-  if (!DELIVERY_STATUSES.includes(nextStatus)) {
+  const backendStatusMap = {
+    waiting: 'waiting',
+    assigned: 'assigned',
+    pickedUp: 'picked_up',
+    picked_up: 'picked_up',
+    inTransit: 'in_transit',
+    on_the_way: 'in_transit',
+    in_transit: 'in_transit',
+    delivered: 'delivered',
+    cancelled: 'cancelled',
+  };
+  const normalizedStatus = backendStatusMap[nextStatus] || nextStatus;
+
+  if (!DELIVERY_STATUSES.includes(normalizedStatus)) {
     throw new HttpError(422, `Statut de livraison invalide: ${nextStatus}`);
   }
 
   const delivery = await getDeliveryById(deliveryId);
-  const currentStatus = delivery.status;
+  const currentStatus = backendStatusMap[delivery.rawStatus || delivery.status] || delivery.status;
 
-  if (currentStatus === nextStatus) return delivery;
+  if (currentStatus === normalizedStatus) return delivery;
 
   const allowed = ALLOWED_DELIVERY_TRANSITIONS[currentStatus] || [];
-  if (!allowed.includes(nextStatus)) {
+  if (!allowed.includes(normalizedStatus)) {
     throw new HttpError(
       400,
-      `Transition impossible de « ${DELIVERY_STATUS_LABELS[currentStatus] || currentStatus} » vers « ${DELIVERY_STATUS_LABELS[nextStatus] || nextStatus} ».`,
+      `Transition impossible de « ${DELIVERY_STATUS_LABELS[currentStatus] || currentStatus} » vers « ${DELIVERY_STATUS_LABELS[normalizedStatus] || normalizedStatus} ».`,
     );
   }
 
   // Vérification de sécurité lors de la livraison finale
-  if (nextStatus === 'delivered') {
+  if (normalizedStatus === 'delivered') {
     if (delivery.otpCode && otpCode && delivery.otpCode !== String(otpCode).trim()) {
       throw new HttpError(403, 'Code OTP de confirmation de livraison invalide.');
     }
@@ -251,14 +285,14 @@ async function updateDeliveryStatus(deliveryId, nextStatus, { courierId = null, 
 
   await withTransaction(async () => {
     // 1. Mettre à jour la livraison
-    const isCompleted = nextStatus === 'delivered';
+    const isCompleted = normalizedStatus === 'delivered';
     await query(
       `UPDATE deliveries SET 
          status = ?, 
          completed_at = ${isCompleted ? 'CURRENT_TIMESTAMP' : 'completed_at'}, 
          updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
-      [nextStatus, deliveryId],
+      [normalizedStatus, delivery.id],
     );
 
     // 2. Mettre à jour la commande liée
@@ -402,20 +436,27 @@ async function getDeliveryTracking(deliveryId) {
     steps,
     telemetry: {
       courierPosition: {
-        latitude: delivery.courierLat,
-        longitude: delivery.courierLng,
+        latitude: delivery.courierLat != null ? delivery.courierLat : (delivery.pickupLat || 48.8699),
+        longitude: delivery.courierLng != null ? delivery.courierLng : (delivery.pickupLng || 2.3305),
       },
       pickupPosition: {
-        latitude: delivery.pickupLat,
-        longitude: delivery.pickupLng,
+        latitude: delivery.pickupLat || 48.8699,
+        longitude: delivery.pickupLng || 2.3305,
       },
       dropoffPosition: {
-        latitude: delivery.dropoffLat,
-        longitude: delivery.dropoffLng,
+        latitude: delivery.dropoffLat || 48.8686,
+        longitude: delivery.dropoffLng || 2.3312,
       },
       remainingDistanceKm: delivery.distanceKm,
-      remainingMinutes: delivery.durationMin,
+      remainingMinutes: delivery.durationMin || delivery.estimatedMinutes || 25,
     },
+    courier: delivery.courierId ? {
+      id: delivery.courierId,
+      name: delivery.courierName || 'Livreur SuperFaster',
+      phone: delivery.courierPhone || '+33 6 23 45 56 21',
+      vehicle: delivery.courierVehicle || 'scooter',
+      rating: 4.9,
+    } : null,
   };
 }
 

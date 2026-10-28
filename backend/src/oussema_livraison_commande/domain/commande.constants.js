@@ -2,6 +2,7 @@
 
 const ORDER_STATUSES = [
   'pending',
+  'accepted',
   'confirmed',
   'preparing',
   'ready',
@@ -14,6 +15,7 @@ const ORDER_STATUSES = [
 
 const ORDER_STATUS_LABELS = {
   pending: 'En attente',
+  accepted: 'Acceptée',
   confirmed: 'Confirmée',
   preparing: 'En préparation',
   ready: 'Prête pour livraison',
@@ -26,8 +28,9 @@ const ORDER_STATUS_LABELS = {
 
 // Machine d'états : transitions autorisées
 const ALLOWED_ORDER_TRANSITIONS = {
-  pending: ['confirmed', 'cancelled'],
-  confirmed: ['preparing', 'cancelled'],
+  pending: ['accepted', 'confirmed', 'cancelled'],
+  accepted: ['preparing', 'confirmed', 'cancelled'],
+  confirmed: ['preparing', 'accepted', 'cancelled'],
   preparing: ['ready', 'cancelled'],
   ready: ['picked_up', 'delivering', 'cancelled'],
   picked_up: ['delivering', 'delivered', 'cancelled'],
@@ -39,6 +42,7 @@ const ALLOWED_ORDER_TRANSITIONS = {
 
 // Rôles autorisés pour chaque transition
 const STATUS_ROLE_PERMISSIONS = {
+  accepted: ['restaurant', 'admin'],
   confirmed: ['restaurant', 'admin'],
   preparing: ['restaurant', 'admin'],
   ready: ['restaurant', 'admin'],

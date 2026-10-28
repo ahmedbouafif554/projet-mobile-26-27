@@ -48,12 +48,30 @@ async function getStats(req, res) {
   res.json(stats);
 }
 
+const livraisonService = require('../services/livraison.service');
+
+async function refund(req, res) {
+  const refunded = await commandeService.updateOrderStatus(req.params.id, 'refunded', {
+    actorId: req.auth?.id,
+    role: req.auth?.role || 'admin',
+    note: req.body?.reason || 'Remboursement de la commande',
+  });
+  res.json(refunded);
+}
+
+async function getTracking(req, res) {
+  const tracking = await livraisonService.getDeliveryTracking(req.params.id);
+  res.json(tracking);
+}
+
 module.exports = {
   create,
   getById,
   list,
   updateStatus,
   cancel,
+  refund,
+  getTracking,
   getTimeline,
   getStats,
 };
