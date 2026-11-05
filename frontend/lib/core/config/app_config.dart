@@ -10,7 +10,7 @@ class AppConfig {
 
   /// `true` : les dépôts utilisent les données mock en mémoire.
   /// `false` : les dépôts appellent l'API REST avec Dio.
-  static const bool useMockData = bool.fromEnvironment(
+  static bool useMockData = const bool.fromEnvironment(
     'USE_MOCK',
     defaultValue: true,
   );
@@ -27,7 +27,13 @@ class AppConfig {
   /// partagent alors les mêmes données, les autres modules restent en mock.
   static const bool useApiCatalogue = bool.fromEnvironment(
     'USE_API_CATALOGUE',
-    defaultValue: false,
+    defaultValue: true,
+  );
+
+  /// Commandes et livraisons lues et écrites dans SQLite via l'API.
+  static const bool useApiOrders = bool.fromEnvironment(
+    'USE_API_ORDERS',
+    defaultValue: true,
   );
 
   /// URL de base de l'API REST.

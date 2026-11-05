@@ -1,89 +1,157 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../core/theme/app_sizes.dart';
-import 'back_sidebar.dart';
+import '../../core/auth/auth_service.dart';
+import '../../core/theme/theme_extensions.dart';
+import '../../shared/models/user.dart';
+import '../router/back_routes.dart';
+import 'back_nav.dart';
 import 'back_topbar.dart';
-import 'sidebar_state.dart';
 
-/// Coque du back office : sidebar + topbar autour de la page courante.
-///
-/// - grand écran (≥ 1024 px) : sidebar dépliée ;
-/// - tablette (600–1024 px) : sidebar repliée (icônes) ;
-/// - téléphone (< 600 px) : menu dans un Drawer.
-///
-/// Le bouton « Replier » mémorise le choix de l'utilisateur.
-class BackShell extends ConsumerStatefulWidget {
+/// Largeur d'un téléphone : l'Espace Pro reste une application mobile,
+/// même lorsqu'il est ouvert dans une fenêtre de navigateur large.
+const double _phoneWidth = 430;
+
+/// Coque mobile du back office : cadre téléphone, barre du haut et
+/// navigation en bas. Les autres modules sont dans l'onglet Plus.
+class BackShell extends ConsumerWidget {
   const BackShell({super.key, required this.location, required this.child});
 
   final String location;
   final Widget child;
 
   @override
-  ConsumerState<BackShell> createState() => _BackShellState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authServiceProvider).user;
+    final width = MediaQuery.sizeOf(context).width;
+    final phone = width > _phoneWidth ? _phoneWidth : width;
+
+    return ColoredBox(
+      color: context.palette.border.withValues(alpha: 0.35),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: phone),
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(size: Size(phone, MediaQuery.sizeOf(context).height)),
+            child: Scaffold(
+              body: SafeArea(
+                bottom: false,
+                child: Column(
+                  children: [
+                    BackTopbar(
+                      location: location,
+                      compact: true,
+                      showMenu: false,
+                      onMenu: () {},
+                    ),
+                    Expanded(child: child),
+                  ],
+                ),
+              ),
+              bottomNavigationBar: user == null
+                  ? null
+                  : _AdminNav(location: location, role: user.role),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _BackShellState extends ConsumerState<BackShell> {
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
+class _AdminNav extends ConsumerWidget {
+  const _AdminNav({required this.location, required this.role});
+
+  final String location;
+  final UserRole role;
+
+  static const _primary = [
+    BackRoutes.dashboard,
+    BackRoutes.orders,
+    BackRoutes.deliveries,
+    BackRoutes.restaurants,
+  ];
 
   @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final compact = width < Breakpoints.compact;
-    final collapsed =
-        ref.watch(sidebarCollapsedProvider) ?? width < Breakpoints.expanded;
-
-    final topbar = BackTopbar(
-      location: widget.location,
-      compact: compact,
-      onMenu: () => _scaffoldKey.currentState?.openDrawer(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = [
+      for (final group in navFor(role)) ...group.items,
+    ];
+    final primary = [
+      for (final path in _primary)
+        if (items.any((item) => item.path == path))
+          items.firstWhere((item) => item.path == path),
+    ];
+    if (primary.isEmpty && items.isNotEmpty) primary.add(items.first);
+    final more = [
+      for (final item in items)
+        if (!primary.contains(item)) item,
+    ];
+    final onMore = more.any(
+      (item) => location == item.path || location.startsWith('${item.path}/'),
     );
+    final selected = onMore
+        ? primary.length
+        : primary.indexWhere(
+            (item) =>
+                location == item.path || location.startsWith('${item.path}/'),
+          );
 
-    if (compact) {
-      return Scaffold(
-        key: _scaffoldKey,
-        drawer: Drawer(
-          width: SidebarWidth.expanded,
-          child: SafeArea(
-            child: BackSidebar(
-              location: widget.location,
-              collapsed: false,
-              onNavigate: () => Navigator.of(context).pop(),
-            ),
+    return NavigationBar(
+      selectedIndex: selected < 0 ? 0 : selected,
+      onDestinationSelected: (index) {
+        if (index == primary.length) {
+          _openMore(context, more);
+          return;
+        }
+        context.go(primary[index].path);
+      },
+      destinations: [
+        for (final item in primary)
+          NavigationDestination(
+            icon: Icon(item.icon),
+            label: item.labelFor(role),
           ),
-        ),
-        body: SafeArea(
-          child: Column(
+        if (more.isNotEmpty)
+          const NavigationDestination(
+            icon: Icon(Icons.grid_view_rounded),
+            label: 'Plus',
+          ),
+      ],
+    );
+  }
+
+  void _openMore(BuildContext context, List<BackNavItem> more) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
             children: [
-              topbar,
-              Expanded(child: widget.child),
+              for (final item in more)
+                ListTile(
+                  leading: Icon(item.icon),
+                  title: Text(item.labelFor(role)),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.go(item.path);
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.person_rounded),
+                title: const Text('Mon compte'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  context.go(BackRoutes.account);
+                },
+              ),
             ],
           ),
-        ),
-      );
-    }
-
-    return Scaffold(
-      key: _scaffoldKey,
-      body: Row(
-        children: [
-          BackSidebar(
-            location: widget.location,
-            collapsed: collapsed,
-            onToggle: () => ref
-                .read(sidebarCollapsedProvider.notifier)
-                .toggle(currentlyCollapsed: collapsed),
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                topbar,
-                Expanded(child: widget.child),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

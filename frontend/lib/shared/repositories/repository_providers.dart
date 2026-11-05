@@ -60,23 +60,23 @@ import 'users/user_repository.dart';
 //   .overrideWithValue(MonFauxDepot())]).
 // =============================================================================
 
-const bool _mock = AppConfig.useMockData;
+bool get _mock => AppConfig.useMockData;
 
 // --- Module 1 : utilisateurs ---------------------------------------------------
 final userRepositoryProvider = Provider<UserRepository>(
-  (ref) => _mock
+  (ref) => _mock && !AppConfig.useApiAuth
       ? MockUserRepository(MockUsers.users)
       : ApiUserRepository(ref.watch(dioProvider)),
 );
 
 final addressRepositoryProvider = Provider<AddressRepository>(
-  (ref) => _mock
+  (ref) => _mock && !AppConfig.useApiAuth
       ? MockAddressRepository(MockUsers.addresses)
       : ApiAddressRepository(ref.watch(dioProvider)),
 );
 
 // --- Module 2 : catalogue -------------------------------------------------------
-const bool _mockCatalogue = _mock && !AppConfig.useApiCatalogue;
+bool get _mockCatalogue => _mock && !AppConfig.useApiCatalogue;
 
 final restaurantRepositoryProvider = Provider<RestaurantRepository>(
   (ref) => _mockCatalogue
@@ -109,7 +109,7 @@ final cartRepositoryProvider = Provider<CartRepository>(
 );
 
 final orderRepositoryProvider = Provider<OrderRepository>(
-  (ref) => _mock
+  (ref) => _mock && !AppConfig.useApiOrders
       ? MockOrderRepository(MockOrders.orders)
       : ApiOrderRepository(ref.watch(dioProvider)),
 );
@@ -122,7 +122,7 @@ final courierRepositoryProvider = Provider<CourierRepository>(
 );
 
 final deliveryRepositoryProvider = Provider<DeliveryRepository>(
-  (ref) => _mock
+  (ref) => _mock && !AppConfig.useApiOrders
       ? MockDeliveryRepository(MockDelivery.deliveries)
       : ApiDeliveryRepository(ref.watch(dioProvider)),
 );

@@ -24,13 +24,17 @@ class BackTopbar extends ConsumerWidget {
     required this.location,
     required this.compact,
     required this.onMenu,
+    this.showMenu = true,
   });
 
   final String location;
 
-  /// Téléphone : bouton menu (Drawer), titre de la page, recherche en icône.
+  /// Téléphone : titre de la page et recherche en icône.
   final bool compact;
   final VoidCallback onMenu;
+
+  /// Bouton menu. Masqué quand la navigation est la barre du bas.
+  final bool showMenu;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -51,11 +55,14 @@ class BackTopbar extends ConsumerWidget {
       child: Row(
         children: [
           if (compact) ...[
-            IconButton(
-              tooltip: 'Menu',
-              onPressed: onMenu,
-              icon: const Icon(Icons.menu_rounded),
-            ),
+            if (showMenu)
+              IconButton(
+                tooltip: 'Menu',
+                onPressed: onMenu,
+                icon: const Icon(Icons.menu_rounded),
+              )
+            else
+              const SizedBox(width: 12),
             const SizedBox(width: 4),
             Expanded(
               child: Text(

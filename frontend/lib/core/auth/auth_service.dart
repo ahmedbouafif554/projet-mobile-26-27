@@ -8,6 +8,7 @@ import '../../shared/models/restaurant.dart';
 import '../../shared/models/user.dart';
 import '../../shared/repositories/repository_providers.dart';
 import '../config/app_config.dart';
+import 'session_store.dart';
 import '../network/api_client.dart';
 import '../network/api_exception.dart';
 import 'permissions.dart';
@@ -36,7 +37,22 @@ class AuthService extends Notifier<AuthState> {
   static const demoOtpCode = '1234';
 
   @override
-  AuthState build() => const AuthState();
+  AuthState build() {
+    final saved = readSession();
+    final rawUser = saved?['user'];
+    final token = saved?['token'];
+    if (rawUser is! Map || token is! String || token.isEmpty) {
+      return const AuthState();
+    }
+    try {
+      return AuthState(
+        user: User.fromJson(Map<String, dynamic>.from(rawUser)),
+      );
+    } catch (_) {
+      writeSession(null);
+      return const AuthState();
+    }
+  }
 
   /// Connexion. [space] refuse les comptes de l'autre application (un client
   /// ne peut pas se connecter à l'Espace Pro) ; [role] vérifie le rôle choisi
@@ -274,17 +290,28 @@ class AuthService extends Notifier<AuthState> {
       );
     }
     // Jeton fictif : les dépôts API l'enverront dans l'en-tête Authorization.
+    final opened = user.copyWith(lastLoginAt: DateTime.now());
     ref.read(authTokenProvider.notifier).set('mock-token-${user.id}');
-    state = AuthState(user: user.copyWith(lastLoginAt: DateTime.now()));
-    return state.user!;
+    state = AuthState(user: opened);
+    _remember(opened, 'mock-token-${user.id}');
+    return opened;
   }
 
   /// Met à jour l'utilisateur affiché (après modification du profil).
-  void updateUser(User user) => state = AuthState(user: user);
+  void updateUser(User user) {
+    state = AuthState(user: user);
+    _remember(user, ref.read(authTokenProvider));
+  }
 
   void logout() {
     ref.read(authTokenProvider.notifier).set(null);
+    writeSession(null);
     state = const AuthState();
+  }
+
+  void _remember(User user, String? token) {
+    if (token == null || token.isEmpty) return;
+    writeSession({'user': user.toJson(), 'token': token});
   }
 
   Dio _dio() => Dio(
@@ -319,6 +346,7 @@ class AuthService extends Notifier<AuthState> {
     }
     ref.read(authTokenProvider.notifier).set(token);
     state = AuthState(user: user);
+    _remember(user, token);
     return user;
   }
 

@@ -8,6 +8,7 @@ const userRoutes = require('./routes/user.routes');
 const addressRoutes = require('./routes/address.routes');
 const courierRoutes = require('./routes/courier.routes');
 const oussemaModule = require('./oussema_livraison_commande');
+const emptyModules = require('./routes/empty-modules.routes');
 const restaurantCatalogue = require('./restaurant_catalogue');
 
 const app = express();
@@ -32,6 +33,11 @@ app.use('/api/categories', restaurantCatalogue.categoryRoutes);
 // ── Module Oussema : Livraison & Commande ──────────────────────────────────
 app.use('/api/oussema', oussemaModule.router);
 app.use('/api/orders', oussemaModule.commandeRoutes);
+app.use('/api/reviews', emptyModules.reviews);
+app.use('/api/campaigns', emptyModules.campaigns);
+app.use('/api/chats', emptyModules.chats);
+app.use('/api/messages', emptyModules.messages);
+app.use('/api/notifications', emptyModules.notifications);
 app.use('/api/deliveries', oussemaModule.livraisonRoutes);
 
 // ── Health check ────────────────────────────────────────────────────────────

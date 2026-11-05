@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../auth/session_store.dart';
 import '../config/app_config.dart';
 
 /// Jeton renvoyé par l'API après connexion (renseigné par l'AuthService).
@@ -11,7 +12,10 @@ final authTokenProvider = NotifierProvider<AuthTokenNotifier, String?>(
 
 class AuthTokenNotifier extends Notifier<String?> {
   @override
-  String? build() => null;
+  String? build() {
+    final token = readSession()?['token'];
+    return token is String && token.isNotEmpty ? token : null;
+  }
 
   void set(String? token) => state = token;
 }
