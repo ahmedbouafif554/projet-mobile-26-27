@@ -17,7 +17,7 @@ function publicUser(user) {
   };
 }
 
-function publicCourier(courier) {
+function publicCourier(courier, { includeImages = false } = {}) {
   return {
     id: courier.id,
     userId: courier.userId,
@@ -32,7 +32,7 @@ function publicCourier(courier) {
       type: doc.type,
       status: doc.status,
       uploadedAt: doc.uploadedAt,
-      imageData: doc.imageData || null,
+      ...(includeImages ? { imageData: doc.imageData || null } : {}),
     })),
     rating: courier.rating,
     completedDeliveries: courier.completedDeliveries,

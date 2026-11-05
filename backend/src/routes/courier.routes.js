@@ -23,6 +23,15 @@ router.post(
 );
 
 router.get(
+  '/:id/scan',
+  authenticate,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    res.json(await couriers.identityScan(req.params.id));
+  }),
+);
+
+router.get(
   '/:id',
   asyncHandler(async (req, res) => {
     res.json(await couriers.get(req.params.id));

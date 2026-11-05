@@ -11,4 +11,7 @@ abstract interface class CourierRepository implements CrudRepository<Courier> {
 
   /// Valide ou refuse tous les justificatifs du livreur.
   Future<Courier> reviewDocuments(String id, DocumentStatus status);
+
+  /// Dossier scanné, réservé à l'administrateur.
+  Future<CourierIdentityScan> identityScan(String id);
 }

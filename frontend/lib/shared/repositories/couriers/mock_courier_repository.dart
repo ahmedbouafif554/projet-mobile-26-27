@@ -23,6 +23,30 @@ class MockCourierRepository extends MockCrudRepository<Courier>
       mutate(id, (c) => c.copyWith(status: status));
 
   @override
+  Future<CourierIdentityScan> identityScan(String id) async {
+    final courier = await getById(id);
+    return CourierIdentityScan(
+      courierId: courier.id,
+      firstName: courier.firstName,
+      lastName: courier.lastName,
+      email: '',
+      phone: courier.phone,
+      documents: [
+        for (final doc in courier.documents)
+          ScannedDocument(
+            type: doc.type,
+            label: doc.type.label,
+            received: doc.imageData != null && doc.imageData!.length > 32,
+            bytes: doc.imageData?.length ?? 0,
+            status: doc.status,
+            uploadedAt: doc.uploadedAt,
+            imageData: doc.imageData,
+          ),
+      ],
+    );
+  }
+
+  @override
   Future<Courier> reviewDocuments(String id, DocumentStatus status) => mutate(
     id,
     (c) => c.copyWith(

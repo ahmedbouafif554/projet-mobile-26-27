@@ -291,7 +291,7 @@ class AuthService extends Notifier<AuthState> {
     BaseOptions(
       baseUrl: AppConfig.apiBaseUrl,
       connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 90),
       headers: {'Accept': 'application/json'},
     ),
   );

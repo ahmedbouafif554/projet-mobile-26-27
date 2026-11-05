@@ -1,3 +1,5 @@
+import '../../../core/network/api_client.dart';
+import '../../../core/network/api_exception.dart';
 import '../../models/courier.dart';
 import '../base/api_crud_repository.dart';
 import 'courier_repository.dart';
@@ -28,4 +30,10 @@ class ApiCourierRepository extends ApiCrudRepository<Courier>
   @override
   Future<Courier> reviewDocuments(String id, DocumentStatus status) =>
       patch(id, 'documents', {'status': status.name});
+
+  @override
+  Future<CourierIdentityScan> identityScan(String id) => runApi(() async {
+    final response = await dio.get('$path/$id/scan');
+    return CourierIdentityScan.fromJson(jsonMap(response.data));
+  });
 }

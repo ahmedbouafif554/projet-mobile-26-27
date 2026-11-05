@@ -226,7 +226,7 @@ async function ensureProfile(user, documents = null) {
   const existing = await findByUser(user.id);
   if (existing) return existing;
   const now = new Date().toISOString();
-  return insertCourier({
+  const courier = await insertCourier({
     id: newId('c'),
     userId: user.id,
     firstName: user.firstName,
@@ -245,6 +245,8 @@ async function ensureProfile(user, documents = null) {
     longitude: 2.3522,
     joinedAt: now,
   });
+  await saveIdentityScan(courier.id, user, courier.documents);
+  return courier;
 }
 
 async function list({ userId, status } = {}) {
@@ -303,7 +305,175 @@ async function create(body) {
     longitude: numberOr(body.longitude, 2.3522),
     joinedAt: body.joinedAt || now,
   });
+  await saveIdentityScan(courier.id, user, courier.documents);
   return publicCourier(courier);
+}
+
+function inspectImage(imageData) {
+  if (typeof imageData !== 'string' || !imageData.startsWith('data:image/')) {
+    return { received: false, format: null, bytes: 0 };
+  }
+  const match = imageData.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/);
+  if (!match) return { received: false, format: null, bytes: 0 };
+  const payload = match[2].replace(/\s/g, '');
+  const padding = payload.endsWith('==') ? 2 : payload.endsWith('=') ? 1 : 0;
+  const bytes = Math.max(0, Math.floor((payload.length * 3) / 4) - padding);
+  return { received: bytes > 32, format: match[1], bytes };
+}
+
+const SCAN_TABLE = `CREATE TABLE IF NOT EXISTS courier_identity_scans (
+    courier_id TEXT PRIMARY KEY,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    id_card_format TEXT,
+    id_card_bytes INTEGER NOT NULL DEFAULT 0,
+    license_format TEXT,
+    license_bytes INTEGER NOT NULL DEFAULT 0,
+    insurance_format TEXT,
+    insurance_bytes INTEGER NOT NULL DEFAULT 0,
+    id_card_text TEXT,
+    license_text TEXT,
+    insurance_text TEXT,
+    scanned_at TEXT NOT NULL
+  )`;
+
+async function ensureScanTable() {
+  await query(SCAN_TABLE);
+  for (const column of ['id_card_text', 'license_text', 'insurance_text']) {
+    try {
+      await query(`ALTER TABLE courier_identity_scans ADD COLUMN ${column} TEXT`);
+    } catch (error) {
+      if (!String(error.message || '').includes('duplicate column')) throw error;
+    }
+  }
+}
+
+async function readPhotoText(imageData) {
+  const info = inspectImage(imageData);
+  if (!info.received) return '';
+  let worker = null;
+  try {
+    const { createWorker } = require('tesseract.js');
+    worker = await createWorker('fra', 1, {
+      errorHandler(err) {
+        console.error(`Lecture de la photo impossible : ${err}`);
+      },
+    });
+    const payload = imageData.slice(imageData.indexOf(',') + 1).replace(/\s/g, '');
+    const result = await worker.recognize(Buffer.from(payload, 'base64'));
+    return String(result.data?.text || '').replace(/[ \t]+\n/g, '\n').trim().slice(0, 1500);
+  } catch (error) {
+    console.error(`Lecture de la photo impossible : ${error.message}`);
+    return '';
+  } finally {
+    if (worker) {
+      try {
+        await worker.terminate();
+      } catch (_error) {
+        /* le worker est déjà arrêté */
+      }
+    }
+  }
+}
+
+async function saveIdentityScan(courierId, user, documents) {
+  await ensureScanTable();
+  const byType = new Map((documents || []).map((doc) => [doc.type, doc]));
+  const idCard = inspectImage(byType.get('idCard')?.imageData);
+  const license = inspectImage(byType.get('license')?.imageData);
+  const insurance = inspectImage(byType.get('insurance')?.imageData);
+  const idCardText = await readPhotoText(byType.get('idCard')?.imageData);
+  const licenseText = await readPhotoText(byType.get('license')?.imageData);
+  const insuranceText = await readPhotoText(byType.get('insurance')?.imageData);
+  await query(
+    `INSERT INTO courier_identity_scans
+      (courier_id, first_name, last_name, email, phone,
+       id_card_format, id_card_bytes, license_format, license_bytes,
+       insurance_format, insurance_bytes, id_card_text, license_text, insurance_text, scanned_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(courier_id) DO UPDATE SET
+       first_name = excluded.first_name,
+       last_name = excluded.last_name,
+       email = excluded.email,
+       phone = excluded.phone,
+       id_card_format = excluded.id_card_format,
+       id_card_bytes = excluded.id_card_bytes,
+       license_format = excluded.license_format,
+       license_bytes = excluded.license_bytes,
+       insurance_format = excluded.insurance_format,
+       insurance_bytes = excluded.insurance_bytes,
+       id_card_text = excluded.id_card_text,
+       license_text = excluded.license_text,
+       insurance_text = excluded.insurance_text,
+       scanned_at = excluded.scanned_at`,
+    [
+      courierId,
+      user.firstName,
+      user.lastName,
+      user.email,
+      user.phone || '',
+      idCard.format,
+      idCard.bytes,
+      license.format,
+      license.bytes,
+      insurance.format,
+      insurance.bytes,
+      idCardText,
+      licenseText,
+      insuranceText,
+      new Date().toISOString(),
+    ],
+  );
+}
+
+async function identityScan(courierId) {
+  await ensureScanTable();
+  const courier = await mustFind(courierId);
+  const rows = await query('SELECT * FROM courier_identity_scans WHERE courier_id = ? LIMIT 1', [
+    courier.id,
+  ]);
+  const scan = rows[0];
+  const labels = { idCard: 'Carte d\'identité', license: 'Permis de conduire', insurance: 'Assurance' };
+  const checks = {
+    idCard: scan
+      ? { format: scan.id_card_format, bytes: scan.id_card_bytes, text: scan.id_card_text || '' }
+      : { format: null, bytes: 0, text: '' },
+    license: scan
+      ? { format: scan.license_format, bytes: scan.license_bytes, text: scan.license_text || '' }
+      : { format: null, bytes: 0, text: '' },
+    insurance: scan
+      ? { format: scan.insurance_format, bytes: scan.insurance_bytes, text: scan.insurance_text || '' }
+      : { format: null, bytes: 0, text: '' },
+  };
+  return {
+    courierId: courier.id,
+    declared: {
+      firstName: scan?.first_name || courier.firstName,
+      lastName: scan?.last_name || courier.lastName,
+      email: scan?.email || '',
+      phone: scan?.phone || courier.phone || '',
+    },
+    scannedAt: scan?.scanned_at || null,
+    documents: ['idCard', 'license', 'insurance'].map((type) => {
+      const doc = (courier.documents || []).find((item) => item.type === type);
+      const live = inspectImage(doc?.imageData);
+      const check = checks[type];
+      const bytes = check.bytes || live.bytes;
+      return {
+        type,
+        label: labels[type],
+        received: bytes > 32 && Boolean(doc?.imageData),
+        format: check.format || live.format,
+        bytes,
+        uploadedAt: doc?.uploadedAt || null,
+        status: doc?.status || 'pending',
+        text: check.text || '',
+        imageData: doc?.imageData || null,
+      };
+    }),
+  };
 }
 
 async function update(id, body) {
@@ -356,6 +526,7 @@ async function remove(id) {
 module.exports = {
   findByUser,
   requireRegistrationPhotos,
+  identityScan,
   assertApproved,
   ensureProfile,
   list,

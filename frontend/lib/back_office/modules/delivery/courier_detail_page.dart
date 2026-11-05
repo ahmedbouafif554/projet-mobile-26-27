@@ -17,6 +17,7 @@ import '../../../core/widgets/page_header.dart';
 import '../../../core/widgets/shimmer_box.dart';
 import '../../../core/widgets/stat_card.dart';
 import '../../../shared/models/models.dart';
+import '../../../shared/repositories/repository_providers.dart';
 import '../../../shared/widgets/status_chips.dart';
 import '../../router/back_routes.dart';
 import '../../shared/bo_widgets.dart';
@@ -141,6 +142,8 @@ class CourierDetailPage extends ConsumerWidget {
           left: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _IdentityScanCard(courierId: c.id),
+              boGap,
               _DocumentsCard(courier: c),
               boGap,
               SectionCard(
@@ -275,6 +278,89 @@ class _Header extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+final courierIdentityScanProvider = FutureProvider.family<CourierIdentityScan, String>(
+  (ref, id) => ref.watch(courierRepositoryProvider).identityScan(id),
+);
+
+/// Dossier lu à l'inscription : saisie du livreur et contrôle des trois photos.
+/// Affiché seulement dans le back office, et l'API refuse l'accès aux autres rôles.
+class _IdentityScanCard extends ConsumerWidget {
+  const _IdentityScanCard({required this.courierId});
+
+  final String courierId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scan = ref.watch(courierIdentityScanProvider(courierId));
+    return SectionCard(
+      title: 'Dossier scanné',
+      icon: Icons.document_scanner_outlined,
+      child: scan.when(
+        loading: () => const LinearProgressIndicator(),
+        error: (error, _) => Text(
+          'Dossier indisponible. Seul un administrateur connecté peut le lire.',
+          style: context.text.bodyMedium,
+        ),
+        data: (dossier) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Visible uniquement par l\'administrateur. '
+              'Sous la carte d\'identité et le permis, le texte est celui lu sur la photo. '
+              'S\'il est vide, la photo est trop floue pour être lue.',
+              style: context.text.bodySmall?.copyWith(
+                color: context.palette.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSizes.md),
+            infoText(Icons.badge_outlined, 'Nom saisi', '${dossier.firstName} ${dossier.lastName}'),
+            infoText(Icons.mail_outline_rounded, 'E-mail', dossier.email.isEmpty ? '—' : dossier.email),
+            infoText(Icons.phone_outlined, 'Téléphone', dossier.phone.isEmpty ? '—' : dossier.phone),
+            const SizedBox(height: AppSizes.sm),
+            for (final doc in dossier.documents)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    _DocumentThumb(imageData: doc.imageData),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(doc.label.isEmpty ? doc.type.label : doc.label, style: context.text.titleSmall),
+                          Text(
+                            doc.received
+                                ? 'Image reçue · ${doc.format ?? 'image'} · ${doc.bytes} octets'
+                                : 'Photo absente ou illisible',
+                            style: context.text.bodySmall?.copyWith(
+                              color: doc.received ? AppColors.success : AppColors.error,
+                            ),
+                          ),
+                          if (doc.type != DocumentType.insurance)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                doc.text.trim().isEmpty
+                                    ? 'Aucun texte lisible sur la photo.'
+                                    : doc.text.trim(),
+                                style: context.text.bodySmall,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    documentStatusChip(doc.status),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

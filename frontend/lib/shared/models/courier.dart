@@ -226,3 +226,83 @@ class Courier {
     joinedAt: joinedAt ?? this.joinedAt,
   );
 }
+
+/// Contrôle des pièces envoyées à l'inscription. Réservé à l'administrateur.
+/// Les champs viennent de la saisie du livreur et du fichier reçu :
+/// le texte imprimé sur la photo n'est pas deviné.
+class CourierIdentityScan {
+  const CourierIdentityScan({
+    required this.courierId,
+    required this.firstName,
+    required this.lastName,
+    required this.email,
+    required this.phone,
+    required this.documents,
+    this.scannedAt,
+  });
+
+  final String courierId;
+  final String firstName;
+  final String lastName;
+  final String email;
+  final String phone;
+  final DateTime? scannedAt;
+  final List<ScannedDocument> documents;
+
+  factory CourierIdentityScan.fromJson(Map<String, dynamic> json) {
+    final declared = json['declared'] is Map
+        ? Map<String, dynamic>.from(json['declared'] as Map)
+        : json;
+    return CourierIdentityScan(
+      courierId: json['courierId'] as String? ?? '',
+      firstName: declared['firstName'] as String? ?? '',
+      lastName: declared['lastName'] as String? ?? '',
+      email: declared['email'] as String? ?? '',
+      phone: declared['phone'] as String? ?? '',
+      scannedAt: parseDateOrNull(json['scannedAt']),
+      documents: parseList(json['documents'], ScannedDocument.fromJson),
+    );
+  }
+}
+
+class ScannedDocument {
+  const ScannedDocument({
+    required this.type,
+    required this.label,
+    required this.received,
+    required this.bytes,
+    required this.status,
+    this.format,
+    this.uploadedAt,
+    this.imageData,
+    this.text = '',
+  });
+
+  final DocumentType type;
+  final String label;
+  final bool received;
+  final String? format;
+  final int bytes;
+  final DocumentStatus status;
+  final DateTime? uploadedAt;
+  final String? imageData;
+  final String text;
+
+  factory ScannedDocument.fromJson(Map<String, dynamic> json) {
+    return ScannedDocument(
+      type: parseEnum(DocumentType.values, json['type'], DocumentType.idCard),
+      label: json['label'] as String? ?? '',
+      received: json['received'] == true,
+      format: json['format']?.toString(),
+      bytes: parseInt(json['bytes']),
+      status: parseEnum(
+        DocumentStatus.values,
+        json['status'],
+        DocumentStatus.pending,
+      ),
+      uploadedAt: parseDateOrNull(json['uploadedAt']),
+      imageData: json['imageData']?.toString(),
+      text: json['text'] as String? ?? '',
+    );
+  }
+}
