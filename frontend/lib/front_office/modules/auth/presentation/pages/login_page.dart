@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/auth/auth_service.dart';
+import '../../../../../core/auth/biometric_login.dart';
 import '../../../../../core/auth/permissions.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_sizes.dart';
@@ -89,8 +90,41 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Future<void> _socialLogin(SocialProvider provider) =>
       _run(() => ref.read(authServiceProvider.notifier).loginAs(_role));
 
+  /// Déverrouille la session client déjà enregistrée sur cet appareil.
+  Future<void> _biometricLogin() async {
+    final gate = ref.read(biometricLoginProvider);
+    final confirmed = await gate.authenticate();
+    if (!confirmed) {
+      if (mounted) {
+        AppSnackbar.error(
+          context,
+          'Reconnaissance faciale annulée ou indisponible.',
+        );
+      }
+      return;
+    }
+    final saved = await gate.readSession();
+    if (saved == null) {
+      if (mounted) {
+        AppSnackbar.error(
+          context,
+          'Aucune session client enregistrée. Connectez-vous avec votre mot de passe.',
+        );
+      }
+      return;
+    }
+    await _run(
+      () async {
+        ref
+            .read(authServiceProvider.notifier)
+            .restoreBiometricSession(user: saved.user, token: saved.token);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final biometricEnabled = ref.watch(clientBiometricEnabledProvider);
     final subtitle = switch (_role) {
       UserRole.courier => 'Connectez-vous pour recevoir des courses.',
       UserRole.admin => 'Connectez-vous pour administrer la plateforme.',
@@ -163,6 +197,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             isLoading: _loading,
                             onPressed: _submit,
                           ),
+                          if (_role == UserRole.client &&
+                              biometricEnabled.asData?.value == true) ...[
+                            const SizedBox(height: AppSizes.sm),
+                            OutlinedButton.icon(
+                              onPressed: _loading ? null : _biometricLogin,
+                              icon: const Icon(Icons.face_rounded),
+                              label: const Text('Connexion par reconnaissance faciale'),
+                            ),
+                          ],
                           const SizedBox(height: AppSizes.lg),
                           const OrDivider(),
                           const SizedBox(height: AppSizes.lg),

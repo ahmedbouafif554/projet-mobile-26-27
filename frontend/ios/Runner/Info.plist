@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>SuperFaster utilise Face ID pour rouvrir votre compte client.</string>
 </dict>
 </plist>

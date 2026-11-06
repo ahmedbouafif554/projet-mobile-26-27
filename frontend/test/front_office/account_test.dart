@@ -130,7 +130,8 @@ void main() {
     await tester.tap(find.textContaining('English'));
     await settle(tester, 600);
     expect(app.container.read(languageProvider), AppLanguage.en);
-    expect(find.textContaining('Traduction à venir'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('APPEARANCE'), findsOneWidget);
 
     expect(tester.takeException(), isNull);
     await settle(tester, 3000);

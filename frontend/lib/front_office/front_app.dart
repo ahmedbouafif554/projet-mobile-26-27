@@ -7,6 +7,7 @@ import '../core/auth/auth_service.dart';
 import '../core/auth/permissions.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/theme_mode_provider.dart';
+import 'modules/auth/providers/settings_providers.dart';
 import '../core/widgets/responsive_frame.dart';
 import 'router/front_router.dart';
 
@@ -38,7 +39,7 @@ class _MobileApp extends ConsumerWidget {
       darkTheme: AppTheme.dark,
       themeMode: ref.watch(themeModeProvider),
       themeAnimationDuration: const Duration(milliseconds: 400),
-      locale: AppLocalization.locale,
+      locale: ref.watch(languageProvider).locale,
       supportedLocales: AppLocalization.supportedLocales,
       localizationsDelegates: AppLocalization.delegates,
       routerConfig: ref.watch(frontRouterProvider),

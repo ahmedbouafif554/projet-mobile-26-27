@@ -27,7 +27,12 @@ class AppLocalization {
   AppLocalization._();
 
   static const locale = Locale('fr', 'FR');
-  static const supportedLocales = [locale];
+  static const supportedLocales = [
+    Locale('fr', 'FR'),
+    Locale('en', 'US'),
+    Locale('es', 'ES'),
+    Locale('ar', 'MA'),
+  ];
   static const delegates = <LocalizationsDelegate<Object>>[
     GlobalMaterialLocalizations.delegate,
     GlobalWidgetsLocalizations.delegate,

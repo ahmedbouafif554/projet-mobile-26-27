@@ -303,6 +303,19 @@ class AuthService extends Notifier<AuthState> {
     _remember(user, ref.read(authTokenProvider));
   }
 
+  /// Rouvre une session client déjà vérifiée par la biométrie de l'appareil.
+  User restoreBiometricSession({required User user, required String token}) {
+    if (user.role != UserRole.client) {
+      throw const ApiException(
+        'La reconnaissance faciale est réservée aux comptes client.',
+      );
+    }
+    ref.read(authTokenProvider.notifier).set(token);
+    state = AuthState(user: user);
+    _remember(user, token);
+    return user;
+  }
+
   void logout() {
     ref.read(authTokenProvider.notifier).set(null);
     writeSession(null);
