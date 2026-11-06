@@ -7,6 +7,8 @@
     "start": "node --experimental-sqlite src/app.js",
     "dev": "nodemon --exec \"node --experimental-sqlite\" src/app.js",
     "test": "node --experimental-sqlite ./node_modules/jest/bin/jest.js",
+    "test:module3": "node --experimental-sqlite ./node_modules/jest/bin/jest.js tests/oussema-panier-commande.test.js tests/e2e-frontend-backend-link.test.js",
+    "seed:module3": "node --experimental-sqlite src/oussema_panier_commande/seed/seed-demo-orders.js",
     "seed:catalogue": "node src/restaurant_catalogue/seed/seed-demo-catalogue.js"
   },
   "jest": {

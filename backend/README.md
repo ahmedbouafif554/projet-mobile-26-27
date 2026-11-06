@@ -65,7 +65,7 @@ backend/
 │   ├── data/db.js             # Connexion SQLite, schéma et jeu de démo
 │   ├── data/schema.js         # Tables users, couriers, addresses, favorites
 │   ├── middleware/            # JWT + mock-token
-│   ├── oussema_livraison_commande/  # Module Commandes & Livraisons (voir son README)
+│   ├── oussema_panier_commande/    # Module 3 : Panier & Commandes (voir son README)
 │   └── restaurant_catalogue/  # Module Restaurants & Catalogue (voir son README)
 ├── tests/                     # Un fichier de tests par module
 ├── .env.example

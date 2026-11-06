@@ -7,7 +7,7 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const addressRoutes = require('./routes/address.routes');
 const courierRoutes = require('./routes/courier.routes');
-const oussemaModule = require('./oussema_livraison_commande');
+const oussemaModule = require('./oussema_panier_commande');
 const emptyModules = require('./routes/empty-modules.routes');
 const restaurantCatalogue = require('./restaurant_catalogue');
 
@@ -30,8 +30,10 @@ app.use('/api/restaurants', restaurantCatalogue.restaurantRoutes);
 app.use('/api/products', restaurantCatalogue.productRoutes);
 app.use('/api/categories', restaurantCatalogue.categoryRoutes);
 
-// ── Module Oussema : Livraison & Commande ──────────────────────────────────
+// ── Module 3 : Panier & Commandes (Oussema) ────────────────────────────────
 app.use('/api/oussema', oussemaModule.router);
+app.use('/api/cart', oussemaModule.panierRoutes);
+app.use('/api/panier', oussemaModule.panierRoutes);
 app.use('/api/orders', oussemaModule.commandeRoutes);
 app.use('/api/reviews', emptyModules.reviews);
 app.use('/api/campaigns', emptyModules.campaigns);

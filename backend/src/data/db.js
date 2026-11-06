@@ -153,14 +153,33 @@ function createSchema() {
       uploaded_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS cart_items (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      product_id TEXT NOT NULL,
+      quantity INTEGER NOT NULL DEFAULT 1,
+      options TEXT NOT NULL DEFAULT '[]',
+      note TEXT,
+      product_data TEXT,
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+      updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+    );
+
     CREATE TABLE IF NOT EXISTS orders (
       id TEXT PRIMARY KEY,
+      reference TEXT,
       user_id TEXT,
       restaurant_id TEXT,
       courier_id TEXT,
       status TEXT NOT NULL DEFAULT 'pending',
       total_amount REAL NOT NULL DEFAULT 0,
       delivery_fee REAL NOT NULL DEFAULT 0,
+      service_fee REAL NOT NULL DEFAULT 0,
+      discount REAL NOT NULL DEFAULT 0,
+      payment_method TEXT NOT NULL DEFAULT 'card',
+      payment_status TEXT NOT NULL DEFAULT 'paid',
+      promo_code TEXT,
+      cancel_reason TEXT,
       delivery_address TEXT,
       delivery_lat REAL,
       delivery_lng REAL,
@@ -176,7 +195,10 @@ function createSchema() {
       product_id TEXT,
       name TEXT,
       price REAL NOT NULL DEFAULT 0,
-      quantity INTEGER NOT NULL DEFAULT 1
+      quantity INTEGER NOT NULL DEFAULT 1,
+      options TEXT NOT NULL DEFAULT '[]',
+      note TEXT,
+      product_data TEXT
     );
 
     CREATE TABLE IF NOT EXISTS order_events (
@@ -262,6 +284,26 @@ function createSchema() {
       created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
     );
   `);
+
+  const migrations = [
+    ['orders', 'reference', 'TEXT'],
+    ['orders', 'service_fee', 'REAL NOT NULL DEFAULT 0'],
+    ['orders', 'discount', 'REAL NOT NULL DEFAULT 0'],
+    ['orders', 'payment_method', "TEXT NOT NULL DEFAULT 'card'"],
+    ['orders', 'payment_status', "TEXT NOT NULL DEFAULT 'paid'"],
+    ['orders', 'promo_code', 'TEXT'],
+    ['orders', 'cancel_reason', 'TEXT'],
+    ['order_items', 'options', "TEXT NOT NULL DEFAULT '[]'"],
+    ['order_items', 'note', 'TEXT'],
+    ['order_items', 'product_data', 'TEXT'],
+  ];
+  for (const [table, col, type] of migrations) {
+    try {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
+    } catch (_err) {
+      // Column already exists
+    }
+  }
 }
 
 const DEMO_USERS = [
@@ -344,6 +386,7 @@ function clearRows() {
     db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((row) => row.name),
   );
   const tables = [
+    'cart_items',
     'courier_locations',
     'deliveries',
     'order_events',

@@ -1,0 +1,150 @@
+### ==============================================================================
+### MODULE 3 : PANIER & COMMANDES (Oussema) — Collection de Requêtes HTTP REST
+### ==============================================================================
+
+@baseUrl = http://localhost:3001/api
+@userId = u-client-1
+
+### ------------------------------------------------------------------------------
+### A. PANIER (Cart CRUD)
+### ------------------------------------------------------------------------------
+
+### 1. Consulter les articles du panier
+GET {{baseUrl}}/cart/items?userId={{userId}}
+
+### 2. Ajouter un article avec options et note
+POST {{baseUrl}}/cart/items?userId={{userId}}
+Content-Type: application/json
+
+{
+  "product": {
+    "id": "prod_1",
+    "restaurantId": "rest_demo",
+    "name": "Classic Burger",
+    "price": 9.90,
+    "section": "Burgers"
+  },
+  "quantity": 1,
+  "options": [
+    { "id": "opt_cheddar", "name": "Extra Cheddar", "price": 1.00 }
+  ],
+  "note": "Sans oignons"
+}
+
+### 3. Calcul des totaux et réduction (code promo)
+GET {{baseUrl}}/cart/totals?userId={{userId}}&promoCode=BIENVENUE
+
+### 4. Modifier la quantité d'une ligne du panier
+# Remplacer :itemId par l'identifiant retourné à l'ajout (ex: ci_abc123)
+PUT {{baseUrl}}/cart/items/:itemId?userId={{userId}}
+Content-Type: application/json
+
+{
+  "quantity": 3
+}
+
+### 5. Supprimer une ligne du panier
+DELETE {{baseUrl}}/cart/items/:itemId?userId={{userId}}
+
+### 6. Vider complètement le panier
+DELETE {{baseUrl}}/cart/items?userId={{userId}}
+
+
+### ------------------------------------------------------------------------------
+### B. COMMANDES (Order CRUD & State Machine)
+### ------------------------------------------------------------------------------
+
+### 7. Créer une nouvelle commande (depuis le panier / checkout)
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "restaurantId": "rest_demo",
+  "customerName": "Alex Martin",
+  "deliveryAddress": {
+    "id": "a-1",
+    "userId": "{{userId}}",
+    "label": "Maison",
+    "street": "12 rue de la Paix",
+    "postalCode": "75002",
+    "city": "Paris",
+    "type": "home",
+    "latitude": 48.8686,
+    "longitude": 2.3312
+  },
+  "items": [
+    { "productId": "prod_1", "quantity": 2 },
+    { "productId": "prod_3", "quantity": 1 }
+  ],
+  "promoCode": "BIENVENUE",
+  "paymentMethod": "card",
+  "paymentStatus": "paid",
+  "note": "Laisser devant la porte"
+}
+
+### 8. Lister toutes les commandes (Back Office)
+GET {{baseUrl}}/orders
+
+### 9. Filtrer les commandes par utilisateur (Front Office - Mes Commandes)
+GET {{baseUrl}}/orders?userId={{userId}}
+
+### 10. Filtrer les commandes par restaurant (Back Office - Cuisine)
+GET {{baseUrl}}/orders?restaurantId=rest_demo
+
+### 11. Détail d'une commande
+# Remplacer :orderId par l'id retourné lors de la création (ex: ord_abc123)
+GET {{baseUrl}}/orders/:orderId
+
+### 12. Suivi en direct d'une commande (carte & étapes)
+GET {{baseUrl}}/orders/:orderId/tracking
+
+### 13. Historique chronologique (Timeline)
+GET {{baseUrl}}/orders/:orderId/timeline
+
+### 14. Avancer le statut en cuisine : Acceptée
+PATCH {{baseUrl}}/orders/:orderId/status
+Content-Type: application/json
+
+{
+  "status": "accepted",
+  "note": "Commande acceptée par le restaurant"
+}
+
+### 15. Avancer le statut en cuisine : En préparation
+PATCH {{baseUrl}}/orders/:orderId/status
+Content-Type: application/json
+
+{
+  "status": "preparing",
+  "note": "En cours de cuisson"
+}
+
+### 16. Avancer le statut : Prête pour livraison
+PATCH {{baseUrl}}/orders/:orderId/status
+Content-Type: application/json
+
+{
+  "status": "ready",
+  "note": "Commande emballée et prête au comptoir"
+}
+
+### 17. Annuler une commande
+PATCH {{baseUrl}}/orders/:orderId/cancel
+Content-Type: application/json
+
+{
+  "reason": "Changement d'avis"
+}
+
+### 18. Rembourser une commande
+PATCH {{baseUrl}}/orders/:orderId/refund
+Content-Type: application/json
+
+{
+  "reason": "Commande annulée avant préparation"
+}
+
+### 19. Statistiques globales ou par restaurant
+GET {{baseUrl}}/oussema/commandes/stats?restaurantId=rest_demo
+

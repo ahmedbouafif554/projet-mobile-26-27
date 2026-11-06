@@ -17,10 +17,35 @@ const { haversineDistance, estimateDurationMinutes } = require('./geo.utils');
 
 function mapOrder(row, items = [], events = []) {
   if (!row) return null;
-  const status = row.status === 'confirmed' ? 'accepted' : (row.status || 'pending');
+  const status = row.status || 'pending';
+  const orderRef = row.reference || `CMD-${row.id.slice(-6).toUpperCase()}`;
+
+  let addrObj = null;
+  if (row.delivery_address && typeof row.delivery_address === 'string') {
+    try {
+      if (row.delivery_address.startsWith('{')) {
+        addrObj = JSON.parse(row.delivery_address);
+      }
+    } catch (_) {}
+  }
+
+  const deliveryAddress = addrObj || {
+    id: `addr_${row.id}`,
+    userId: row.user_id,
+    label: 'Adresse de livraison',
+    street: row.delivery_address || 'Adresse de livraison',
+    postalCode: '75001',
+    city: 'Paris',
+    type: 'home',
+    instructions: row.notes || null,
+    isDefault: true,
+    latitude: row.delivery_lat ? Number(row.delivery_lat) : 48.8686,
+    longitude: row.delivery_lng ? Number(row.delivery_lng) : 2.3312,
+  };
+
   return {
     id: row.id,
-    reference: `CMD-${row.id.slice(-6).toUpperCase()}`,
+    reference: orderRef,
     userId: row.user_id,
     customerName: row.customer_name || 'Client',
     customerPhone: row.customer_phone || '',
@@ -33,53 +58,61 @@ function mapOrder(row, items = [], events = []) {
     statusLabel: ORDER_STATUS_LABELS[row.status] || ORDER_STATUS_LABELS[status] || status,
     totalAmount: Number(row.total_amount) || 0,
     deliveryFee: Number(row.delivery_fee) || 0,
-    serviceFee: 0.0,
-    discount: 0.0,
-    paymentMethod: 'card',
-    paymentStatus: 'paid',
-    deliveryAddress: {
-      id: `addr_${row.id}`,
-      userId: row.user_id,
-      label: 'Adresse de livraison',
-      street: row.delivery_address || 'Adresse de livraison',
-      postalCode: '75001',
-      city: 'Paris',
-      type: 'home',
-      instructions: row.notes || null,
-      isDefault: true,
-      latitude: row.delivery_lat ? Number(row.delivery_lat) : 48.8686,
-      longitude: row.delivery_lng ? Number(row.delivery_lng) : 2.3312,
-    },
-    deliveryAddressText: row.delivery_address || '',
+    serviceFee: Number(row.service_fee) || 0.0,
+    discount: Number(row.discount) || 0.0,
+    paymentMethod: row.payment_method || 'card',
+    paymentStatus: row.payment_status || 'paid',
+    deliveryAddress,
+    deliveryAddressText: addrObj && addrObj.street ? `${addrObj.street}, ${addrObj.postalCode || ''} ${addrObj.city || ''}`.trim() : (row.delivery_address || ''),
     deliveryLat: row.delivery_lat ? Number(row.delivery_lat) : null,
     deliveryLng: row.delivery_lng ? Number(row.delivery_lng) : null,
     notes: row.notes || null,
     note: row.notes || null,
+    promoCode: row.promo_code || null,
+    cancelReason: row.cancel_reason || null,
     estimatedMinutes: Number(row.estimated_time) || 30,
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
-    items: items.map((i) => ({
-      id: String(i.id),
-      product: {
-        id: i.product_id,
-        restaurantId: row.restaurant_id,
-        categoryId: 'c1',
+    items: items.map((i) => {
+      let savedProd = null;
+      if (i.product_data) {
+        try {
+          savedProd = typeof i.product_data === 'string' ? JSON.parse(i.product_data) : i.product_data;
+        } catch (_) {}
+      }
+      let options = [];
+      if (i.options) {
+        try {
+          options = typeof i.options === 'string' ? JSON.parse(i.options) : i.options;
+        } catch (_) {}
+      }
+      return {
+        id: String(i.id),
+        product: savedProd || {
+          id: i.product_id,
+          restaurantId: row.restaurant_id,
+          categoryId: 'c1',
+          name: i.name,
+          description: '',
+          price: Number(i.price),
+          imageUrl: '',
+          section: 'Menu',
+          optionGroups: [],
+          isAvailable: true,
+          isPopular: false,
+          calories: null,
+        },
+        productId: i.product_id,
         name: i.name,
-        description: '',
         price: Number(i.price),
-        imageUrl: '',
-        section: 'Menu',
-        optionGroups: [],
-        isAvailable: true,
-      },
-      productId: i.product_id,
-      name: i.name,
-      price: Number(i.price),
-      quantity: Number(i.quantity) || 1,
-      total: Math.round(Number(i.price) * (Number(i.quantity) || 1) * 100) / 100,
-    })),
+        quantity: Number(i.quantity) || 1,
+        options: Array.isArray(options) ? options : [],
+        note: i.note || null,
+        total: Math.round(Number(i.price) * (Number(i.quantity) || 1) * 100) / 100,
+      };
+    }),
     history: events.map((e) => ({
-      status: e.status === 'confirmed' ? 'accepted' : e.status,
+      status: e.status,
       at: toIso(e.created_at),
       note: e.note || null,
     })),
@@ -117,10 +150,7 @@ async function createOrder(data) {
   let deliveryLng = Number(data.deliveryLng) || 2.3312;
 
   if (typeof deliveryAddress === 'object' && deliveryAddress !== null) {
-    addrText = deliveryAddress.fullAddress || 
-      [deliveryAddress.street, deliveryAddress.postalCode, deliveryAddress.city].filter(Boolean).join(', ') ||
-      deliveryAddress.label ||
-      'Adresse de livraison';
+    addrText = JSON.stringify(deliveryAddress);
     if (deliveryAddress.latitude) deliveryLat = Number(deliveryAddress.latitude);
     if (deliveryAddress.longitude) deliveryLng = Number(deliveryAddress.longitude);
   } else if (typeof deliveryAddress === 'string') {
@@ -167,6 +197,9 @@ async function createOrder(data) {
       name,
       price,
       quantity,
+      options: item.options || [],
+      note: item.note || null,
+      product: item.product || null,
     });
   }
 
@@ -180,9 +213,12 @@ async function createOrder(data) {
 
   // Calcul des frais de livraison
   let deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : Math.round((BASE_DELIVERY_FEE + (distanceKm > 2 ? (distanceKm - 2) * PER_KM_FEE : 0)) * 10) / 10;
+  if (data.deliveryFee !== undefined) {
+    deliveryFee = Number(data.deliveryFee) || 0;
+  }
 
   // Calcul éventuel de réduction (code promo)
-  let discount = 0;
+  let discount = Number(data.discount) || 0;
   if (promoCode) {
     const code = String(promoCode).toUpperCase().trim();
     if (code === 'BIENVENUE' || code === 'SUPER5') discount = 5.0;
@@ -190,23 +226,33 @@ async function createOrder(data) {
     else if (code === 'LIVRAISON') deliveryFee = 0.0;
   }
 
-  const totalAmount = Math.max(0, Math.round((subtotal + deliveryFee - discount) * 100) / 100);
+  const serviceFee = Number(data.serviceFee) || 0;
+  const totalAmount = Math.max(0, Math.round((subtotal + deliveryFee + serviceFee - discount) * 100) / 100);
   const estimatedMinutes = estimateDurationMinutes(distanceKm, 'scooter');
   const orderId = newId('ord');
+  const orderReference = data.reference || `CMD-${orderId.slice(-6).toUpperCase()}`;
   const deliveryId = newId('deliv');
   const otpCode = String(Math.floor(1000 + Math.random() * 9000)); // Code OTP 4 chiffres pour validation livraison
+  const paymentMethod = data.paymentMethod || 'card';
+  const paymentStatus = data.paymentStatus || 'paid';
 
   await withTransaction(async () => {
     // 1. Insérer la commande
     await query(
-      `INSERT INTO orders (id, user_id, restaurant_id, courier_id, status, total_amount, delivery_fee, delivery_address, delivery_lat, delivery_lng, notes, estimated_time)
-       VALUES (?, ?, ?, NULL, 'pending', ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO orders (id, reference, user_id, restaurant_id, courier_id, status, total_amount, delivery_fee, service_fee, discount, payment_method, payment_status, promo_code, delivery_address, delivery_lat, delivery_lng, notes, estimated_time)
+       VALUES (?, ?, ?, ?, NULL, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         orderId,
+        orderReference,
         userId,
         restaurantId,
         totalAmount,
         deliveryFee,
+        serviceFee,
+        discount,
+        paymentMethod,
+        paymentStatus,
+        promoCode || null,
         addrText,
         deliveryLat,
         deliveryLng,
@@ -215,12 +261,21 @@ async function createOrder(data) {
       ],
     );
 
-    // 2. Insérer les articles
+    // 2. Insérer les articles avec options, note et données produit
     for (const it of verifiedItems) {
       await query(
-        `INSERT INTO order_items (order_id, product_id, name, price, quantity)
-         VALUES (?, ?, ?, ?, ?)`,
-        [orderId, it.productId, it.name, it.price, it.quantity],
+        `INSERT INTO order_items (order_id, product_id, name, price, quantity, options, note, product_data)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          orderId,
+          it.productId,
+          it.name,
+          it.price,
+          it.quantity,
+          JSON.stringify(it.options || []),
+          it.note || null,
+          it.product ? JSON.stringify(it.product) : null,
+        ],
       );
     }
 
@@ -383,7 +438,14 @@ async function updateOrderStatus(orderId, nextStatus, { actorId, role, note } = 
       [orderId, nextStatus, note || defaultNote, actorId || null],
     );
 
-    // Synchronisation de la livraison
+    // Synchronisation du paiement et de la livraison
+    if (nextStatus === 'refunded') {
+      await query(
+        'UPDATE orders SET payment_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        ['refunded', orderId],
+      );
+    }
+
     if (nextStatus === 'cancelled') {
       await query('UPDATE deliveries SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?', [
         'cancelled',
@@ -408,6 +470,7 @@ async function cancelOrder(orderId, { actorId, role, reason = 'Annulation demand
   if (role === 'client' && order.status !== 'pending') {
     throw new HttpError(400, 'Une commande déjà confirmée ou en cours de préparation ne peut plus être annulée par le client.');
   }
+  await query('UPDATE orders SET cancel_reason = ? WHERE id = ?', [reason, orderId]);
   return updateOrderStatus(orderId, 'cancelled', {
     actorId,
     role,
@@ -472,12 +535,72 @@ async function getOrderStats({ restaurantId = null } = {}) {
   };
 }
 
+/**
+ * Met à jour une commande (PUT /orders/:id) avec support des modifications générales ou de statut.
+ */
+async function updateOrder(orderId, data, context = {}) {
+  const existing = await getOrderById(orderId);
+
+  // Si un changement de statut est demandé
+  if (data.status && data.status !== existing.status) {
+    await updateOrderStatus(orderId, data.status, {
+      actorId: context.actorId || data.actorId,
+      role: context.role || data.role,
+      note: data.note || `Mise à jour statut: ${data.status}`,
+    });
+  }
+
+  const updates = [];
+  const params = [];
+
+  if (data.notes !== undefined || data.note !== undefined) {
+    updates.push('notes = ?');
+    params.push(data.notes ?? data.note);
+  }
+  if (data.courierId !== undefined) {
+    updates.push('courier_id = ?');
+    params.push(data.courierId);
+  }
+  if (data.paymentStatus !== undefined) {
+    updates.push('payment_status = ?');
+    params.push(data.paymentStatus);
+  }
+  if (data.cancelReason !== undefined) {
+    updates.push('cancel_reason = ?');
+    params.push(data.cancelReason);
+  }
+
+  if (updates.length > 0) {
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    params.push(orderId);
+    await query(`UPDATE orders SET ${updates.join(', ')} WHERE id = ?`, params);
+  }
+
+  return getOrderById(orderId);
+}
+
+/**
+ * Supprime une commande et ses données associées (DELETE /orders/:id).
+ */
+async function deleteOrder(orderId) {
+  await getOrderById(orderId); // vérifie existence
+  await withTransaction(async () => {
+    await query('DELETE FROM order_events WHERE order_id = ?', [orderId]);
+    await query('DELETE FROM order_items WHERE order_id = ?', [orderId]);
+    await query('DELETE FROM deliveries WHERE order_id = ?', [orderId]);
+    await query('DELETE FROM orders WHERE id = ?', [orderId]);
+  });
+  return { success: true, id: orderId };
+}
+
 module.exports = {
   createOrder,
   getOrderById,
   listOrders,
+  updateOrder,
   updateOrderStatus,
   cancelOrder,
+  deleteOrder,
   getOrderTimeline,
   getOrderStats,
 };

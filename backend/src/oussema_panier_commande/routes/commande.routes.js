@@ -21,6 +21,13 @@ router.post('/', asyncHandler(commandeCtrl.create));
 // Détail d'une commande
 router.get('/:id', asyncHandler(commandeCtrl.getById));
 
+// Mise à jour complète d'une commande (pour ApiCrudRepository.update)
+router.put('/:id', asyncHandler(commandeCtrl.update));
+router.patch('/:id', asyncHandler(commandeCtrl.update));
+
+// Suppression d'une commande (pour ApiCrudRepository.delete)
+router.delete('/:id', asyncHandler(commandeCtrl.remove));
+
 // Suivi / tracking en temps réel d'une commande
 router.get('/:id/tracking', asyncHandler(commandeCtrl.getTracking));
 
@@ -30,13 +37,12 @@ router.get('/:id/timeline', asyncHandler(commandeCtrl.getTimeline));
 // Changement de statut (machine d'états)
 router.patch('/:id/status', asyncHandler(commandeCtrl.updateStatus));
 router.put('/:id/status', asyncHandler(commandeCtrl.updateStatus));
-router.put('/:id', asyncHandler(commandeCtrl.updateStatus));
 
 // Annulation de commande (POST & PATCH pour compatibilité Flutter ApiOrderRepository)
 router.post('/:id/cancel', asyncHandler(commandeCtrl.cancel));
 router.patch('/:id/cancel', asyncHandler(commandeCtrl.cancel));
 
-// Remboursement de commande (POST & PATCH)
+// Remboursement de commande (POST & PATCH pour compatibilité Flutter ApiOrderRepository)
 router.post('/:id/refund', asyncHandler(commandeCtrl.refund));
 router.patch('/:id/refund', asyncHandler(commandeCtrl.refund));
 

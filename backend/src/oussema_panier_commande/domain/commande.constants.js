@@ -36,7 +36,7 @@ const ALLOWED_ORDER_TRANSITIONS = {
   picked_up: ['delivering', 'delivered', 'cancelled'],
   delivering: ['delivered', 'cancelled'],
   delivered: ['refunded'],
-  cancelled: [],
+  cancelled: ['refunded'],
   refunded: [],
 };
 

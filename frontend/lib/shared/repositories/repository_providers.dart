@@ -104,8 +104,9 @@ final favoriteRepositoryProvider = Provider<FavoriteRepository>(
 
 // --- Module 3 : panier et commandes -----------------------------------------------
 final cartRepositoryProvider = Provider<CartRepository>(
-  (ref) =>
-      _mock ? MockCartRepository() : ApiCartRepository(ref.watch(dioProvider)),
+  (ref) => _mock && !AppConfig.useApiOrders
+      ? MockCartRepository()
+      : ApiCartRepository(ref.watch(dioProvider)),
 );
 
 final orderRepositoryProvider = Provider<OrderRepository>(
