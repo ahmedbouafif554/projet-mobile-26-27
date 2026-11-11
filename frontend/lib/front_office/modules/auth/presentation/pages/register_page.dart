@@ -200,7 +200,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               label: type.label,
                               icon: switch (type) {
                                 DocumentType.idCard => Icons.badge_rounded,
-                                DocumentType.license => Icons.credit_card_rounded,
+                                DocumentType.license =>
+                                  Icons.credit_card_rounded,
                                 DocumentType.insurance => Icons.shield_outlined,
                               },
                               bytes: _photos[type],
@@ -313,7 +314,10 @@ class _DocumentPhotoField extends StatelessWidget {
   final Uint8List? bytes;
   final ValueChanged<Uint8List> onChanged;
 
-  Future<void> _pick(BuildContext context, FormFieldState<Uint8List> field) async {
+  Future<void> _pick(
+    BuildContext context,
+    FormFieldState<Uint8List> field,
+  ) async {
     try {
       final file = await ImagePicker().pickImage(
         source: ImageSource.gallery,
@@ -416,7 +420,9 @@ class _DocumentPhotoField extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 4, left: 12),
                 child: Text(
                   field.errorText!,
-                  style: context.text.bodySmall?.copyWith(color: AppColors.error),
+                  style: context.text.bodySmall?.copyWith(
+                    color: AppColors.error,
+                  ),
                 ),
               ),
           ],

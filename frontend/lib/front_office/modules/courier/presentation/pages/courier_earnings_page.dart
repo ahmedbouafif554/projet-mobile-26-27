@@ -22,9 +22,10 @@ class CourierEarningsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final courier = ref.watch(myCourierProvider).value;
-    final deliveries = (ref.watch(myDeliveriesProvider).value ?? const <Delivery>[])
-        .where((d) => d.status == DeliveryStatus.delivered)
-        .toList();
+    final deliveries =
+        (ref.watch(myDeliveriesProvider).value ?? const <Delivery>[])
+            .where((d) => d.status == DeliveryStatus.delivered)
+            .toList();
     final week = earningsByDay(deliveries);
     final weekTotal = week.fold<double>(0, (s, e) => s + e.$2);
     final tips = deliveries.fold<double>(0, (s, d) => s + d.tip);
@@ -120,7 +121,10 @@ class CourierEarningsPage extends ConsumerWidget {
                       child: AppBarChart(
                         bars: [
                           for (final (day, total) in week)
-                            ChartBar(label: Formatters.weekday(day), value: total),
+                            ChartBar(
+                              label: Formatters.weekday(day),
+                              value: total,
+                            ),
                         ],
                         formatValue: Formatters.priceShort,
                         color: AppColors.success,

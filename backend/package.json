@@ -7,7 +7,9 @@
     "start": "node --experimental-sqlite src/app.js",
     "dev": "nodemon --exec \"node --experimental-sqlite\" src/app.js",
     "test": "node --experimental-sqlite ./node_modules/jest/bin/jest.js",
-    "test:module3": "node --experimental-sqlite ./node_modules/jest/bin/jest.js tests/oussema-panier-commande.test.js tests/e2e-frontend-backend-link.test.js",
+    "test:module3": "node --experimental-sqlite ./node_modules/jest/bin/jest.js tests/oussema-panier-commande.test.js tests/oussema-adresse-carte.test.js tests/e2e-frontend-backend-link.test.js",
+    "test:module4": "node --experimental-sqlite ./node_modules/jest/bin/jest.js tests/imed-livraison-livreur.test.js",
+    "test:module5": "node --experimental-sqlite ./node_modules/jest/bin/jest.js tests/avis-notification.test.js",
     "seed:module3": "node --experimental-sqlite src/oussema_panier_commande/seed/seed-demo-orders.js",
     "seed:catalogue": "node src/restaurant_catalogue/seed/seed-demo-catalogue.js"
   },
@@ -31,8 +33,10 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-validator": "^7.1.0",
+    "google-auth-library": "^9.15.1",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "nodemailer": "^6.10.1",
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {

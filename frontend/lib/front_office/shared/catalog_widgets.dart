@@ -81,7 +81,9 @@ class FavoriteButton extends ConsumerWidget {
               size: size * 0.5,
               color: isFavorite
                   ? AppColors.favorite
-                  : (onImage ? AppColors.textPrimary : context.colors.onSurface),
+                  : (onImage
+                        ? AppColors.textPrimary
+                        : context.colors.onSurface),
             ),
           ),
         ),
@@ -107,15 +109,16 @@ class RatingLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = dense ? context.text.labelMedium : context.text.labelLarge;
     if (count == 0) {
-      return Text(
-        'Nouveau',
-        style: style?.copyWith(color: AppColors.success),
-      );
+      return Text('Nouveau', style: style?.copyWith(color: AppColors.success));
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.star_rounded, size: dense ? 15 : 17, color: AppColors.warning),
+        Icon(
+          Icons.star_rounded,
+          size: dense ? 15 : 17,
+          color: AppColors.warning,
+        ),
         const SizedBox(width: 3),
         Text(Formatters.rating(rating), style: style),
         if (count != null)
@@ -512,10 +515,7 @@ class ProductTile extends StatelessWidget {
                           const SizedBox(width: 4),
                         ],
                         Expanded(
-                          child: Text(
-                            p.name,
-                            style: context.text.titleSmall,
-                          ),
+                          child: Text(p.name, style: context.text.titleSmall),
                         ),
                       ],
                     ),
@@ -675,12 +675,15 @@ class QuantityStepper extends StatelessWidget {
           width: compact ? 30 : 40,
           child: AnimatedSwitcher(
             duration: AppDurations.fast,
-            transitionBuilder: (child, a) => ScaleTransition(scale: a, child: child),
+            transitionBuilder: (child, a) =>
+                ScaleTransition(scale: a, child: child),
             child: Text(
               '$value',
               key: ValueKey(value),
               textAlign: TextAlign.center,
-              style: compact ? context.text.titleSmall : context.text.titleMedium,
+              style: compact
+                  ? context.text.titleSmall
+                  : context.text.titleMedium,
             ),
           ),
         ),
@@ -714,23 +717,27 @@ class StarRatingInput extends StatelessWidget {
       children: [
         for (var i = 1; i <= 5; i++)
           GestureDetector(
-            onTap: () => onChanged(i),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: AnimatedScale(
-                scale: i <= value ? 1.08 : 0.92,
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.elasticOut,
-                child: Icon(
-                  i <= value ? Icons.star_rounded : Icons.star_outline_rounded,
-                  size: size,
-                  color: i <= value
-                      ? AppColors.warning
-                      : context.palette.textSecondary.withValues(alpha: 0.5),
+                onTap: () => onChanged(i),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: AnimatedScale(
+                    scale: i <= value ? 1.08 : 0.92,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.elasticOut,
+                    child: Icon(
+                      i <= value
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      size: size,
+                      color: i <= value
+                          ? AppColors.warning
+                          : context.palette.textSecondary.withValues(
+                              alpha: 0.5,
+                            ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          )
+              )
               .animate(key: ValueKey('$i-${i <= value}'))
               .shimmer(
                 duration: i <= value ? 500.ms : 1.ms,

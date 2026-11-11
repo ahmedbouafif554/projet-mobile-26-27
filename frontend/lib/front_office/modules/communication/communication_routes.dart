@@ -24,10 +24,7 @@ List<RouteBase> communicationAccountRoutes() => [
     FrontRoutes.notifications,
     (_, _) => const NotificationsPage(),
     routes: [
-      transitionRoute(
-        'settings',
-        (_, _) => const NotificationSettingsPage(),
-      ),
+      transitionRoute('settings', (_, _) => const NotificationSettingsPage()),
     ],
   ),
   transitionRoute(

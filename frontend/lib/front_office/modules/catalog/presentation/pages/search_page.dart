@@ -246,7 +246,10 @@ class _Results extends ConsumerWidget {
               const SizedBox(height: AppSizes.md),
             ],
             if (r.products.isNotEmpty) ...[
-              Text('Plats (${r.products.length})', style: context.text.titleMedium),
+              Text(
+                'Plats (${r.products.length})',
+                style: context.text.titleMedium,
+              ),
               const SizedBox(height: AppSizes.sm),
               for (final (i, (product, restaurant)) in r.products.indexed)
                 ListTile(

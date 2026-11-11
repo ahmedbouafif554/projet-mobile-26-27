@@ -251,9 +251,11 @@ class _Banner extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            AppNetworkImage(r.imageUrl, width: double.infinity, height: 200)
-                .animate()
-                .scaleXY(begin: 1.08, end: 1, duration: 900.ms),
+            AppNetworkImage(
+              r.imageUrl,
+              width: double.infinity,
+              height: 200,
+            ).animate().scaleXY(begin: 1.08, end: 1, duration: 900.ms),
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(

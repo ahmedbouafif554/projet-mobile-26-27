@@ -6,7 +6,7 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_sizes.dart';
 import '../../../../../core/theme/theme_extensions.dart';
 import '../../../../../core/utils/formatters.dart';
-import '../../../../../core/widgets/app_snackbar.dart';
+import '../../../../../core/utils/launcher.dart';
 import '../../../../../core/widgets/circle_icon_button.dart';
 import '../../../../../core/widgets/city_map.dart';
 import '../../../../../core/widgets/empty_state.dart';
@@ -99,7 +99,10 @@ class _DetailViewState extends ConsumerState<_DetailView>
                     height: 190,
                     child: LayoutBuilder(
                       builder: (context, c) {
-                        final from = Offset(c.maxWidth * 0.2, c.maxHeight * 0.3);
+                        final from = Offset(
+                          c.maxWidth * 0.2,
+                          c.maxHeight * 0.3,
+                        );
                         final to = Offset(c.maxWidth * 0.8, c.maxHeight * 0.72);
                         return AnimatedBuilder(
                           animation: _dash,
@@ -114,8 +117,16 @@ class _DetailViewState extends ConsumerState<_DetailView>
                                   ),
                                 ),
                               ),
-                              _pin(from, Icons.storefront_rounded, AppColors.primary),
-                              _pin(to, Icons.location_on_rounded, AppColors.success),
+                              _pin(
+                                from,
+                                Icons.storefront_rounded,
+                                AppColors.primary,
+                              ),
+                              _pin(
+                                to,
+                                Icons.location_on_rounded,
+                                AppColors.success,
+                              ),
                             ],
                           ),
                         );
@@ -213,10 +224,7 @@ class _DetailViewState extends ConsumerState<_DetailView>
                       CircleIconButton(
                         icon: Icons.call_rounded,
                         tooltip: 'Appeler le client',
-                        onTap: () => AppSnackbar.info(
-                          context,
-                          'Appel de ${d.customerName} (démo).',
-                        ),
+                        onTap: () => Launcher.call(context, d.customerPhone),
                       ),
                       const SizedBox(width: 8),
                       CircleIconButton(
@@ -224,10 +232,20 @@ class _DetailViewState extends ConsumerState<_DetailView>
                         tooltip: 'Itinéraire',
                         backgroundColor: AppColors.primary,
                         iconColor: Colors.white,
-                        onTap: () => AppSnackbar.info(
-                          context,
-                          'Ouverture du GPS (démo).',
-                        ),
+                        // Avant le retrait : le restaurant ; ensuite : le client.
+                        onTap: () => d.status == DeliveryStatus.assigned
+                            ? Launcher.navigate(
+                                context,
+                                latitude: d.pickupLat,
+                                longitude: d.pickupLng,
+                                address: d.pickupAddress,
+                              )
+                            : Launcher.navigate(
+                                context,
+                                latitude: d.dropoffLat,
+                                longitude: d.dropoffLng,
+                                address: d.dropoffAddress,
+                              ),
                       ),
                     ],
                   ),

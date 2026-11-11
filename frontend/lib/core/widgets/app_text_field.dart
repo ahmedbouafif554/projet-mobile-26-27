@@ -57,8 +57,8 @@ class AppTextField extends StatefulWidget {
 
 class _AppTextFieldState extends State<AppTextField> {
   final _fieldKey = GlobalKey<FormFieldState<String>>();
-  late final FocusNode _focusNode = widget.focusNode ?? FocusNode();
-  late final TextEditingController _controller =
+  late FocusNode _focusNode = widget.focusNode ?? FocusNode();
+  late TextEditingController _controller =
       widget.controller ?? TextEditingController();
 
   bool _focused = false;
@@ -69,6 +69,32 @@ class _AppTextFieldState extends State<AppTextField> {
     super.initState();
     _focusNode.addListener(_onFocusChange);
     _controller.addListener(_syncFormField);
+  }
+
+  /// Flutter peut réutiliser l'état de ce champ pour un autre champ (par
+  /// exemple quand un bloc apparaît plus haut dans un formulaire animé) : on
+  /// suit alors le nouveau contrôleur. Sinon deux champs partageraient le
+  /// même texte (« Adresse » et « Téléphone » liés).
+  @override
+  void didUpdateWidget(AppTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      _controller.removeListener(_syncFormField);
+      if (oldWidget.controller == null) _controller.dispose();
+      _controller = widget.controller ?? TextEditingController();
+      _controller.addListener(_syncFormField);
+      // Le FormField reprend la valeur du nouveau contrôleur (validation).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _syncFormField();
+      });
+    }
+    if (widget.focusNode != oldWidget.focusNode) {
+      _focusNode.removeListener(_onFocusChange);
+      if (oldWidget.focusNode == null) _focusNode.dispose();
+      _focusNode = widget.focusNode ?? FocusNode();
+      _focusNode.addListener(_onFocusChange);
+      _focused = _focusNode.hasFocus;
+    }
   }
 
   void _onFocusChange() => setState(() => _focused = _focusNode.hasFocus);

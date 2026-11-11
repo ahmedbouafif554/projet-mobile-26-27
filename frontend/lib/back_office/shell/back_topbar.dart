@@ -142,7 +142,9 @@ class _AlertsBell extends ConsumerWidget {
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
         ),
-        padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 8)),
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(vertical: 8),
+        ),
       ),
       menuChildren: [
         SizedBox(
@@ -212,21 +214,20 @@ class _AlertsBell extends ConsumerWidget {
               ),
             ),
       ],
-      builder: (context, controller, _) => IconButton(
-        tooltip: 'Alertes',
-        onPressed: () =>
-            controller.isOpen ? controller.close() : controller.open(),
-        icon: Badge(
-          isLabelVisible: total > 0,
-          backgroundColor: AppColors.badge,
-          label: Text('$total'),
-          child: const Icon(Icons.notifications_none_rounded),
-        ),
-      ).animate(key: ValueKey(total)).shake(
-        hz: 4,
-        rotation: total > 0 ? 0.08 : 0,
-        duration: 500.ms,
-      ),
+      builder: (context, controller, _) =>
+          IconButton(
+                tooltip: 'Alertes',
+                onPressed: () =>
+                    controller.isOpen ? controller.close() : controller.open(),
+                icon: Badge(
+                  isLabelVisible: total > 0,
+                  backgroundColor: AppColors.badge,
+                  label: Text('$total'),
+                  child: const Icon(Icons.notifications_none_rounded),
+                ),
+              )
+              .animate(key: ValueKey(total))
+              .shake(hz: 4, rotation: total > 0 ? 0.08 : 0, duration: 500.ms),
     );
   }
 }

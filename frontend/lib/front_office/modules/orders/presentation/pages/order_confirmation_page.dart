@@ -30,7 +30,12 @@ class OrderConfirmationPage extends ConsumerWidget {
           child: Column(
             children: [
               const Spacer(),
-              Lottie.asset(AppAssets.lottieSuccess, width: 200, height: 200, repeat: false),
+              Lottie.asset(
+                AppAssets.lottieSuccess,
+                width: 200,
+                height: 200,
+                repeat: false,
+              ),
               Text(
                 'Commande confirmée !',
                 textAlign: TextAlign.center,

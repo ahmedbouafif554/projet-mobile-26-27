@@ -53,7 +53,9 @@ class ProfilePage extends ConsumerWidget {
         final chat = await ref.read(myChatsProvider.notifier).supportChat();
         if (!context.mounted) return;
         context.push(
-          isClient ? FrontRoutes.chat(chat.id) : FrontRoutes.courierChat(chat.id),
+          isClient
+              ? FrontRoutes.chat(chat.id)
+              : FrontRoutes.courierChat(chat.id),
         );
       } catch (error) {
         if (context.mounted) AppSnackbar.error(context, error);

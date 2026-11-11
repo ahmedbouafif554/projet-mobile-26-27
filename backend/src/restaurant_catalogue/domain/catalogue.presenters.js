@@ -52,6 +52,7 @@ function presentRestaurant(row, categoryIds = []) {
     latitude: numberOr(row.latitude, RESTAURANT_DEFAULTS.latitude),
     longitude: numberOr(row.longitude, RESTAURANT_DEFAULTS.longitude),
     menuSections: jsonList(row.menu_sections).filter((s) => typeof s === 'string'),
+    menuImageUrl: row.menu_image_url || null,
     isOpen: flag(row.is_open),
     isPopular: flag(row.is_popular),
     promo: row.promo || null,

@@ -138,7 +138,10 @@ class _RestaurantViewState extends ConsumerState<_RestaurantView> {
                   child: ShimmerScope(
                     child: Padding(
                       padding: EdgeInsets.all(AppSizes.pagePadding),
-                      child: SkeletonBox(height: 300, radius: AppSizes.radiusLg),
+                      child: SkeletonBox(
+                        height: 300,
+                        radius: AppSizes.radiusLg,
+                      ),
                     ),
                   ),
                 ),
@@ -175,7 +178,9 @@ class _RestaurantViewState extends ConsumerState<_RestaurantView> {
     int inCart(Product p) => cart
         .where((i) => i.product.id == p.id)
         .fold(0, (sum, i) => sum + i.quantity);
-    final popular = products.where((p) => p.isPopular && p.isAvailable).toList();
+    final popular = products
+        .where((p) => p.isPopular && p.isAvailable)
+        .toList();
 
     return [
       SliverPersistentHeader(
@@ -197,7 +202,10 @@ class _RestaurantViewState extends ConsumerState<_RestaurantView> {
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSizes.pagePadding,
                   ),
-                  child: Text('Les plus commandés', style: context.text.titleLarge),
+                  child: Text(
+                    'Les plus commandés',
+                    style: context.text.titleLarge,
+                  ),
                 ),
                 SizedBox(
                   height: 196,
@@ -236,9 +244,8 @@ class _RestaurantViewState extends ConsumerState<_RestaurantView> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(section, style: context.text.titleLarge),
-                for (final (i, p) in products
-                    .where((p) => p.section == section)
-                    .indexed) ...[
+                for (final (i, p)
+                    in products.where((p) => p.section == section).indexed) ...[
                   if (i > 0) Divider(height: 1, color: context.palette.border),
                   ProductTile(
                     product: p,
@@ -367,7 +374,9 @@ class _InfoCard extends StatelessWidget {
                 stat(Icons.schedule_rounded, r.deliveryTimeLabel, 'Livraison'),
                 stat(
                   Icons.delivery_dining_rounded,
-                  r.deliveryFee == 0 ? 'Offerte' : Formatters.price(r.deliveryFee),
+                  r.deliveryFee == 0
+                      ? 'Offerte'
+                      : Formatters.price(r.deliveryFee),
                   'Frais',
                 ),
                 stat(
@@ -378,11 +387,66 @@ class _InfoCard extends StatelessWidget {
               ],
             ),
           ),
+          if (r.menuImageUrl != null && r.menuImageUrl!.isNotEmpty) ...[
+            const SizedBox(height: AppSizes.md),
+            OutlinedButton.icon(
+              onPressed: () => _showMenuPhoto(context, r),
+              icon: const Icon(Icons.menu_book_rounded),
+              label: const Text('Voir la carte'),
+            ),
+          ],
         ],
       ),
     ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.05, end: 0);
   }
 }
+
+/// Photo de la carte en plein écran, zoomable.
+Future<void> _showMenuPhoto(BuildContext context, Restaurant r) => showDialog(
+  context: context,
+  builder: (context) => Dialog.fullscreen(
+    backgroundColor: Colors.black,
+    child: Stack(
+      children: [
+        Positioned.fill(
+          child: InteractiveViewer(
+            maxScale: 5,
+            child: Center(
+              child: AppNetworkImage(
+                r.menuImageUrl!,
+                fit: BoxFit.contain,
+                fallbackIcon: Icons.menu_book_rounded,
+              ),
+            ),
+          ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.sm),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white),
+                  tooltip: 'Fermer',
+                ),
+                Expanded(
+                  child: Text(
+                    'Carte — ${r.name}',
+                    style: context.text.titleMedium?.copyWith(
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  ),
+);
 
 /// Onglets du menu, épinglés sous la barre du haut.
 class _SectionTabs extends SliverPersistentHeaderDelegate {

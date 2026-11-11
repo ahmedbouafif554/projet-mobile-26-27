@@ -31,7 +31,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
   final _promo = TextEditingController();
   final _note = TextEditingController();
   String? _addressId;
-  PaymentMethod _payment = PaymentMethod.card;
+  PaymentMethod _payment = PaymentMethod.available.first;
   bool _scheduled = false;
   String? _promoCode;
   double _discount = 0;
@@ -146,7 +146,9 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                             title: 'Adresse de livraison',
                             trailing: TextButton(
                               onPressed: () => _pickAddress(addresses),
-                              child: Text(address == null ? 'Ajouter' : 'Changer'),
+                              child: Text(
+                                address == null ? 'Ajouter' : 'Changer',
+                              ),
                             ),
                             child: SurfaceCard(
                               onTap: () => _pickAddress(addresses),
@@ -232,7 +234,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                             title: 'Moyen de paiement',
                             child: Column(
                               children: [
-                                for (final method in PaymentMethod.values)
+                                for (final method in PaymentMethod.available)
                                   _PaymentTile(
                                     method: method,
                                     selected: method == _payment,
@@ -406,7 +408,10 @@ class _PaymentTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, detail) = switch (method) {
       PaymentMethod.card => (Icons.credit_card_rounded, 'Visa •••• 4242'),
-      PaymentMethod.applePay => (Icons.phone_iphone_rounded, 'Paiement express'),
+      PaymentMethod.applePay => (
+        Icons.phone_iphone_rounded,
+        'Paiement express',
+      ),
       PaymentMethod.cash => (Icons.payments_outlined, 'À la livraison'),
     };
     return Padding(

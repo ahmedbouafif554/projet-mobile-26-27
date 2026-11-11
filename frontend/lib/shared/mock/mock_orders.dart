@@ -161,9 +161,7 @@ class MockOrders {
     final step = last == 0
         ? Duration.zero
         : Duration(
-            seconds: (elapsed.inSeconds * 0.9 / last)
-                .clamp(0, 7 * 60)
-                .round(),
+            seconds: (elapsed.inSeconds * 0.9 / last).clamp(0, 7 * 60).round(),
           );
     return [
       for (var k = 0; k <= last; k++)

@@ -80,7 +80,10 @@ class CartPage extends ConsumerWidget {
                   ? const ShimmerScope(
                       child: Padding(
                         padding: EdgeInsets.all(AppSizes.pagePadding),
-                        child: SkeletonBox(height: 260, radius: AppSizes.radiusLg),
+                        child: SkeletonBox(
+                          height: 260,
+                          radius: AppSizes.radiusLg,
+                        ),
                       ),
                     )
                   : items.isEmpty

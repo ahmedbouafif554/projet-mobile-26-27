@@ -72,6 +72,8 @@ const MODULE_COLUMNS = {
     ['menu_sections', "TEXT NOT NULL DEFAULT '[]'"],
     ['is_popular', 'INTEGER NOT NULL DEFAULT 0 CHECK(is_popular IN (0,1))'],
     ['promo', 'TEXT'],
+    // Photo de la carte importée depuis le téléphone (data URI) ou lien web.
+    ['menu_image_url', 'TEXT'],
   ],
   products: [
     // NULL pour les produits d'avant le module : l'onglet reprend `category`.

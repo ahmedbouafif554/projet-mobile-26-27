@@ -52,8 +52,7 @@ IconData nextStatusIcon(OrderStatus next) => switch (next) {
   _ => Icons.arrow_forward_rounded,
 };
 
-bool canCancel(Order order) =>
-    order.status.index <= OrderStatus.ready.index;
+bool canCancel(Order order) => order.status.index <= OrderStatus.ready.index;
 
 bool canRefund(Order order, UserRole? role) =>
     Permissions.can(role, Permission.refundOrders) &&

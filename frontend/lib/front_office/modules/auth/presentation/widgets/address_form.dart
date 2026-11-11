@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
+import '../../../../../core/location/geocoding_service.dart';
 import '../../../../../core/theme/app_sizes.dart';
 import '../../../../../core/utils/validators.dart';
 import '../../../../../core/widgets/app_form.dart';
@@ -10,6 +12,7 @@ import '../../../../../core/widgets/selectable_chip.dart';
 import '../../../../../shared/models/address.dart';
 import '../../providers/addresses_controller.dart';
 import 'address_card.dart';
+import 'address_map_field.dart';
 
 /// Ouvre le formulaire d'adresse : création ([address] null) ou modification.
 Future<bool> openAddressForm(BuildContext context, {Address? address}) =>
@@ -38,6 +41,31 @@ class _AddressFormState extends ConsumerState<AddressForm> {
   );
   late AddressType _type = widget.address?.type ?? AddressType.home;
   late bool _isDefault = widget.address?.isDefault ?? false;
+
+  /// Position exacte placée sur la carte. Une adresse encore aux coordonnées
+  /// par défaut (centre de Paris) n'a jamais été placée : à placer.
+  late LatLng? _position = _placedPosition(widget.address);
+
+  static LatLng? _placedPosition(Address? a) {
+    if (a == null) return null;
+    final isDefault =
+        a.latitude == AddressMapField.fallbackCenter.latitude &&
+        a.longitude == AddressMapField.fallbackCenter.longitude;
+    return isDefault ? null : LatLng(a.latitude, a.longitude);
+  }
+
+  /// Adresse trouvée sur la carte → champs du formulaire.
+  void _fillFrom(GeocodedAddress found) => setState(() {
+    if (found.street.isNotEmpty) _street.text = found.street;
+    if (found.postalCode.isNotEmpty) _postalCode.text = found.postalCode;
+    if (found.city.isNotEmpty) _city.text = found.city;
+  });
+
+  String _typedAddress() => [
+    _street.text.trim(),
+    _postalCode.text.trim(),
+    _city.text.trim(),
+  ].where((s) => s.isNotEmpty).join(', ');
 
   @override
   void dispose() {
@@ -72,6 +100,9 @@ class _AddressFormState extends ConsumerState<AddressForm> {
             type: _type,
             instructions: instructions.isEmpty ? null : instructions,
             isDefault: _isDefault,
+            // Validé par le formulaire : la position est toujours placée ici.
+            latitude: _position?.latitude,
+            longitude: _position?.longitude,
           ),
         );
   }
@@ -135,6 +166,12 @@ class _AddressFormState extends ConsumerState<AddressForm> {
               validator: (v) => Validators.required(v, field: 'La ville'),
             ),
           ],
+        ),
+        AddressMapField(
+          initial: _position,
+          onChanged: (p) => _position = p,
+          onAddressFound: _fillFrom,
+          searchQuery: _typedAddress,
         ),
         AppTextField(
           controller: _instructions,

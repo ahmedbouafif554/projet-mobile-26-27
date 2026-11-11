@@ -432,11 +432,17 @@ class _CustomerCard extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             leading: Avatar(name: order.customerName, size: 44),
             title: Text(order.customerName),
-            subtitle: Text(registered ? 'Client SuperFaster' : 'Commande téléphonique'),
+            subtitle: Text(
+              registered ? 'Client SuperFaster' : 'Commande téléphonique',
+            ),
           ),
           infoText(Icons.place_outlined, 'Adresse de livraison', a.fullAddress),
           if (a.instructions != null)
-            infoText(Icons.info_outline_rounded, 'Instructions', a.instructions!),
+            infoText(
+              Icons.info_outline_rounded,
+              'Instructions',
+              a.instructions!,
+            ),
         ],
       ),
     );
@@ -511,9 +517,7 @@ class _DeliveryCard extends ConsumerWidget {
     return SectionCard(
       title: 'Livraison',
       icon: Icons.delivery_dining_outlined,
-      trailing: delivery == null
-          ? null
-          : deliveryStatusChip(delivery.status),
+      trailing: delivery == null ? null : deliveryStatusChip(delivery.status),
       child: delivery == null
           ? Text(
               'La course sera créée quand la commande sera prête.',

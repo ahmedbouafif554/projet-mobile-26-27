@@ -144,9 +144,8 @@ class _CampaignFormState extends ConsumerState<CampaignForm> {
               : 'Envoi le ${Formatters.dateTime(_scheduledAt!)}',
           icon: Icons.schedule_rounded,
           value: _scheduledAt != null,
-          onChanged: (on) => on
-              ? _pickDate()
-              : setState(() => _scheduledAt = null),
+          onChanged: (on) =>
+              on ? _pickDate() : setState(() => _scheduledAt = null),
         ),
         if (_scheduledAt != null)
           Align(

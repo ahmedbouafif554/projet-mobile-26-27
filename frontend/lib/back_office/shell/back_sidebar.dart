@@ -253,7 +253,9 @@ class _SidebarTile extends ConsumerWidget {
             height: 42,
             decoration: BoxDecoration(
               color: selected
-                  ? AppColors.primary.withValues(alpha: context.isDark ? 0.18 : 0.1)
+                  ? AppColors.primary.withValues(
+                      alpha: context.isDark ? 0.18 : 0.1,
+                    )
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(AppSizes.radiusSm),
             ),

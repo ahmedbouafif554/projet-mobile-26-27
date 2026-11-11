@@ -79,27 +79,27 @@ class _RestaurantSignupFormState extends ConsumerState<RestaurantSignupForm> {
           prefixIcon: Icons.storefront_outlined,
           validator: Validators.name,
         ),
-        AppFormRow(
-          children: [
-            AppTextField(
-              controller: _cuisine,
-              label: 'Type de cuisine',
-              hint: 'Pizza • Italien',
-              validator: (v) => Validators.required(v, field: 'Le type'),
-            ),
-            AppTextField(
-              controller: _phone,
-              label: 'Téléphone',
-              keyboardType: TextInputType.phone,
-              validator: Validators.phone,
-            ),
-          ],
+        AppTextField(
+          controller: _cuisine,
+          label: 'Type de cuisine',
+          hint: 'Pizza • Italien',
+          prefixIcon: Icons.restaurant_menu_rounded,
+          validator: (v) => Validators.required(v, field: 'Le type'),
         ),
+        // Adresse et téléphone : chacun sur sa propre ligne.
         AppTextField(
           controller: _address,
           label: 'Adresse',
           prefixIcon: Icons.place_outlined,
+          keyboardType: TextInputType.streetAddress,
           validator: (v) => Validators.required(v, field: "L'adresse"),
+        ),
+        AppTextField(
+          controller: _phone,
+          label: 'Téléphone',
+          prefixIcon: Icons.phone_outlined,
+          keyboardType: TextInputType.phone,
+          validator: Validators.phone,
         ),
         const AppFormSection(title: 'Responsable'),
         AppFormRow(

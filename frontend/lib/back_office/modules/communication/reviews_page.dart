@@ -62,9 +62,9 @@ class _ReviewsPageState extends ConsumerState<ReviewsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = ref.watch(authServiceProvider).can(
-      Permission.moderateReviews,
-    );
+    final isAdmin = ref
+        .watch(authServiceProvider)
+        .can(Permission.moderateReviews);
     final reviews = ref.watch(reviewsControllerProvider);
     final restaurants = ref.watch(restaurantsControllerProvider).value ?? [];
     final all = reviews.value ?? const <Review>[];
@@ -96,7 +96,9 @@ class _ReviewsPageState extends ConsumerState<ReviewsPage> {
           rightFlex: 3,
           breakpoint: 820,
           left: _RatingSummary(
-            reviews: all.where((r) => r.status == ReviewStatus.approved).toList(),
+            reviews: all
+                .where((r) => r.status == ReviewStatus.approved)
+                .toList(),
           ),
           right: AppCard(
             child: Column(
@@ -307,7 +309,9 @@ class _ReviewCard extends ConsumerWidget {
     ReviewStatus status,
   ) async {
     try {
-      await ref.read(reviewsControllerProvider.notifier).moderate(review, status);
+      await ref
+          .read(reviewsControllerProvider.notifier)
+          .moderate(review, status);
       if (context.mounted) {
         AppSnackbar.success(
           context,
@@ -341,7 +345,9 @@ class _ReviewCard extends ConsumerWidget {
     );
     if (text == null || text.trim().isEmpty) return;
     try {
-      await ref.read(reviewsControllerProvider.notifier).reply(review, text.trim());
+      await ref
+          .read(reviewsControllerProvider.notifier)
+          .reply(review, text.trim());
       if (context.mounted) AppSnackbar.success(context, 'Réponse publiée');
     } catch (error) {
       if (context.mounted) AppSnackbar.error(context, error);
@@ -388,7 +394,8 @@ class _ReviewCard extends ConsumerWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               _Stars(rating: r.rating, size: 18),
-              if (r.foodRating != null) Text('Plats ${r.foodRating}/5', style: muted),
+              if (r.foodRating != null)
+                Text('Plats ${r.foodRating}/5', style: muted),
               if (r.deliveryRating != null)
                 Text('Livraison ${r.deliveryRating}/5', style: muted),
               if (r.packagingRating != null)
@@ -463,7 +470,8 @@ class _ReviewCard extends ConsumerWidget {
             children: [
               if (canModerate && r.status != ReviewStatus.rejected)
                 OutlinedButton.icon(
-                  onPressed: () => _moderate(context, ref, ReviewStatus.rejected),
+                  onPressed: () =>
+                      _moderate(context, ref, ReviewStatus.rejected),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.error,
                   ),
@@ -472,7 +480,8 @@ class _ReviewCard extends ConsumerWidget {
                 ),
               if (canModerate && r.status != ReviewStatus.approved)
                 FilledButton.icon(
-                  onPressed: () => _moderate(context, ref, ReviewStatus.approved),
+                  onPressed: () =>
+                      _moderate(context, ref, ReviewStatus.approved),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.success,
                   ),

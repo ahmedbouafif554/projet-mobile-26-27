@@ -225,15 +225,12 @@ class _OrderFormState extends ConsumerState<OrderForm> {
           label: 'Paiement',
           prefixIcon: Icons.payments_outlined,
           value: _payment,
-          items: PaymentMethod.values,
+          items: PaymentMethod.available,
           itemLabel: (m) => m.label,
           onChanged: (m) => setState(() => _payment = m ?? _payment),
         ),
         if (restaurant != null && itemCount > 0)
-          _Totals(
-            subtotal: subtotal,
-            deliveryFee: restaurant.deliveryFee,
-          ),
+          _Totals(subtotal: subtotal, deliveryFee: restaurant.deliveryFee),
       ],
     );
   }

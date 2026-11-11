@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/permissions.dart';
+import '../../core/config/app_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../core/theme/theme_extensions.dart';
@@ -27,8 +28,12 @@ class BackLoginPage extends ConsumerStatefulWidget {
 
 class _BackLoginPageState extends ConsumerState<BackLoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _email = TextEditingController(text: DemoAccounts.admin);
-  final _password = TextEditingController(text: DemoAccounts.password);
+  final _email = TextEditingController(
+    text: AppConfig.demoMode ? DemoAccounts.admin : '',
+  );
+  final _password = TextEditingController(
+    text: AppConfig.demoMode ? DemoAccounts.password : '',
+  );
   bool _submitted = false;
   bool _loading = false;
 
@@ -199,46 +204,48 @@ class _LoginForm extends StatelessWidget {
                       isLoading: loading,
                       onPressed: onLogin,
                     ),
-                    const SizedBox(height: AppSizes.lg),
-                    Row(
-                      children: [
-                        const Expanded(child: Divider()),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text(
-                            'Comptes de démonstration',
-                            style: context.text.bodySmall?.copyWith(
-                              color: context.palette.textSecondary,
+                    if (AppConfig.demoMode) ...[
+                      const SizedBox(height: AppSizes.lg),
+                      Row(
+                        children: [
+                          const Expanded(child: Divider()),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(
+                              'Comptes de démonstration',
+                              style: context.text.bodySmall?.copyWith(
+                                color: context.palette.textSecondary,
+                              ),
                             ),
                           ),
-                        ),
-                        const Expanded(child: Divider()),
-                      ],
-                    ),
-                    const SizedBox(height: AppSizes.md),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _DemoButton(
-                            icon: Icons.admin_panel_settings_rounded,
-                            label: 'Admin démo',
-                            onTap: loading
-                                ? null
-                                : () => onDemo(DemoAccounts.admin),
+                          const Expanded(child: Divider()),
+                        ],
+                      ),
+                      const SizedBox(height: AppSizes.md),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _DemoButton(
+                              icon: Icons.admin_panel_settings_rounded,
+                              label: 'Admin démo',
+                              onTap: loading
+                                  ? null
+                                  : () => onDemo(DemoAccounts.admin),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: AppSizes.sm + 4),
-                        Expanded(
-                          child: _DemoButton(
-                            icon: Icons.storefront_rounded,
-                            label: 'Restaurant démo',
-                            onTap: loading
-                                ? null
-                                : () => onDemo(DemoAccounts.restaurant),
+                          const SizedBox(width: AppSizes.sm + 4),
+                          Expanded(
+                            child: _DemoButton(
+                              icon: Icons.storefront_rounded,
+                              label: 'Restaurant démo',
+                              onTap: loading
+                                  ? null
+                                  : () => onDemo(DemoAccounts.restaurant),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: AppSizes.lg),
                     Wrap(
                       alignment: WrapAlignment.center,
@@ -386,7 +393,11 @@ class _BrandPanel extends StatelessWidget {
                   children: [
                     for (final (i, (icon, value, label)) in const [
                       (Icons.storefront_rounded, '120+', 'restaurants'),
-                      (Icons.delivery_dining_rounded, '25 min', 'livraison moy.'),
+                      (
+                        Icons.delivery_dining_rounded,
+                        '25 min',
+                        'livraison moy.',
+                      ),
                       (Icons.star_rounded, '4,8/5', 'satisfaction'),
                     ].indexed)
                       _BrandStat(icon: icon, value: value, label: label)
@@ -426,7 +437,12 @@ class _Bubble extends StatelessWidget {
           ),
         )
         .animate(onPlay: (c) => c.repeat(reverse: true), delay: delay)
-        .scaleXY(begin: 0.92, end: 1.05, duration: 4.seconds, curve: Curves.easeInOut);
+        .scaleXY(
+          begin: 0.92,
+          end: 1.05,
+          duration: 4.seconds,
+          curve: Curves.easeInOut,
+        );
   }
 }
 

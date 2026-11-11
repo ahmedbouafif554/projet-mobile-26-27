@@ -28,7 +28,9 @@ class MyCourierController extends AsyncNotifier<Courier?> {
     final courier = state.value;
     if (courier == null) return;
     if (courier.status == CourierStatus.busy) {
-      throw const ApiException('Terminez votre course avant de vous déconnecter.');
+      throw const ApiException(
+        'Terminez votre course avant de vous déconnecter.',
+      );
     }
     if (online && courier.documentStatus != DocumentStatus.approved) {
       throw const ApiException(
@@ -83,7 +85,8 @@ class AvailableDeliveriesController extends AsyncNotifier<List<Delivery>> {
 
   Future<void> accept(Delivery delivery) async {
     final courier = await ref.read(myCourierProvider.future);
-    if (courier == null) throw const ApiException('Profil livreur introuvable.');
+    if (courier == null)
+      throw const ApiException('Profil livreur introuvable.');
     if (courier.status == CourierStatus.offline) {
       throw const ApiException('Passez en ligne pour accepter des courses.');
     }
@@ -137,7 +140,8 @@ class MyDeliveriesController extends AsyncNotifier<List<Delivery>> {
     if (next == null) return;
     await ref.read(deliveryRepositoryProvider).updateStatus(delivery.id, next);
     final orderStatus = switch (next) {
-      DeliveryStatus.pickedUp || DeliveryStatus.inTransit => OrderStatus.delivering,
+      DeliveryStatus.pickedUp ||
+      DeliveryStatus.inTransit => OrderStatus.delivering,
       DeliveryStatus.delivered => OrderStatus.delivered,
       _ => null,
     };

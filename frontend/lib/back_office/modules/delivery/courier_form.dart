@@ -102,9 +102,7 @@ class _CourierFormState extends ConsumerState<CourierForm> {
     final isNew = _c == null;
     return AppForm(
       title: isNew ? 'Nouveau livreur' : 'Modifier le livreur',
-      subtitle: isNew
-          ? 'Ses justificatifs seront à vérifier.'
-          : _c.fullName,
+      subtitle: isNew ? 'Ses justificatifs seront à vérifier.' : _c.fullName,
       icon: Icons.delivery_dining_rounded,
       successMessage: isNew ? 'Livreur ajouté' : 'Livreur mis à jour',
       onSubmit: _save,

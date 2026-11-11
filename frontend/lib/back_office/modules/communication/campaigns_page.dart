@@ -202,17 +202,14 @@ class CampaignsPage extends ConsumerWidget {
               label: 'Date',
               flex: 2,
               sortValue: (c) => c.sentAt ?? c.scheduledAt ?? c.createdAt,
-              cell: (context, c) => Text(
-                switch (c.status) {
-                  CampaignStatus.sent =>
-                    'Envoyée ${Formatters.relative(c.sentAt ?? c.createdAt).toLowerCase()}\n${Formatters.compact(c.recipientCount)} destinataires',
-                  CampaignStatus.scheduled =>
-                    'Prévue le ${Formatters.dateTime(c.scheduledAt ?? c.createdAt)}',
-                  CampaignStatus.draft =>
-                    'Créée le ${Formatters.date(c.createdAt)}',
-                },
-                style: context.text.bodySmall,
-              ),
+              cell: (context, c) => Text(switch (c.status) {
+                CampaignStatus.sent =>
+                  'Envoyée ${Formatters.relative(c.sentAt ?? c.createdAt).toLowerCase()}\n${Formatters.compact(c.recipientCount)} destinataires',
+                CampaignStatus.scheduled =>
+                  'Prévue le ${Formatters.dateTime(c.scheduledAt ?? c.createdAt)}',
+                CampaignStatus.draft =>
+                  'Créée le ${Formatters.date(c.createdAt)}',
+              }, style: context.text.bodySmall),
             ),
           ],
           onEdit: (c) => c.status == CampaignStatus.sent

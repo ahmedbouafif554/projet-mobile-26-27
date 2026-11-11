@@ -39,7 +39,10 @@ class NotificationSettingsPage extends ConsumerWidget {
               [
                     const PageTitle('Préférences'),
                     const SizedBox(height: AppSizes.lg),
-                    Text('Je souhaite recevoir', style: context.text.titleMedium),
+                    Text(
+                      'Je souhaite recevoir',
+                      style: context.text.titleMedium,
+                    ),
                     const SizedBox(height: AppSizes.sm),
                     for (final type in NotificationType.values) ...[
                       AppSwitchField(
@@ -63,7 +66,8 @@ class NotificationSettingsPage extends ConsumerWidget {
                         icon: switch (channel) {
                           NotificationChannel.push =>
                             Icons.notifications_active_outlined,
-                          NotificationChannel.email => Icons.mail_outline_rounded,
+                          NotificationChannel.email =>
+                            Icons.mail_outline_rounded,
                           NotificationChannel.sms => Icons.sms_outlined,
                         },
                         value: channels.contains(channel),

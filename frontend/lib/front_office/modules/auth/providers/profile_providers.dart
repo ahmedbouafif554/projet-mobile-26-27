@@ -73,7 +73,9 @@ class ProfileController {
       },
       options: Options(headers: {'Authorization': 'Bearer $token'}),
     );
-    final saved = User.fromJson(Map<String, dynamic>.from(response.data as Map));
+    final saved = User.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
     _ref.read(authServiceProvider.notifier).updateUser(saved);
     return saved;
   }

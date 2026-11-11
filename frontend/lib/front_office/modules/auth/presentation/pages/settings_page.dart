@@ -172,10 +172,7 @@ class _BiometricSwitch extends ConsumerWidget {
     if (value) {
       if (!await gate.isAvailable) {
         if (context.mounted) {
-          AppSnackbar.error(
-            context,
-            ref.read(languageProvider).tr('noFace'),
-          );
+          AppSnackbar.error(context, ref.read(languageProvider).tr('noFace'));
         }
         return;
       }

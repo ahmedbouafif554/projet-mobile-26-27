@@ -1,23 +1,27 @@
 const express = require('express');
 const asyncHandler = require('../middleware/async');
-const { authenticate, optionalAuth, requireAdmin } = require('../middleware/auth.middleware');
+const { authenticate, requireAdmin } = require('../middleware/auth.middleware');
 const users = require('../services/users.service');
 const addresses = require('../services/addresses.service');
 
 const router = express.Router();
 
-// Lecture publique : le front cherche l'e-mail et charge le compte
-// avant d'avoir un jeton (connexion, OTP, connexion de démo).
+// Annuaire : réservé aux comptes connectés. Contact (e-mail, téléphone)
+// visible seulement pour l'admin et pour soi-même.
 router.get(
   '/',
+  authenticate,
   asyncHandler(async (req, res) => {
-    res.json(await users.list({ email: req.query.email, role: req.query.role }));
+    res.json(await users.listFor(req.auth, { email: req.query.email, role: req.query.role }));
   }),
 );
 
+// Création directe d'un compte : back office (admin). L'inscription publique
+// passe par /api/auth/register et /api/auth/register-restaurant.
 router.post(
   '/',
-  optionalAuth,
+  authenticate,
+  requireAdmin,
   asyncHandler(async (req, res) => {
     res.status(201).json(await users.create(req.body, req.auth));
   }),
@@ -61,14 +65,15 @@ router.delete(
 
 router.get(
   '/:id',
+  authenticate,
   asyncHandler(async (req, res) => {
-    res.json(await users.get(req.params.id));
+    res.json(await users.getFor(req.auth, req.params.id));
   }),
 );
 
 router.put(
   '/:id',
-  optionalAuth,
+  authenticate,
   asyncHandler(async (req, res) => {
     res.json(await users.update(req.auth, req.params.id, req.body));
   }),

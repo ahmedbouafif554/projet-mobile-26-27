@@ -203,8 +203,7 @@ final dashboardProvider = FutureProvider.autoDispose<DashboardData>((
       barsTitle: 'Top restaurants',
       barsSubtitle: "Chiffre d'affaires total",
       bars: [
-        for (final e in top.take(5))
-          ChartBar(label: e.key, value: e.value),
+        for (final e in top.take(5)) ChartBar(label: e.key, value: e.value),
       ],
       barsFormat: Formatters.priceShort,
       latestOrders: latest,

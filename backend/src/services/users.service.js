@@ -27,6 +27,8 @@ function mapUser(row) {
     restaurantId: row.restaurant_id,
     loyaltyPoints: Number(row.loyalty_points) || 0,
     passwordHash: row.password_hash,
+    tokenVersion: Number(row.token_version) || 0,
+    googleId: row.google_id || null,
     createdAt: toIso(row.created_at),
     lastLoginAt: toIso(row.last_login_at),
   };
@@ -82,9 +84,32 @@ async function saveUser(user) {
   );
 }
 
+/**
+ * Nouveau mot de passe. Incrémente la version des jetons : toutes les
+ * sessions ouvertes avec l'ancien mot de passe sont révoquées.
+ */
 async function setPassword(userId, password) {
   const hash = await bcrypt.hash(password, rounds());
-  await query('UPDATE users SET password_hash = ? WHERE id = ?', [hash, userId]);
+  await query(
+    `UPDATE users SET password_hash = ?, password_changed_at = ?,
+            token_version = token_version + 1 WHERE id = ?`,
+    [hash, new Date().toISOString(), userId],
+  );
+}
+
+/** Révoque toutes les sessions du compte (déconnexion de tous les appareils). */
+async function bumpTokenVersion(userId) {
+  await query('UPDATE users SET token_version = token_version + 1 WHERE id = ?', [userId]);
+}
+
+async function findByGoogleId(googleId) {
+  if (!googleId) return null;
+  const rows = await query('SELECT * FROM users WHERE google_id = ? LIMIT 1', [googleId]);
+  return mapUser(rows[0]);
+}
+
+async function linkGoogle(userId, googleId) {
+  await query('UPDATE users SET google_id = ? WHERE id = ?', [googleId, userId]);
 }
 
 async function create(body, actor) {
@@ -162,6 +187,39 @@ async function create(body, actor) {
   return publicUser(user);
 }
 
+/**
+ * Annuaire : l'admin voit tout. Les autres comptes connectés ne voient que le
+ * nom, le rôle et l'avatar des autres (noms des participants d'une
+ * conversation, par ex.) ; e-mail et téléphone ne sont visibles que pour
+ * soi-même. La recherche par e-mail ne renvoie un compte qu'à l'admin ou à
+ * son propriétaire.
+ */
+async function listFor(actor, filters = {}) {
+  if (!actor) throw new HttpError(401, 'Access token required');
+  const all = await list(filters);
+  if (actor.role === 'admin') return all;
+  if (filters.email != null && text(filters.email)) {
+    return all.filter((user) => user.id === actor.id);
+  }
+  return all.map((user) => (user.id === actor.id ? user : redacted(user)));
+}
+
+async function getFor(actor, id) {
+  if (!actor) throw new HttpError(401, 'Access token required');
+  const user = await get(id);
+  return actor.role === 'admin' || actor.id === id ? user : redacted(user);
+}
+
+function redacted(user) {
+  return {
+    ...user,
+    email: '',
+    phone: '',
+    loyaltyPoints: 0,
+    lastLoginAt: null,
+  };
+}
+
 async function list({ email, role } = {}) {
   const where = [];
   const params = [];
@@ -183,8 +241,8 @@ async function get(id) {
 }
 
 async function update(actor, id, body) {
+  if (!actor) throw new HttpError(401, 'Access token required');
   const user = await mustFind(id);
-  if (!actor) return linkPendingRestaurant(user, body);
 
   const isAdmin = actor.role === 'admin';
   const isSelf = actor.id === user.id;
@@ -229,24 +287,6 @@ async function update(actor, id, body) {
   if (user.role === 'courier') await couriers.ensureProfile(user);
   const password = isAdmin ? optionalPassword(body.password) : null;
   if (password) await setPassword(user.id, password);
-  return publicUser(user);
-}
-
-async function linkPendingRestaurant(user, body) {
-  if (user.role !== 'restaurant' || user.status !== 'pending' || user.restaurantId) {
-    throw new HttpError(401, 'Access token required');
-  }
-  const restaurantId = text(body.restaurantId);
-  if (!restaurantId) throw new HttpError(422, 'restaurantId est obligatoire');
-
-  const identity = ['firstName', 'lastName', 'email', 'phone', 'role', 'status'];
-  for (const key of identity) {
-    if (body[key] != null && String(body[key]) !== String(user[key])) {
-      throw new HttpError(401, 'Access token required');
-    }
-  }
-  user.restaurantId = restaurantId;
-  await saveUser(user);
   return publicUser(user);
 }
 
@@ -331,8 +371,13 @@ function assertSelfOrAdmin(actor, userId) {
 module.exports = {
   findById,
   findByEmail,
+  findByGoogleId,
+  linkGoogle,
   mustFind,
   setPassword,
+  bumpTokenVersion,
+  listFor,
+  getFor,
   create,
   list,
   get,

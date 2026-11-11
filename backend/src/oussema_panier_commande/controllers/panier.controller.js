@@ -2,50 +2,35 @@
 
 const panierService = require('../services/panier.service');
 
-function getUserId(req) {
-  return req.auth?.id || req.query.userId || req.headers['x-user-id'] || req.body?.userId || 'u-client-1';
-}
+/** Le panier est toujours celui du compte connecté. */
+const userOf = (req) => req.auth.id;
 
 async function listItems(req, res) {
-  const userId = getUserId(req);
-  const items = await panierService.getCart(userId);
-  res.json(items);
+  res.json(await panierService.getCart(userOf(req)));
 }
 
 async function getItemById(req, res) {
-  const userId = getUserId(req);
-  const item = await panierService.getItem(userId, req.params.id);
-  res.json(item);
+  res.json(await panierService.getItem(userOf(req), req.params.id));
 }
 
 async function addItem(req, res) {
-  const userId = getUserId(req);
-  const created = await panierService.addItem(userId, req.body);
-  res.status(201).json(created);
+  res.status(201).json(await panierService.addItem(userOf(req), req.body || {}));
 }
 
 async function updateItem(req, res) {
-  const userId = getUserId(req);
-  const updated = await panierService.updateItem(userId, req.params.id, req.body);
-  res.json(updated);
+  res.json(await panierService.updateItem(userOf(req), req.params.id, req.body || {}));
 }
 
 async function deleteItem(req, res) {
-  const userId = getUserId(req);
-  const result = await panierService.deleteItem(userId, req.params.id);
-  res.status(200).json(result);
+  res.json(await panierService.deleteItem(userOf(req), req.params.id));
 }
 
 async function clearCart(req, res) {
-  const userId = getUserId(req);
-  const result = await panierService.clearCart(userId);
-  res.status(200).json(result);
+  res.json(await panierService.clearCart(userOf(req)));
 }
 
 async function getTotals(req, res) {
-  const userId = getUserId(req);
-  const totals = await panierService.getTotals(userId, req.query.promoCode);
-  res.json(totals);
+  res.json(await panierService.getTotals(userOf(req), req.query.promoCode));
 }
 
 module.exports = {
@@ -57,4 +42,3 @@ module.exports = {
   clearCart,
   getTotals,
 };
-

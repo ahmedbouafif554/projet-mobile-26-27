@@ -102,10 +102,15 @@ class ChatsListPage extends ConsumerWidget {
                         itemCount: list.length,
                         separatorBuilder: (_, _) =>
                             Divider(height: 1, color: context.palette.border),
-                        itemBuilder: (context, i) => _ChatTile(
-                          chat: list[i],
-                          onTap: () => context.push(_chatRoute(ref, list[i].id)),
-                        ).animate(delay: (40 * i).ms).fadeIn().slideX(begin: 0.04),
+                        itemBuilder: (context, i) =>
+                            _ChatTile(
+                                  chat: list[i],
+                                  onTap: () =>
+                                      context.push(_chatRoute(ref, list[i].id)),
+                                )
+                                .animate(delay: (40 * i).ms)
+                                .fadeIn()
+                                .slideX(begin: 0.04),
                       ),
                     ),
             ),

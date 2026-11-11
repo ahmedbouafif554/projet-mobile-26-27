@@ -31,6 +31,7 @@ class Restaurant {
     required this.address,
     required this.phone,
     this.menuSections = const [],
+    this.menuImageUrl,
     this.isOpen = true,
     this.isPopular = false,
     this.promo,
@@ -62,6 +63,9 @@ class Restaurant {
 
   /// Onglets du menu, dans l'ordre d'affichage.
   final List<String> menuSections;
+
+  /// Photo de la carte importée depuis le téléphone (data URI) ou lien web.
+  final String? menuImageUrl;
   final bool isOpen;
   final bool isPopular;
 
@@ -94,6 +98,7 @@ class Restaurant {
     address: json['address'] as String? ?? '',
     phone: json['phone'] as String? ?? '',
     menuSections: parseStrings(json['menuSections']),
+    menuImageUrl: json['menuImageUrl'] as String?,
     isOpen: json['isOpen'] as bool? ?? true,
     isPopular: json['isPopular'] as bool? ?? false,
     promo: json['promo'] as String?,
@@ -122,6 +127,7 @@ class Restaurant {
     'address': address,
     'phone': phone,
     'menuSections': menuSections,
+    'menuImageUrl': menuImageUrl,
     'isOpen': isOpen,
     'isPopular': isPopular,
     'promo': promo,
@@ -146,6 +152,7 @@ class Restaurant {
     String? address,
     String? phone,
     List<String>? menuSections,
+    Object? menuImageUrl = keep,
     bool? isOpen,
     bool? isPopular,
     Object? promo = keep,
@@ -168,6 +175,9 @@ class Restaurant {
     address: address ?? this.address,
     phone: phone ?? this.phone,
     menuSections: menuSections ?? this.menuSections,
+    menuImageUrl: menuImageUrl == keep
+        ? this.menuImageUrl
+        : menuImageUrl as String?,
     isOpen: isOpen ?? this.isOpen,
     isPopular: isPopular ?? this.isPopular,
     promo: promo == keep ? this.promo : promo as String?,

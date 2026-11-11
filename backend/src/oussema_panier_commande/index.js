@@ -9,6 +9,7 @@ const panierService = require('./services/panier.service');
 const commandeService = require('./services/commande.service');
 const livraisonService = require('./services/livraison.service');
 const geoUtils = require('./services/geo.utils');
+const notificationLivreurService = require('./services/notification-livreur.service');
 
 const router = express.Router();
 
@@ -33,4 +34,5 @@ module.exports = {
   orderService: commandeService,
   livraisonService,
   geoUtils,
+  notificationLivreurService,
 };

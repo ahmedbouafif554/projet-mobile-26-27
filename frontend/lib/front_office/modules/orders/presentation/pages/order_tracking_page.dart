@@ -6,6 +6,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../core/config/app_config.dart';
+import '../../../../../core/network/api_client.dart';
+import '../../../../../core/utils/launcher.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_sizes.dart';
 import '../../../../../core/theme/theme_extensions.dart';
@@ -23,8 +26,61 @@ import '../../../../router/front_routes.dart';
 import '../../../communication/providers/communication_providers.dart';
 import '../../providers/orders_providers.dart';
 
+/// Livreur assigné à une commande (nom, téléphone, véhicule, note).
+class TrackedCourier {
+  const TrackedCourier({
+    required this.name,
+    this.phone,
+    this.vehicle,
+    this.rating,
+  });
+
+  final String name;
+  final String? phone;
+  final String? vehicle;
+  final double? rating;
+
+  String get vehicleLabel => switch (vehicle) {
+    'bike' => 'Vélo',
+    'car' => 'Voiture',
+    _ => 'Scooter',
+  };
+}
+
+/// Livreur de la commande, lu sur `GET /orders/:id/tracking` (rechargé avec
+/// la commande). Données mock : le livreur de démonstration.
+final trackedCourierProvider = FutureProvider.autoDispose
+    .family<TrackedCourier?, String>((ref, orderId) async {
+      ref.watch(myOrdersProvider);
+      if (AppConfig.useMockData && !AppConfig.useApiOrders) {
+        final demo = MockUsers.byId('u-courier-1');
+        return TrackedCourier(
+          name: demo.firstName,
+          phone: demo.phone,
+          rating: 4.9,
+        );
+      }
+      try {
+        final response = await ref
+            .read(dioProvider)
+            .get('/orders/$orderId/tracking');
+        final courier = (response.data as Map)['courier'];
+        if (courier is! Map) return null;
+        return TrackedCourier(
+          name: '${courier['name'] ?? 'Votre livreur'}',
+          phone: courier['phone'] as String?,
+          vehicle: courier['vehicle'] as String?,
+          rating: (courier['rating'] as num?)?.toDouble(),
+        );
+      } catch (_) {
+        return null;
+      }
+    });
+
 /// Suivi en temps réel : plan animé (restaurant → domicile), étape en
-/// cours, heure d'arrivée et livreur. La commande avance toute seule (démo).
+/// cours, heure d'arrivée et livreur. Avec l'API, la commande est relue
+/// régulièrement (le restaurant et le livreur la font avancer) ; en
+/// démonstration hors ligne, elle avance toute seule.
 class OrderTrackingPage extends ConsumerWidget {
   const OrderTrackingPage({super.key, required this.orderId});
 
@@ -59,24 +115,41 @@ class _TrackingViewState extends ConsumerState<_TrackingView>
     duration: const Duration(seconds: 6),
   )..repeat();
 
-  /// Simulation : la commande avance d'une étape toutes les 6 secondes tant
-  /// que la page est ouverte.
+  /// Toutes les 6 secondes tant que la page est ouverte : relecture de la
+  /// commande (API) ou étape suivante simulée (données mock).
   Timer? _progression;
+
+  /// Commandes en mémoire (aucun serveur ne les fait avancer).
+  static bool get _offlineDemo =>
+      AppConfig.useMockData && !AppConfig.useApiOrders;
 
   @override
   void initState() {
     super.initState();
-    _progression = Timer.periodic(const Duration(seconds: 6), (_) => _step());
+    if (!widget.order.status.isFinal) {
+      _progression = Timer.periodic(const Duration(seconds: 6), (_) => _step());
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _TrackingView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.order.status.isFinal) _progression?.cancel();
   }
 
   Future<void> _step() async {
     if (!mounted) return;
-    final next = await advanceOrderDemo(
-      ref.read(orderRepositoryProvider),
-      widget.order.id,
-    );
-    if (!mounted) return;
-    if (next == null || next == OrderStatus.delivered) _progression?.cancel();
+    if (_offlineDemo) {
+      final next = await advanceOrderDemo(
+        ref.read(orderRepositoryProvider),
+        widget.order.id,
+      );
+      if (!mounted) return;
+      if (next == null || next == OrderStatus.delivered) _progression?.cancel();
+      ref.invalidate(myOrdersProvider);
+      return;
+    }
+    // Relit la commande (et la liste « Mes commandes »).
     ref.invalidate(myOrdersProvider);
   }
 
@@ -143,7 +216,10 @@ class _TrackingViewState extends ConsumerState<_TrackingView>
                           painter: CityMapPainter(
                             dark: context.isDark,
                             routes: [
-                              (px(_restaurant), px(Offset(_home.dx, _restaurant.dy))),
+                              (
+                                px(_restaurant),
+                                px(Offset(_home.dx, _restaurant.dy)),
+                              ),
                               (px(Offset(_home.dx, _restaurant.dy)), px(_home)),
                             ],
                             dash: _motion.value,
@@ -168,9 +244,16 @@ class _TrackingViewState extends ConsumerState<_TrackingView>
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.5),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   blurRadius: 16,
-                                  spreadRadius: 2 + 3 * math.sin(_motion.value * 2 * math.pi).abs(),
+                                  spreadRadius:
+                                      2 +
+                                      3 *
+                                          math
+                                              .sin(_motion.value * 2 * math.pi)
+                                              .abs(),
                                 ),
                               ],
                             ),
@@ -223,10 +306,7 @@ class _TrackingViewState extends ConsumerState<_TrackingView>
         ),
         Align(
           alignment: Alignment.bottomCenter,
-          child: _BottomPanel(
-            order: o,
-            minutesLeft: minutesLeft,
-          ),
+          child: _BottomPanel(order: o, minutesLeft: minutesLeft),
         ),
       ],
     );
@@ -256,24 +336,34 @@ class _BottomPanel extends ConsumerWidget {
   final int minutesLeft;
 
   static const _labels = {
-    OrderStatus.pending: ('Commande envoyée', 'Le restaurant va confirmer votre commande.'),
-    OrderStatus.accepted: ('Commande acceptée', 'Le restaurant s’apprête à cuisiner.'),
-    OrderStatus.preparing: ('En préparation 👨‍🍳', 'Votre repas est en cuisine.'),
+    OrderStatus.pending: (
+      'Commande envoyée',
+      'Le restaurant va confirmer votre commande.',
+    ),
+    OrderStatus.accepted: (
+      'Commande acceptée',
+      'Le restaurant s’apprête à cuisiner.',
+    ),
+    OrderStatus.preparing: (
+      'En préparation 👨‍🍳',
+      'Votre repas est en cuisine.',
+    ),
     OrderStatus.ready: ('Commande prête', 'Un livreur arrive au restaurant.'),
     OrderStatus.delivering: ('En route 🛵', 'Votre livreur arrive bientôt.'),
     OrderStatus.delivered: ('Livrée ✅', 'Bon appétit !'),
     OrderStatus.cancelled: ('Commande annulée', 'Vous ne serez pas débité.'),
-    OrderStatus.refunded: ('Commande remboursée', 'Le remboursement est en cours.'),
+    OrderStatus.refunded: (
+      'Commande remboursée',
+      'Le remboursement est en cours.',
+    ),
   };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final (title, subtitle) = _labels[order.status]!;
     final step = order.status.index.clamp(0, OrderStatus.delivered.index);
-    final courier = MockUsers.byId('u-courier-1');
-    final showCourier =
-        order.status == OrderStatus.delivering ||
-        order.status == OrderStatus.ready;
+    final courier = ref.watch(trackedCourierProvider(order.id)).value;
+    final showCourier = courier != null && order.status.isActive;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(
@@ -374,19 +464,17 @@ class _BottomPanel extends ConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    Avatar(
-                      name: courier.fullName,
-                      imageUrl: courier.avatarUrl,
-                      size: 46,
-                    ),
+                    Avatar(name: courier.name, size: 46),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(courier.firstName, style: context.text.titleSmall),
+                          Text(courier.name, style: context.text.titleSmall),
                           Text(
-                            'Scooter • ★ 4,9',
+                            courier.rating == null
+                                ? courier.vehicleLabel
+                                : '${courier.vehicleLabel} • ★ ${courier.rating!.toStringAsFixed(1).replaceAll('.', ',')}',
                             style: context.text.bodySmall?.copyWith(
                               color: context.palette.textSecondary,
                             ),
@@ -397,10 +485,7 @@ class _BottomPanel extends ConsumerWidget {
                     CircleIconButton(
                       icon: Icons.call_rounded,
                       tooltip: 'Appeler',
-                      onTap: () => AppSnackbar.info(
-                        context,
-                        'Appel de ${courier.firstName} (démo).',
-                      ),
+                      onTap: () => Launcher.call(context, courier.phone),
                     ),
                     const SizedBox(width: 8),
                     CircleIconButton(
@@ -409,14 +494,18 @@ class _BottomPanel extends ConsumerWidget {
                       backgroundColor: AppColors.primary,
                       iconColor: Colors.white,
                       onTap: () async {
-                        final chats = await ref.read(myChatsProvider.future);
-                        final chat = chats
-                            .where((c) => c.type == ChatType.courier)
-                            .firstOrNull;
-                        if (!context.mounted) return;
-                        chat == null
-                            ? AppSnackbar.info(context, 'Messagerie bientôt disponible.')
-                            : context.push(FrontRoutes.chat(chat.id));
+                        try {
+                          final chat = await ref
+                              .read(myChatsProvider.notifier)
+                              .chatWithCourier(order);
+                          if (context.mounted) {
+                            context.push(FrontRoutes.chat(chat.id));
+                          }
+                        } catch (error) {
+                          if (context.mounted) {
+                            AppSnackbar.error(context, error);
+                          }
+                        }
                       },
                     ),
                   ],

@@ -5,6 +5,8 @@ const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { DatabaseSync } = require('node:sqlite');
+const { AsyncLocalStorage } = require('node:async_hooks');
+const config = require('../config');
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 
@@ -50,20 +52,42 @@ function query(sql, params = [], _conn) {
   return Promise.resolve([]);
 }
 
+/**
+ * Une seule transaction à la fois. Les requêtes sont asynchrones : sans ce
+ * verrou, deux requêtes HTTP simultanées mélangeraient leurs écritures dans
+ * le même BEGIN…COMMIT (et un ROLLBACK annulerait le travail de l'autre).
+ * Un appel imbriqué (dans la même chaîne asynchrone) réutilise la transaction
+ * en cours.
+ */
+const transactionScope = new AsyncLocalStorage();
+let transactionQueue = Promise.resolve();
+
 async function withTransaction(work) {
-  if (db.isTransaction) return work(db);
-  db.exec('BEGIN');
+  if (transactionScope.getStore()) return work(db);
+  const previous = transactionQueue;
+  let release;
+  transactionQueue = new Promise((resolve) => {
+    release = resolve;
+  });
+  await previous;
   try {
-    const result = await work(db);
-    db.exec('COMMIT');
-    return result;
-  } catch (error) {
-    try {
-      db.exec('ROLLBACK');
-    } catch (_rollback) {
-      /* déjà annulée */
-    }
-    throw error;
+    return await transactionScope.run(true, async () => {
+      db.exec('BEGIN');
+      try {
+        const result = await work(db);
+        db.exec('COMMIT');
+        return result;
+      } catch (error) {
+        try {
+          db.exec('ROLLBACK');
+        } catch (_rollback) {
+          /* déjà annulée */
+        }
+        throw error;
+      }
+    });
+  } finally {
+    release();
   }
 }
 
@@ -296,6 +320,13 @@ function createSchema() {
     ['order_items', 'options', "TEXT NOT NULL DEFAULT '[]'"],
     ['order_items', 'note', 'TEXT'],
     ['order_items', 'product_data', 'TEXT'],
+    // Commandes saisies par téléphone (client sans compte).
+    ['orders', 'customer_name', 'TEXT'],
+    ['orders', 'customer_phone', 'TEXT'],
+    // Authentification : révocation des jetons et connexion Google.
+    ['users', 'token_version', 'INTEGER NOT NULL DEFAULT 0'],
+    ['users', 'google_id', 'TEXT'],
+    ['users', 'password_changed_at', 'TEXT'],
   ];
   for (const [table, col, type] of migrations) {
     try {
@@ -304,6 +335,55 @@ function createSchema() {
       // Column already exists
     }
   }
+
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users (google_id) WHERE google_id IS NOT NULL;
+
+    -- Liens « mot de passe oublié » : seul le hash du jeton est stocké.
+    CREATE TABLE IF NOT EXISTS password_resets (
+      token_hash TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      used_at TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets (user_id);
+
+    CREATE INDEX IF NOT EXISTS idx_cart_items_user ON cart_items (user_id);
+    CREATE INDEX IF NOT EXISTS idx_orders_user ON orders (user_id);
+    CREATE INDEX IF NOT EXISTS idx_orders_restaurant ON orders (restaurant_id);
+    CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items (order_id);
+    CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events (order_id);
+    CREATE INDEX IF NOT EXISTS idx_deliveries_order ON deliveries (order_id);
+    CREATE INDEX IF NOT EXISTS idx_deliveries_courier ON deliveries (courier_id);
+  `);
+}
+
+/**
+ * Production : crée le premier administrateur à partir de ADMIN_EMAIL /
+ * ADMIN_PASSWORD s'il n'existe encore aucun compte admin.
+ */
+function bootstrapAdmin() {
+  const admin = config.bootstrapAdmin;
+  if (!admin.email || !admin.password) return;
+  const [{ n }] = db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").all();
+  if (n > 0) return;
+  if (admin.password.length < 8) {
+    throw new Error('ADMIN_PASSWORD doit faire au moins 8 caractères.');
+  }
+  db.prepare(
+    `INSERT INTO users
+      (id, first_name, last_name, email, phone, role, status, loyalty_points, password_hash, created_at)
+     VALUES (?, ?, ?, ?, ?, 'admin', 'active', 0, ?, ?)`,
+  ).run(
+    newId('u'),
+    admin.firstName,
+    admin.lastName,
+    admin.email,
+    admin.phone,
+    bcrypt.hashSync(admin.password, rounds()),
+    new Date().toISOString(),
+  );
 }
 
 const DEMO_USERS = [
@@ -365,9 +445,9 @@ function seed() {
   db.prepare(
     `INSERT INTO restaurants
       (id, name, description, address, phone, email, category, latitude, longitude, rating,
-       is_open, owner_id, created_at, status, cuisine)
+       is_open, owner_id, created_at, status, cuisine, min_order, delivery_fee)
      VALUES ('rest_demo', 'SuperBurger Demo', 'Burgers de démonstration', '10 rue Démo', '0100000000',
-             'demo@superburger.fr', 'burgers', 48.8699, 2.3305, 4.6, 1, NULL, ?, 'approved', 'burgers')`,
+             'demo@superburger.fr', 'burgers', 48.8699, 2.3305, 4.6, 1, NULL, ?, 'approved', 'burgers', 5, 2.5)`,
   ).run(now);
 
   const insertProduct = db.prepare(
@@ -386,6 +466,7 @@ function clearRows() {
     db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((row) => row.name),
   );
   const tables = [
+    'password_resets',
     'cart_items',
     'courier_locations',
     'deliveries',
@@ -415,7 +496,8 @@ async function init() {
   db = new DatabaseSync(databasePath());
   createSchema();
   const [{ n }] = db.prepare('SELECT COUNT(*) AS n FROM users').all();
-  if (n === 0) seed();
+  if (n === 0 && config.seedDemo) seed();
+  bootstrapAdmin();
 }
 
 async function reset() {

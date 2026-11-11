@@ -2,6 +2,7 @@
 
 const request = require('supertest');
 const app = require('../src/app');
+const helpers = require('./helpers');
 const { init, reset, close, query } = require('../src/data/db');
 const restaurantCatalogue = require('../src/restaurant_catalogue');
 
@@ -76,7 +77,7 @@ async function createProduct(restaurantId, extra = {}, headers = ADMIN) {
 async function createRestaurateur(status = 'active') {
   const res = await request(app)
     .post('/api/users')
-    .set(status === 'pending' ? {} : ADMIN)
+    .set(ADMIN)
     .send({
       firstName: 'Lina',
       lastName: 'Roux',
@@ -84,7 +85,7 @@ async function createRestaurateur(status = 'active') {
       phone: '0611111111',
       password: 'secret12',
       role: 'restaurant',
-      ...(status === 'pending' ? {} : { status }),
+      status,
     });
   expect(res.status).toBe(201);
   expect(res.body.status).toBe(status);
@@ -421,14 +422,7 @@ describe('restaurants', () => {
     expect(saved.status).toBe(200);
 
     // Le module Commandes lit toujours restaurants / products normalement.
-    const order = await request(app)
-      .post('/api/orders')
-      .send({
-        userId: 'u-client-1',
-        restaurantId: 'rest_demo',
-        deliveryAddress: '12 rue de la Paix, Paris',
-        items: [{ productId: 'prod_1', quantity: 1 }],
-      });
+    const order = await helpers.placeOrder(app);
     expect(order.status).toBe(201);
     expect(order.body.items[0]).toMatchObject({ productId: 'prod_1', price: 9.9 });
   });

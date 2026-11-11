@@ -11,12 +11,7 @@ import '../../../../shared/catalog_widgets.dart';
 
 /// Avis client : auteur, étoiles, commentaire, photos et réponse.
 class ReviewCard extends StatelessWidget {
-  const ReviewCard({
-    super.key,
-    required this.review,
-    this.footer,
-    this.header,
-  });
+  const ReviewCard({super.key, required this.review, this.footer, this.header});
 
   final Review review;
   final Widget? footer;

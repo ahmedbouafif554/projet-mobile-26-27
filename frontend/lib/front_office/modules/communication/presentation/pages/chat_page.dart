@@ -109,7 +109,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     }
 
     final quickReplies = me.role == UserRole.courier
-        ? const ['J’arrive dans 5 min', 'Je suis en bas', 'Merci, bonne journée !']
+        ? const [
+            'J’arrive dans 5 min',
+            'Je suis en bas',
+            'Merci, bonne journée !',
+          ]
         : const ['Merci !', 'Où en est ma commande ?', 'Pouvez-vous sonner ?'];
 
     return Scaffold(
@@ -163,14 +167,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       ],
                     ),
                   ),
-                  CircleIconButton(
-                    icon: Icons.call_rounded,
-                    tooltip: 'Appeler',
-                    onTap: () => AppSnackbar.info(
-                      context,
-                      'Appel de ${chat.title} (démo).',
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -194,8 +190,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                           if (i == list.length) return const _TypingDots();
                           final m = list[i];
                           final showDay =
-                              i == 0 ||
-                              !_sameDay(list[i - 1].sentAt, m.sentAt);
+                              i == 0 || !_sameDay(list[i - 1].sentAt, m.sentAt);
                           return Column(
                             children: [
                               if (showDay) _DayLabel(date: m.sentAt),
@@ -373,33 +368,33 @@ class _Bubble extends StatelessWidget {
       ),
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Align(
-        alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-        child: GestureDetector(
-          onLongPress: onDelete == null
-              ? null
-              : () async {
-                  final delete = await showModalBottomSheet<bool>(
-                    context: context,
-                    useRootNavigator: true,
-                    builder: (context) => SafeArea(
-                      child: ListTile(
-                        leading: const Icon(
-                          Icons.delete_outline_rounded,
-                          color: AppColors.error,
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Align(
+            alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+            child: GestureDetector(
+              onLongPress: onDelete == null
+                  ? null
+                  : () async {
+                      final delete = await showModalBottomSheet<bool>(
+                        context: context,
+                        useRootNavigator: true,
+                        builder: (context) => SafeArea(
+                          child: ListTile(
+                            leading: const Icon(
+                              Icons.delete_outline_rounded,
+                              color: AppColors.error,
+                            ),
+                            title: const Text('Supprimer le message'),
+                            onTap: () => Navigator.pop(context, true),
+                          ),
                         ),
-                        title: const Text('Supprimer le message'),
-                        onTap: () => Navigator.pop(context, true),
-                      ),
-                    ),
-                  );
-                  if (delete == true) onDelete!();
-                },
-          child: bubble,
-        ),
-      ),
-    )
+                      );
+                      if (delete == true) onDelete!();
+                    },
+              child: bubble,
+            ),
+          ),
+        )
         .animate()
         .fadeIn(duration: 250.ms)
         .slideX(begin: mine ? 0.15 : -0.15, end: 0, curve: Curves.easeOutCubic);
@@ -435,7 +430,12 @@ class _TypingDots extends StatelessWidget {
                     ),
                   )
                   .animate(onPlay: (c) => c.repeat())
-                  .moveY(begin: 0, end: -5, delay: (150 * i).ms, duration: 300.ms)
+                  .moveY(
+                    begin: 0,
+                    end: -5,
+                    delay: (150 * i).ms,
+                    duration: 300.ms,
+                  )
                   .then()
                   .moveY(begin: -5, end: 0, duration: 300.ms),
           ],

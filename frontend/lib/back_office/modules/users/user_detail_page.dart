@@ -541,8 +541,7 @@ class _CourierLink extends ConsumerWidget {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: FilledButton.tonalIcon(
-                    onPressed: () =>
-                        context.go(BackRoutes.courier(courier.id)),
+                    onPressed: () => context.go(BackRoutes.courier(courier.id)),
                     icon: const Icon(Icons.open_in_new_rounded),
                     label: const Text('Voir la fiche livreur'),
                   ),

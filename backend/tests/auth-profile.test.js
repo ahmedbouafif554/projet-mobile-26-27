@@ -102,7 +102,10 @@ describe('inscription', () => {
     expect(accepted.status).toBe(200);
     expect(accepted.body.user.role).toBe('courier');
 
-    const listed = await request(app).get('/api/couriers').query({ userId: created.body.user.id });
+    const listed = await request(app)
+      .get('/api/couriers')
+      .set(auth(accepted.body.token))
+      .query({ userId: created.body.user.id });
     expect(listed.body).toHaveLength(1);
     expect(listed.body[0].id).toBe(created.body.courier.id);
   });
@@ -249,7 +252,10 @@ describe('connexion et rôles', () => {
     expect(promoted.status).toBe(200);
     expect(promoted.body.role).toBe('courier');
 
-    const profile = await request(app).get('/api/couriers').query({ userId: 'u-client-1' });
+    const profile = await request(app)
+      .get('/api/couriers')
+      .set(auth(admin.body.token))
+      .query({ userId: 'u-client-1' });
     expect(profile.body).toHaveLength(1);
     expect(profile.body[0].documents.every((doc) => doc.status === 'pending')).toBe(true);
 
@@ -262,8 +268,8 @@ describe('connexion et rôles', () => {
 });
 
 describe('contrat utilisé par le frontend, sans modifier les écrans', () => {
-  test('POST /users puis POST /couriers, comme AuthService.register', async () => {
-    const user = await request(app).post('/api/users').send({
+  test('POST /users et POST /couriers : réservés à l’admin (formulaire du back office)', async () => {
+    const body = {
       id: '',
       firstName: 'Sami',
       lastName: 'Kaci',
@@ -271,52 +277,26 @@ describe('contrat utilisé par le frontend, sans modifier les écrans', () => {
       phone: '0700000000',
       role: 'courier',
       status: 'active',
-      avatarUrl: null,
-      restaurantId: null,
-      loyaltyPoints: 0,
       createdAt: new Date().toISOString(),
-      lastLoginAt: null,
-    });
+    };
+    // Plus d'inscription anonyme par ces routes (seulement /api/auth/register).
+    expect((await request(app).post('/api/users').send(body)).status).toBe(401);
+    expect((await request(app).post('/api/users').set(auth('mock-token-u-client-1')).send(body)).status).toBe(403);
+    expect((await request(app).get('/api/users').query({ email: body.email })).status).toBe(401);
+
+    const admin = auth('mock-token-u-admin');
+    const user = await request(app).post('/api/users').set(admin).send(body);
     expect(user.status).toBe(201);
-    expect(user.body.id).toEqual(expect.any(String));
     expect(user.body.role).toBe('courier');
 
-    const found = await request(app).get('/api/users').query({ email: 'sami.kaci@exemple.fr' });
-    expect(found.body).toHaveLength(1);
-    expect(found.body[0].id).toBe(user.body.id);
+    const found = await request(app).get('/api/users').set(admin).query({ email: body.email });
+    expect(found.body.map((u) => u.id)).toEqual([user.body.id]);
 
-    const now = new Date().toISOString();
-    const courier = await request(app).post('/api/couriers').send({
-      id: '',
-      userId: user.body.id,
-      firstName: 'Sami',
-      lastName: 'Kaci',
-      phone: '0700000000',
-      avatarUrl: null,
-      vehicle: 'scooter',
-      plateNumber: null,
-      status: 'offline',
-      documents: ['idCard', 'license', 'insurance'].map((type) => ({
-        type,
-        status: 'pending',
-        uploadedAt: now,
-      })),
-      rating: 5,
-      completedDeliveries: 0,
-      totalEarnings: 0,
-      zone: 'Paris',
-      latitude: 48.8566,
-      longitude: 2.3522,
-      joinedAt: now,
-    });
+    const courier = await request(app).post('/api/couriers').set(admin).send({ userId: user.body.id, vehicle: 'scooter' });
     expect(courier.status).toBe(201);
     expect(courier.body.userId).toBe(user.body.id);
 
-    const clientProfile = await request(app).post('/api/couriers').send({
-      userId: 'u-client-1',
-      firstName: 'Alex',
-      lastName: 'Martin',
-    });
+    const clientProfile = await request(app).post('/api/couriers').set(admin).send({ userId: 'u-client-1' });
     expect(clientProfile.status).toBe(422);
   });
 
@@ -390,7 +370,7 @@ describe('contrat utilisé par le frontend, sans modifier les écrans', () => {
     const after = await request(app).get('/api/users/u-client-1/favorites').set(token);
     expect(after.body).toEqual(['r1']);
 
-    const orders = await request(app).get('/api/orders').query({ userId: 'u-client-1' });
+    const orders = await request(app).get('/api/orders').set(token).query({ userId: 'u-client-1' });
     expect(orders.body).toEqual([]);
   });
 });

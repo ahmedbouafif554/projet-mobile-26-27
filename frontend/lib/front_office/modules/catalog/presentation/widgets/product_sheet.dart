@@ -124,9 +124,7 @@ class _ProductSheetState extends ConsumerState<ProductSheet> {
             children: [
               const Icon(Icons.check_circle_rounded, color: AppColors.success),
               const SizedBox(width: 12),
-              Expanded(
-                child: Text('${widget.product.name} ajouté au panier'),
-              ),
+              Expanded(child: Text('${widget.product.name} ajouté au panier')),
             ],
           ),
           action: SnackBarAction(
@@ -202,7 +200,8 @@ class _ProductSheetState extends ConsumerState<ProductSheet> {
                                     if (p.calories != null) ...[
                                       const SizedBox(width: 12),
                                       InfoTag(
-                                        icon: Icons.local_fire_department_outlined,
+                                        icon: Icons
+                                            .local_fire_department_outlined,
                                         label: '${p.calories} kcal',
                                       ),
                                     ],

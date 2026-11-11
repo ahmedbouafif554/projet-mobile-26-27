@@ -255,9 +255,7 @@ class _GlobalSearchState extends ConsumerState<GlobalSearch> {
           controller: controller,
           hintText: hint,
           elevation: const WidgetStatePropertyAll(0),
-          backgroundColor: WidgetStatePropertyAll(
-            context.palette.surfaceMuted,
-          ),
+          backgroundColor: WidgetStatePropertyAll(context.palette.surfaceMuted),
           constraints: const BoxConstraints(minHeight: 44, maxHeight: 44),
           padding: const WidgetStatePropertyAll(
             EdgeInsets.symmetric(horizontal: 14),

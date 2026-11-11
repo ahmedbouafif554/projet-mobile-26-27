@@ -77,44 +77,46 @@ class FavoritesPage extends ConsumerWidget {
                       itemBuilder: (context, i) {
                         final r = list[i];
                         return Dismissible(
-                          key: ValueKey(r.id),
-                          direction: DismissDirection.endToStart,
-                          background: Container(
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.only(right: 24),
-                            decoration: BoxDecoration(
-                              color: AppColors.favorite,
-                              borderRadius: BorderRadius.circular(
-                                AppSizes.radiusMd,
+                              key: ValueKey(r.id),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(right: 24),
+                                decoration: BoxDecoration(
+                                  color: AppColors.favorite,
+                                  borderRadius: BorderRadius.circular(
+                                    AppSizes.radiusMd,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.heart_broken_rounded,
+                                  color: Colors.white,
+                                ),
                               ),
-                            ),
-                            child: const Icon(
-                              Icons.heart_broken_rounded,
-                              color: Colors.white,
-                            ),
-                          ),
-                          onDismissed: (_) async {
-                            final notifier = ref.read(favoritesProvider.notifier);
-                            await notifier.toggle(r.id);
-                            if (!context.mounted) return;
-                            AppSnackbar.show(
-                              context,
-                              '${r.name} retiré des favoris',
-                              icon: Icons.heart_broken_rounded,
-                              iconColor: AppColors.favorite,
-                              actionLabel: 'Annuler',
-                              onAction: () => notifier.toggle(r.id),
-                            );
-                          },
-                          child: RestaurantTile(
-                            restaurant: r,
-                            onTap: () =>
-                                context.push(FrontRoutes.restaurant(r.id)),
-                          ),
-                        ).animate(delay: (50 * i).ms).fadeIn().slideX(
-                          begin: 0.05,
-                          end: 0,
-                        );
+                              onDismissed: (_) async {
+                                final notifier = ref.read(
+                                  favoritesProvider.notifier,
+                                );
+                                await notifier.toggle(r.id);
+                                if (!context.mounted) return;
+                                AppSnackbar.show(
+                                  context,
+                                  '${r.name} retiré des favoris',
+                                  icon: Icons.heart_broken_rounded,
+                                  iconColor: AppColors.favorite,
+                                  actionLabel: 'Annuler',
+                                  onAction: () => notifier.toggle(r.id),
+                                );
+                              },
+                              child: RestaurantTile(
+                                restaurant: r,
+                                onTap: () =>
+                                    context.push(FrontRoutes.restaurant(r.id)),
+                              ),
+                            )
+                            .animate(delay: (50 * i).ms)
+                            .fadeIn()
+                            .slideX(begin: 0.05, end: 0);
                       },
                     ),
             ),

@@ -32,6 +32,7 @@ class BackRoutes {
   static const reviews = '/reviews';
   static const campaigns = '/campaigns';
   static const chats = '/chats';
+
   /// Conversation ouverte dans la même page que la liste (paramètre `id`).
   static String chat(String id) => '$chats?id=$id';
 }

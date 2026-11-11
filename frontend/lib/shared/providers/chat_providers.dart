@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_service.dart';
+import '../../core/config/app_config.dart';
 import '../models/models.dart';
 import '../repositories/repository_providers.dart';
 
@@ -67,10 +68,49 @@ class ChatMessagesController extends AsyncNotifier<List<Message>> {
     'Merci pour votre réactivité 👍',
   ];
 
+  /// Messages tenus par le serveur : relus toutes les 4 s tant que la
+  /// conversation est ouverte. Sinon : démonstration en mémoire, avec une
+  /// réponse automatique.
+  static bool get _server => !AppConfig.useMockData || AppConfig.useApiAuth;
+
+  Timer? _pollTimer;
+
   @override
   Future<List<Message>> build() {
-    ref.onDispose(() => _replyTimer?.cancel());
+    ref.onDispose(() {
+      _replyTimer?.cancel();
+      _pollTimer?.cancel();
+    });
+    if (_server) {
+      _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) => _poll());
+    }
     return ref.read(messageRepositoryProvider).forChat(chatId);
+  }
+
+  Future<void> _poll() async {
+    if (!ref.mounted || state.isLoading) return;
+    try {
+      final fresh = await ref.read(messageRepositoryProvider).forChat(chatId);
+      if (!ref.mounted) return;
+      final current = state.value ?? const <Message>[];
+      // Les bulles « envoi… » en cours restent affichées.
+      final pending = current.where((m) => m.status == MessageStatus.sending);
+      final changed =
+          fresh.length != current.length - pending.length ||
+          [
+            for (var i = 0; i < fresh.length; i++)
+              i < current.length &&
+                  (current[i].id != fresh[i].id ||
+                      current[i].text != fresh[i].text ||
+                      current[i].status != fresh[i].status),
+          ].any((c) => c);
+      if (changed) {
+        state = AsyncData([...fresh, ...pending]);
+        ref.read(chatsRevisionProvider.notifier).bump();
+      }
+    } catch (_) {
+      // Réseau momentané : nouvel essai au prochain tour.
+    }
   }
 
   /// Envoi optimiste : la bulle apparaît tout de suite (« envoi… »).
@@ -96,6 +136,11 @@ class ChatMessagesController extends AsyncNotifier<List<Message>> {
       for (final m in state.value ?? const <Message>[])
         m.id == draft.id ? sent : m,
     ]);
+    if (_server) {
+      // L'aperçu et les non lus sont mis à jour par le serveur.
+      if (ref.mounted) ref.read(chatsRevisionProvider.notifier).bump();
+      return;
+    }
     await _touchChat(text);
     if (ref.mounted) _scheduleReply(chat, user.id);
   }
@@ -135,13 +180,13 @@ class ChatMessagesController extends AsyncNotifier<List<Message>> {
 
   /// Réponse simulée de l'autre participant après quelques secondes.
   void _scheduleReply(Chat chat, String myId) {
-    final otherId = chat.participantIds
-        .where((id) => id != myId)
-        .firstOrNull;
+    final otherId = chat.participantIds.where((id) => id != myId).firstOrNull;
     if (otherId == null) return;
     _replyTimer?.cancel();
     void setTyping(bool typing) {
-      if (ref.mounted) ref.read(chatTypingProvider(chatId).notifier).set(typing);
+      if (ref.mounted) {
+        ref.read(chatTypingProvider(chatId).notifier).set(typing);
+      }
     }
 
     _replyTimer = Timer(const Duration(milliseconds: 1200), () {

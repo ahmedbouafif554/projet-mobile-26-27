@@ -33,7 +33,9 @@ class BackShell extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: phone),
           child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(size: Size(phone, MediaQuery.sizeOf(context).height)),
+            data: MediaQuery.of(
+              context,
+            ).copyWith(size: Size(phone, MediaQuery.sizeOf(context).height)),
             child: Scaffold(
               body: SafeArea(
                 bottom: false,
@@ -75,9 +77,7 @@ class _AdminNav extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final items = [
-      for (final group in navFor(role)) ...group.items,
-    ];
+    final items = [for (final group in navFor(role)) ...group.items];
     final primary = [
       for (final path in _primary)
         if (items.any((item) => item.path == path))

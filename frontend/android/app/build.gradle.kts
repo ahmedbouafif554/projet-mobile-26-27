@@ -15,9 +15,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
-    }
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
@@ -30,12 +27,34 @@ android {
         versionName = flutter.versionName
     }
 
+    // Deux applications installables côte à côte :
+    //   front : clients et livreurs   (com.superfaster.superfaster)
+    //   back  : Espace Pro, admin et restaurants (com.superfaster.superfaster.pro)
+    flavorDimensions += "app"
+    productFlavors {
+        create("front") {
+            dimension = "app"
+            manifestPlaceholders["appLabel"] = "SuperFaster"
+        }
+        create("back") {
+            dimension = "app"
+            applicationIdSuffix = ".pro"
+            manifestPlaceholders["appLabel"] = "SuperFaster Pro"
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
 }
 

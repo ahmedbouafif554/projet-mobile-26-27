@@ -47,7 +47,9 @@ class OrdersPage extends ConsumerWidget {
       if (items.isEmpty) {
         return EmptyState(
           icon: current ? Icons.delivery_dining_rounded : Icons.history_rounded,
-          title: current ? 'Aucune commande en cours' : 'Pas encore d’historique',
+          title: current
+              ? 'Aucune commande en cours'
+              : 'Pas encore d’historique',
           message: current
               ? 'Vos commandes en préparation et en livraison apparaîtront ici.'
               : 'Vos commandes passées apparaîtront ici.',

@@ -47,7 +47,11 @@ class OrderDetailPage extends ConsumerWidget {
     }
   }
 
-  Future<void> _contact(BuildContext context, WidgetRef ref, Order order) async {
+  Future<void> _contact(
+    BuildContext context,
+    WidgetRef ref,
+    Order order,
+  ) async {
     try {
       final chat = await ref.read(myChatsProvider.notifier).chatForOrder(order);
       if (context.mounted) context.push(FrontRoutes.chat(chat.id));
@@ -84,189 +88,180 @@ class OrderDetailPage extends ConsumerWidget {
                 AppSizes.pagePadding,
                 AppSizes.xl,
               ),
-              children:
-                  [
-                        const PageTitle('Ma commande'),
-                        const SizedBox(height: AppSizes.md),
-                        SurfaceCard(
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      o.restaurantName,
-                                      style: context.text.titleMedium,
-                                    ),
-                                    Text(
-                                      '#${o.reference} • ${Formatters.dateTime(o.createdAt)}',
-                                      style: context.text.bodySmall?.copyWith(
-                                        color: context.palette.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              orderStatusChip(o.status),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AppSizes.md),
-                        if (o.status.isActive)
-                          PrimaryButton(
-                            label: 'Suivre en temps réel',
-                            icon: Icons.map_rounded,
-                            onPressed: () =>
-                                context.push(FrontRoutes.orderTracking(o.id)),
-                          ),
-                        if (o.status == OrderStatus.cancelled &&
-                            o.cancelReason != null)
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.error.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(
-                                AppSizes.radiusSm,
-                              ),
-                            ),
-                            child: Text('Motif : ${o.cancelReason}'),
-                          ),
-                        const SizedBox(height: AppSizes.lg),
-                        TitledBlock(
-                          title: 'Suivi',
-                          child: SurfaceCard(child: OrderTimeline(order: o)),
-                        ),
-                        const SizedBox(height: AppSizes.lg),
-                        TitledBlock(
-                          title: 'Articles',
-                          child: SurfaceCard(
-                            child: Column(
-                              children: [
-                                for (final item in o.items)
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 6,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: AppNetworkImage(
-                                            item.product.imageUrl,
-                                            width: 48,
-                                            height: 48,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                '${item.quantity} × ${item.product.name}',
-                                                style: context.text.titleSmall,
-                                              ),
-                                              if (item.options.isNotEmpty)
-                                                Text(
-                                                  item.optionsLabel,
-                                                  style: context.text.bodySmall
-                                                      ?.copyWith(
-                                                        color: context
-                                                            .palette
-                                                            .textSecondary,
-                                                      ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                        Text(
-                                          Formatters.price(item.totalPrice),
-                                          style: context.text.titleSmall,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: AppSizes.md),
-                        TotalsCard(
-                          totals: CartTotals(
-                            subtotal: o.subtotal,
-                            deliveryFee: o.deliveryFee,
-                            serviceFee: o.serviceFee,
-                            discount: o.discount,
-                          ),
-                          promoCode: o.promoCode,
-                        ),
-                        const SizedBox(height: AppSizes.lg),
-                        TitledBlock(
-                          title: 'Livraison et paiement',
-                          child: SurfaceCard(
-                            child: Column(
-                              children: [
-                                ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  leading: const Icon(
-                                    Icons.location_on_outlined,
-                                    color: AppColors.primary,
-                                  ),
-                                  title: Text(o.deliveryAddress.label),
-                                  subtitle: Text(o.deliveryAddress.fullAddress),
-                                ),
-                                ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  leading: const Icon(
-                                    Icons.credit_card_rounded,
-                                    color: AppColors.primary,
-                                  ),
-                                  title: Text(o.paymentMethod.label),
-                                  subtitle: Text(o.paymentStatus.label),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: AppSizes.lg),
-                        Wrap(
-                          spacing: AppSizes.sm,
-                          runSpacing: AppSizes.sm,
-                          alignment: WrapAlignment.center,
+              children: [
+                const PageTitle('Ma commande'),
+                const SizedBox(height: AppSizes.md),
+                SurfaceCard(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _Action(
-                              icon: Icons.chat_bubble_outline_rounded,
-                              label: 'Contacter le restaurant',
-                              onTap: () => _contact(context, ref, o),
+                            Text(
+                              o.restaurantName,
+                              style: context.text.titleMedium,
                             ),
-                            if (o.status == OrderStatus.delivered && !reviewed)
-                              _Action(
-                                icon: Icons.star_outline_rounded,
-                                label: 'Laisser un avis',
-                                onTap: () =>
-                                    context.push(FrontRoutes.writeReview(o.id)),
+                            Text(
+                              '#${o.reference} • ${Formatters.dateTime(o.createdAt)}',
+                              style: context.text.bodySmall?.copyWith(
+                                color: context.palette.textSecondary,
                               ),
-                            if (!o.status.isActive)
-                              _Action(
-                                icon: Icons.replay_rounded,
-                                label: 'Recommander',
-                                onTap: () => reorder(context, ref, o),
-                              ),
-                            if (o.status == OrderStatus.pending)
-                              _Action(
-                                icon: Icons.cancel_outlined,
-                                label: 'Annuler',
-                                destructive: true,
-                                onTap: () => _cancel(context, ref, o),
-                              ),
+                            ),
                           ],
                         ),
-                      ]
-                      .animate(interval: 40.ms)
-                      .fadeIn(duration: 300.ms)
-                      .slideY(begin: 0.05, end: 0),
+                      ),
+                      orderStatusChip(o.status),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSizes.md),
+                if (o.status.isActive)
+                  PrimaryButton(
+                    label: 'Suivre en temps réel',
+                    icon: Icons.map_rounded,
+                    onPressed: () =>
+                        context.push(FrontRoutes.orderTracking(o.id)),
+                  ),
+                if (o.status == OrderStatus.cancelled && o.cancelReason != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                    ),
+                    child: Text('Motif : ${o.cancelReason}'),
+                  ),
+                const SizedBox(height: AppSizes.lg),
+                TitledBlock(
+                  title: 'Suivi',
+                  child: SurfaceCard(child: OrderTimeline(order: o)),
+                ),
+                const SizedBox(height: AppSizes.lg),
+                TitledBlock(
+                  title: 'Articles',
+                  child: SurfaceCard(
+                    child: Column(
+                      children: [
+                        for (final item in o.items)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: AppNetworkImage(
+                                    item.product.imageUrl,
+                                    width: 48,
+                                    height: 48,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${item.quantity} × ${item.product.name}',
+                                        style: context.text.titleSmall,
+                                      ),
+                                      if (item.options.isNotEmpty)
+                                        Text(
+                                          item.optionsLabel,
+                                          style: context.text.bodySmall
+                                              ?.copyWith(
+                                                color: context
+                                                    .palette
+                                                    .textSecondary,
+                                              ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  Formatters.price(item.totalPrice),
+                                  style: context.text.titleSmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSizes.md),
+                TotalsCard(
+                  totals: CartTotals(
+                    subtotal: o.subtotal,
+                    deliveryFee: o.deliveryFee,
+                    serviceFee: o.serviceFee,
+                    discount: o.discount,
+                  ),
+                  promoCode: o.promoCode,
+                ),
+                const SizedBox(height: AppSizes.lg),
+                TitledBlock(
+                  title: 'Livraison et paiement',
+                  child: SurfaceCard(
+                    child: Column(
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(
+                            Icons.location_on_outlined,
+                            color: AppColors.primary,
+                          ),
+                          title: Text(o.deliveryAddress.label),
+                          subtitle: Text(o.deliveryAddress.fullAddress),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(
+                            Icons.credit_card_rounded,
+                            color: AppColors.primary,
+                          ),
+                          title: Text(o.paymentMethod.label),
+                          subtitle: Text(o.paymentStatus.label),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSizes.lg),
+                Wrap(
+                  spacing: AppSizes.sm,
+                  runSpacing: AppSizes.sm,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    _Action(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      label: 'Contacter le restaurant',
+                      onTap: () => _contact(context, ref, o),
+                    ),
+                    if (o.status == OrderStatus.delivered && !reviewed)
+                      _Action(
+                        icon: Icons.star_outline_rounded,
+                        label: 'Laisser un avis',
+                        onTap: () =>
+                            context.push(FrontRoutes.writeReview(o.id)),
+                      ),
+                    if (!o.status.isActive)
+                      _Action(
+                        icon: Icons.replay_rounded,
+                        label: 'Recommander',
+                        onTap: () => reorder(context, ref, o),
+                      ),
+                    if (o.status == OrderStatus.pending)
+                      _Action(
+                        icon: Icons.cancel_outlined,
+                        label: 'Annuler',
+                        destructive: true,
+                        onTap: () => _cancel(context, ref, o),
+                      ),
+                  ],
+                ),
+              ].animate(interval: 40.ms).fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0),
             );
           },
         ),
@@ -311,10 +306,22 @@ class OrderTimeline extends StatelessWidget {
 
   static const _steps = [
     (OrderStatus.pending, 'Commande envoyée', Icons.receipt_rounded),
-    (OrderStatus.accepted, 'Acceptée par le restaurant', Icons.thumb_up_alt_rounded),
+    (
+      OrderStatus.accepted,
+      'Acceptée par le restaurant',
+      Icons.thumb_up_alt_rounded,
+    ),
     (OrderStatus.preparing, 'En préparation', Icons.soup_kitchen_rounded),
-    (OrderStatus.ready, 'Prête, en attente du livreur', Icons.room_service_rounded),
-    (OrderStatus.delivering, 'En route vers vous', Icons.delivery_dining_rounded),
+    (
+      OrderStatus.ready,
+      'Prête, en attente du livreur',
+      Icons.room_service_rounded,
+    ),
+    (
+      OrderStatus.delivering,
+      'En route vers vous',
+      Icons.delivery_dining_rounded,
+    ),
     (OrderStatus.delivered, 'Livrée, bon appétit !', Icons.task_alt_rounded),
   ];
 

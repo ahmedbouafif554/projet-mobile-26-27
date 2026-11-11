@@ -79,7 +79,11 @@ class SplitRow extends StatelessWidget {
         if (constraints.maxWidth < breakpoint) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [left, const SizedBox(height: AppSizes.md), right],
+            children: [
+              left,
+              const SizedBox(height: AppSizes.md),
+              right,
+            ],
           );
         }
         return Row(
@@ -319,9 +323,7 @@ class SummaryPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected
-          ? color.withValues(alpha: 0.14)
-          : context.colors.surface,
+      color: selected ? color.withValues(alpha: 0.14) : context.colors.surface,
       borderRadius: BorderRadius.circular(AppSizes.radiusMd),
       child: InkWell(
         onTap: onTap,

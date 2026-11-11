@@ -37,9 +37,10 @@ final productProvider = FutureProvider.family<Product, String>(
 
 /// Restaurants favoris de l'utilisateur (identifiants), avec ajout /
 /// retrait optimiste.
-final favoritesProvider = AsyncNotifierProvider<FavoritesController, Set<String>>(
-  FavoritesController.new,
-);
+final favoritesProvider =
+    AsyncNotifierProvider<FavoritesController, Set<String>>(
+      FavoritesController.new,
+    );
 
 class FavoritesController extends AsyncNotifier<Set<String>> {
   @override
@@ -187,7 +188,9 @@ final searchResultsProvider = FutureProvider.autoDispose
       return SearchResults(
         restaurants: [
           for (final r in restaurants)
-            if (normalize('${r.name} ${r.cuisine} ${r.description}').contains(q))
+            if (normalize(
+              '${r.name} ${r.cuisine} ${r.description}',
+            ).contains(q))
               r,
         ],
         products: [
@@ -225,13 +228,13 @@ class RecentSearchesNotifier extends Notifier<List<String>> {
   void add(String query) {
     final q = query.trim();
     if (q.length < 2) return;
-    state = [q, ...state.where((s) => s.toLowerCase() != q.toLowerCase())]
-        .take(6)
-        .toList();
+    state = [
+      q,
+      ...state.where((s) => s.toLowerCase() != q.toLowerCase()),
+    ].take(6).toList();
   }
 
-  void remove(String query) =>
-      state = state.where((s) => s != query).toList();
+  void remove(String query) => state = state.where((s) => s != query).toList();
 
   void clear() => state = const [];
 }

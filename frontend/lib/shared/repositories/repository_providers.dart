@@ -129,32 +129,36 @@ final deliveryRepositoryProvider = Provider<DeliveryRepository>(
 );
 
 // --- Module 5 : avis, notifications et messagerie --------------------------------------
+// Avis, notifications et campagnes : enregistrés dans SQLite via l'API
+// (module backend `avis_notification`), même quand [_mock] est vrai.
+bool get _mockAvis => _mock && !AppConfig.useApiAvisNotifications;
+
 final reviewRepositoryProvider = Provider<ReviewRepository>(
-  (ref) => _mock
+  (ref) => _mockAvis
       ? MockReviewRepository(MockCommunication.reviews)
       : ApiReviewRepository(ref.watch(dioProvider)),
 );
 
 final notificationRepositoryProvider = Provider<NotificationRepository>(
-  (ref) => _mock
+  (ref) => _mockAvis
       ? MockNotificationRepository(MockCommunication.notifications)
       : ApiNotificationRepository(ref.watch(dioProvider)),
 );
 
 final campaignRepositoryProvider = Provider<CampaignRepository>(
-  (ref) => _mock
+  (ref) => _mockAvis
       ? MockCampaignRepository(MockCommunication.campaigns)
       : ApiCampaignRepository(ref.watch(dioProvider)),
 );
 
 final chatRepositoryProvider = Provider<ChatRepository>(
-  (ref) => _mock
+  (ref) => _mock && !AppConfig.useApiAuth
       ? MockChatRepository(MockCommunication.chats)
       : ApiChatRepository(ref.watch(dioProvider)),
 );
 
 final messageRepositoryProvider = Provider<MessageRepository>(
-  (ref) => _mock
+  (ref) => _mock && !AppConfig.useApiAuth
       ? MockMessageRepository(MockCommunication.messages)
       : ApiMessageRepository(ref.watch(dioProvider)),
 );

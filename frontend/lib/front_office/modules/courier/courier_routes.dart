@@ -15,5 +15,8 @@ List<RouteBase> courierDeliveryRoutes() => [
 
 /// Module 4 — documents et véhicule (plein écran, depuis le profil).
 List<RouteBase> courierAccountRoutes() => [
-  transitionRoute(FrontRoutes.documents, (_, _) => const CourierDocumentsPage()),
+  transitionRoute(
+    FrontRoutes.documents,
+    (_, _) => const CourierDocumentsPage(),
+  ),
 ];

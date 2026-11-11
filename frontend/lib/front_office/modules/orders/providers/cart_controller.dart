@@ -52,13 +52,19 @@ class CartController extends AsyncNotifier<List<CartItem>> {
   Future<void> setQuantity(CartItem item, int quantity) async {
     if (quantity <= 0) return remove(item);
     state = AsyncData([
-      for (final i in _items) i.id == item.id ? i.copyWith(quantity: quantity) : i,
+      for (final i in _items)
+        i.id == item.id ? i.copyWith(quantity: quantity) : i,
     ]);
-    await ref.read(cartRepositoryProvider).update(item.copyWith(quantity: quantity));
+    await ref
+        .read(cartRepositoryProvider)
+        .update(item.copyWith(quantity: quantity));
   }
 
   Future<void> remove(CartItem item) async {
-    state = AsyncData([for (final i in _items) if (i.id != item.id) i]);
+    state = AsyncData([
+      for (final i in _items)
+        if (i.id != item.id) i,
+    ]);
     await ref.read(cartRepositoryProvider).delete(item.id);
   }
 
@@ -93,8 +99,10 @@ class CartTotals {
   final double serviceFee;
   final double discount;
 
-  double get total =>
-      (subtotal + deliveryFee + serviceFee - discount).clamp(0, double.infinity);
+  double get total => (subtotal + deliveryFee + serviceFee - discount).clamp(
+    0,
+    double.infinity,
+  );
 
   /// Frais de service : 5 % du sous-total, entre 0,49 € et 1,99 €.
   static double serviceFor(double subtotal) =>

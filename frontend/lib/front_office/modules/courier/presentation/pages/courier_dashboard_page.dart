@@ -12,11 +12,40 @@ import '../../../../../core/widgets/animated_counter.dart';
 import '../../../../../core/widgets/app_charts.dart';
 import '../../../../../core/widgets/app_snackbar.dart';
 import '../../../../../core/widgets/avatar.dart';
+import '../../../../../core/widgets/circle_icon_button.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../../shared/models/models.dart';
 import '../../../../router/front_routes.dart';
+import '../../../communication/providers/communication_providers.dart';
 import '../../providers/courier_providers.dart';
 import '../widgets/delivery_widgets.dart';
+
+/// Cloche des notifications du livreur (nouvelles courses…), avec le nombre
+/// de non lues ; ouvre le centre de notifications.
+class _NotificationsBell extends ConsumerWidget {
+  const _NotificationsBell();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(
+      notificationsProvider.select(
+        (n) => n.value?.where((x) => !x.isRead).length ?? 0,
+      ),
+    );
+    return Badge(
+      isLabelVisible: unread > 0,
+      backgroundColor: AppColors.badge,
+      label: Text('$unread'),
+      offset: const Offset(-4, 4),
+      child: CircleIconButton(
+        icon: Icons.notifications_none_rounded,
+        tooltip: 'Notifications',
+        elevated: true,
+        onTap: () => context.push(FrontRoutes.notifications),
+      ),
+    );
+  }
+}
 
 /// Tableau de bord du livreur : disponibilité, chiffres du jour, course en
 /// cours, gains de la semaine.
@@ -105,6 +134,8 @@ class CourierDashboardPage extends ConsumerWidget {
                               ],
                             ),
                           ),
+                          // Nouvelles courses, avec l'adresse exacte du client.
+                          const _NotificationsBell(),
                         ],
                       ),
                       const SizedBox(height: AppSizes.lg),
@@ -182,7 +213,9 @@ class CourierDashboardPage extends ConsumerWidget {
                         padding: const EdgeInsets.all(AppSizes.md),
                         decoration: BoxDecoration(
                           color: context.colors.surface,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusLg,
+                          ),
                           boxShadow: context.palette.softShadow,
                         ),
                         child: AppBarChart(
@@ -377,9 +410,9 @@ class _OffersBanner extends StatelessWidget {
           child: Row(
             children: [
               const Icon(
-                Icons.notifications_active_rounded,
-                color: AppColors.primary,
-              )
+                    Icons.notifications_active_rounded,
+                    color: AppColors.primary,
+                  )
                   .animate(onPlay: (c) => c.repeat())
                   .shake(hz: 2, rotation: 0.1, duration: 900.ms)
                   .then(delay: 1200.ms),

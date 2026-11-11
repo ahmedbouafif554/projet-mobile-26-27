@@ -110,7 +110,8 @@ class CourierDeliveriesPage extends ConsumerWidget {
                         message:
                             'Passez en ligne depuis le tableau de bord pour voir les courses.',
                         actionLabel: 'Aller au tableau de bord',
-                        onAction: () => context.go(FrontRoutes.courierDashboard),
+                        onAction: () =>
+                            context.go(FrontRoutes.courierDashboard),
                       )
                     else if ((available.value ?? const []).isEmpty)
                       const EmptyState(
@@ -137,7 +138,8 @@ class CourierDeliveriesPage extends ConsumerWidget {
                       const EmptyState(
                         icon: Icons.delivery_dining_rounded,
                         title: 'Aucune course en cours',
-                        message: 'Acceptez une course dans l’onglet « Offres ».',
+                        message:
+                            'Acceptez une course dans l’onglet « Offres ».',
                       )
                     else
                       listOf([
@@ -209,7 +211,10 @@ class _OfferActionsState extends ConsumerState<_OfferActions> {
           .read(availableDeliveriesProvider.notifier)
           .accept(widget.delivery);
       if (!mounted) return;
-      AppSnackbar.success(context, 'Course acceptée ! Direction le restaurant.');
+      AppSnackbar.success(
+        context,
+        'Course acceptée ! Direction le restaurant.',
+      );
       DefaultTabController.maybeOf(context)?.animateTo(1);
     } catch (error) {
       if (mounted) {
@@ -230,9 +235,7 @@ class _OfferActionsState extends ConsumerState<_OfferActions> {
                 : () => ref
                       .read(availableDeliveriesProvider.notifier)
                       .decline(widget.delivery),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 48),
-            ),
+            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
             child: const Text('Refuser'),
           ),
         ),

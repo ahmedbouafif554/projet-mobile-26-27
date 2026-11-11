@@ -36,11 +36,44 @@ class AppConfig {
     defaultValue: true,
   );
 
+  /// Avis, notifications et campagnes lus et écrits dans SQLite via l'API
+  /// (sinon en mémoire, perdus à la fermeture de l'application).
+  /// Les tests le passent à `false` (données mock, sans serveur).
+  static bool useApiAvisNotifications = const bool.fromEnvironment(
+    'USE_API_AVIS_NOTIFICATIONS',
+    defaultValue: true,
+  );
+
+  /// Mode démonstration : identifiants pré-remplis et boutons « compte de
+  /// démo ». Désactivé dans les builds de production (DEMO_MODE=false).
+  static const bool demoMode = bool.fromEnvironment(
+    'DEMO_MODE',
+    defaultValue: true,
+  );
+
   /// URL de base de l'API REST.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://localhost:3001/api',
   );
+
+  /// Connexion Google : identifiant client OAuth « Web » (audience de l'ID
+  /// token vérifié par le serveur, dans GOOGLE_CLIENT_IDS du backend).
+  /// Vide : le bouton Google est masqué en mode API.
+  static const String googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue:
+        '561939304792-4iaq4db1dh9mq59sdr967mgr272q3u8c.apps.googleusercontent.com',
+  );
+
+  /// Identifiant client OAuth « iOS » (facultatif sur Android).
+  static const String googleClientId = String.fromEnvironment(
+    'GOOGLE_CLIENT_ID',
+  );
+
+  /// Bouton Google affiché : démo en mémoire, ou API avec un identifiant.
+  static bool get googleSignInEnabled =>
+      !useApiAuth || googleServerClientId.isNotEmpty;
 
   /// Délai réseau simulé par les dépôts mock (tiré entre ces deux bornes).
   /// Les tests le passent à zéro.

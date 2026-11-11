@@ -90,10 +90,11 @@ class KitchenPage extends ConsumerWidget {
                   for (final lane in _Lane.values)
                     _LaneColumn(
                       lane: lane,
-                      orders: list
-                          .where((o) => lane.contains(o.status))
-                          .toList()
-                        ..sort((a, b) => a.createdAt.compareTo(b.createdAt)),
+                      orders:
+                          list.where((o) => lane.contains(o.status)).toList()
+                            ..sort(
+                              (a, b) => a.createdAt.compareTo(b.createdAt),
+                            ),
                     ),
                 ];
                 if (wide) {
@@ -207,9 +208,7 @@ class _LaneColumn extends ConsumerWidget {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                hovering
-                                    ? 'Déposez ici'
-                                    : 'Aucune commande',
+                                hovering ? 'Déposez ici' : 'Aucune commande',
                                 style: context.text.bodyMedium?.copyWith(
                                   color: context.palette.textSecondary,
                                 ),
@@ -337,7 +336,10 @@ class _Ticket extends ConsumerWidget {
                         ),
                         TextSpan(text: item.product.name),
                         if (item.options.isNotEmpty)
-                          TextSpan(text: ' (${item.optionsLabel})', style: muted),
+                          TextSpan(
+                            text: ' (${item.optionsLabel})',
+                            style: muted,
+                          ),
                       ],
                     ),
                     style: context.text.bodyMedium,
@@ -458,10 +460,7 @@ class _ElapsedState extends State<_Elapsed> {
       children: [
         Icon(Icons.timer_outlined, size: 14, color: color),
         const SizedBox(width: 3),
-        Text(
-          label,
-          style: context.text.labelMedium?.copyWith(color: color),
-        ),
+        Text(label, style: context.text.labelMedium?.copyWith(color: color)),
       ],
     );
   }

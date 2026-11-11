@@ -8,7 +8,11 @@ import '../theme/app_colors.dart';
 /// pointillés animés : carte des livreurs (back office) et suivi de
 /// commande (front office), sans service de cartographie.
 class CityMapPainter extends CustomPainter {
-  CityMapPainter({required this.dark, required this.routes, required this.dash});
+  CityMapPainter({
+    required this.dark,
+    required this.routes,
+    required this.dash,
+  });
 
   final bool dark;
   final List<(Offset, Offset)> routes;
@@ -38,7 +42,10 @@ class CityMapPainter extends CustomPainter {
         ),
         parkPaint,
       )
-      ..drawOval(Rect.fromLTWH(w * 0.7, h * 0.08, w * 0.14, h * 0.16), parkPaint)
+      ..drawOval(
+        Rect.fromLTWH(w * 0.7, h * 0.08, w * 0.14, h * 0.16),
+        parkPaint,
+      )
       ..drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromLTWH(w * 0.42, h * 0.74, w * 0.12, h * 0.14),

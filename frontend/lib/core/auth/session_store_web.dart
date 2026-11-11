@@ -3,6 +3,9 @@ import 'dart:html' as html;
 
 const _key = 'sf_session';
 
+/// `localStorage` se lit directement : rien à charger.
+Future<void> loadSession() async {}
+
 Map<String, dynamic>? readSession() {
   final raw = html.window.localStorage[_key];
   if (raw == null || raw.isEmpty) return null;

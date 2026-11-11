@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
@@ -25,6 +26,28 @@ class AppNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Image importée depuis le téléphone (data:image/...;base64,...) :
+    // Image.network ne sait pas la lire sur Android / iOS.
+    if (url.startsWith('data:')) {
+      final bytes = _decodeDataUri(url);
+      final memory = bytes == null
+          ? _ImageFallback(icon: fallbackIcon, width: width, height: height)
+          : Image.memory(
+              bytes,
+              width: width,
+              height: height,
+              fit: fit,
+              gaplessPlayback: true,
+              errorBuilder: (context, error, stackTrace) => _ImageFallback(
+                icon: fallbackIcon,
+                width: width,
+                height: height,
+              ),
+            );
+      if (borderRadius == null) return memory;
+      return ClipRRect(borderRadius: borderRadius!, child: memory);
+    }
+
     final image = Image.network(
       url,
       width: width,
@@ -57,6 +80,15 @@ class AppNetworkImage extends StatelessWidget {
 
     if (borderRadius == null) return image;
     return ClipRRect(borderRadius: borderRadius!, child: image);
+  }
+}
+
+/// Octets d'une image `data:` (null si elle est illisible).
+Uint8List? _decodeDataUri(String url) {
+  try {
+    return Uri.tryParse(url)?.data?.contentAsBytes();
+  } on FormatException {
+    return null;
   }
 }
 

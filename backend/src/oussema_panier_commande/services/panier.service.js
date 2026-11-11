@@ -1,272 +1,220 @@
 'use strict';
 
-const HttpError = require('../../errors/http-error');
-const { query, withTransaction, newId, toIso } = require('../../data/db');
-const {
-  MAX_QUANTITY_PER_ITEM,
-  calculateServiceFee,
-  getMergeKey,
-  calculatePromoDiscount,
-} = require('../domain/panier.constants');
+/**
+ * Panier de l'utilisateur connecté (`ApiCartRepository`, `/api/cart/items`).
+ *
+ * Règles :
+ * - le panier appartient au compte du jeton (jamais à un `userId` envoyé) ;
+ * - produit, prix et options sont relus en base à chaque lecture : le
+ *   produit envoyé par l'application ne sert qu'à connaître son id ;
+ * - un panier ne contient que les produits d'un seul restaurant ;
+ * - deux lignes identiques (produit, options, note) sont fusionnées.
+ */
 
-function formatProduct(rawProduct, dbRow) {
-  const p = rawProduct || {};
-  const db = dbRow || {};
+const HttpError = require('../../errors/http-error');
+const { query, withTransaction, newId } = require('../../data/db');
+const pricing = require('./pricing');
+const { MAX_QUANTITY_PER_ITEM } = require('../domain/panier.constants');
+
+const MESSAGES = Object.freeze({
+  notFound: (id) => `Article du panier introuvable (${id}).`,
+  productRequired: 'Le produit est obligatoire pour ajouter au panier.',
+  productNotFound: "Ce produit n'existe plus.",
+  unavailable: (name) => `« ${name} » n'est plus disponible.`,
+  restaurantUnavailable: "Ce restaurant n'accepte pas de commandes pour le moment.",
+  otherRestaurant:
+    "Votre panier contient déjà des produits d'un autre restaurant. Videz votre panier pour commander chez un autre établissement.",
+});
+
+function parseJson(value, fallback) {
+  if (value == null) return fallback;
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch (_) {
+    return fallback;
+  }
+}
+
+/**
+ * Ligne du panier au format `CartItem.toJson()`. Le produit et les options
+ * sont ceux de la base ; un produit supprimé garde sa dernière copie et
+ * apparaît indisponible.
+ */
+function present(row, product) {
+  const stored = parseJson(row.options, []);
+  const snapshot = parseJson(row.product_data, null);
+  const current = product || (snapshot ? { ...snapshot, isAvailable: false } : null);
+  let options = Array.isArray(stored) ? stored : [];
+  if (product) {
+    // Suppléments au prix actuel ; une option retirée du menu disparaît.
+    const live = new Map();
+    for (const group of product.optionGroups || []) {
+      for (const option of group.options || []) live.set(option.id, option);
+    }
+    options = options
+      .filter((o) => live.has(o.id))
+      .map((o) => ({ id: o.id, name: live.get(o.id).name, price: pricing.round2(live.get(o.id).price || 0) }));
+  }
+  const quantity = Math.max(1, Number(row.quantity) || 1);
+  const unit = current ? pricing.unitPrice(current, options) : 0;
   return {
-    id: p.id || db.id || 'prod_unknown',
-    restaurantId: p.restaurantId || db.restaurant_id || 'rest_demo',
-    categoryId: p.categoryId || db.category || '',
-    name: p.name || db.name || 'Article',
-    description: p.description || db.description || '',
-    price: Number(p.price ?? db.price ?? 0),
-    imageUrl: p.imageUrl || db.image_url || '',
-    section: p.section || db.section || '',
-    optionGroups: Array.isArray(p.optionGroups)
-      ? p.optionGroups
-      : db.option_groups
-      ? (typeof db.option_groups === 'string' ? JSON.parse(db.option_groups) : db.option_groups)
-      : [],
-    isAvailable: p.isAvailable !== undefined ? Boolean(p.isAvailable) : (db.is_available === undefined ? true : db.is_available === 1),
-    isPopular: p.isPopular !== undefined ? Boolean(p.isPopular) : (db.is_popular === 1),
-    calories: p.calories ? Number(p.calories) : (db.calories ? Number(db.calories) : null),
+    id: row.id,
+    product: current,
+    quantity,
+    options,
+    note: row.note || null,
+    unitPrice: unit,
+    totalPrice: pricing.round2(unit * quantity),
   };
 }
 
-function mapCartRow(row, dbProduct) {
-  let savedProduct = null;
-  if (row.product_data) {
-    try {
-      savedProduct = typeof row.product_data === 'string' ? JSON.parse(row.product_data) : row.product_data;
-    } catch (_) {}
-  }
-  const product = formatProduct(savedProduct, dbProduct);
-
-  let options = [];
-  if (row.options) {
-    try {
-      options = typeof row.options === 'string' ? JSON.parse(row.options) : row.options;
-    } catch (_) {}
-  }
-
-  return {
-    id: row.id,
-    product,
-    quantity: Math.max(1, Number(row.quantity) || 1),
-    options: Array.isArray(options) ? options : [],
-    note: row.note || null,
-    totalPrice: (() => {
-      const optionsSum = (options || []).reduce((sum, o) => sum + (Number(o.price) || 0), 0);
-      return Math.round((product.price + optionsSum) * (Number(row.quantity) || 1) * 100) / 100;
-    })(),
-  };
+async function rowsOf(userId) {
+  return query('SELECT * FROM cart_items WHERE user_id = ? ORDER BY created_at ASC, id ASC', [userId]);
 }
 
 async function getCart(userId) {
-  const effectiveUserId = userId || 'u-client-1';
-  const rows = await query(
-    'SELECT * FROM cart_items WHERE user_id = ? ORDER BY created_at ASC',
-    [effectiveUserId],
-  );
-
+  const rows = await rowsOf(userId);
   if (rows.length === 0) return [];
+  const products = await pricing.loadProducts(rows.map((r) => r.product_id));
+  return rows.map((row) => present(row, products.get(row.product_id))).filter((item) => item.product);
+}
 
-  const productIds = rows.map((r) => r.product_id).filter(Boolean);
-  let productMap = new Map();
-  if (productIds.length > 0) {
-    const placeholders = productIds.map(() => '?').join(',');
-    const dbProducts = await query(
-      `SELECT * FROM products WHERE id IN (${placeholders})`,
-      productIds,
-    );
-    productMap = new Map(dbProducts.map((p) => [p.id, p]));
-  }
-
-  return rows.map((r) => mapCartRow(r, productMap.get(r.product_id)));
+async function findRow(userId, itemId) {
+  const rows = await query('SELECT * FROM cart_items WHERE id = ? AND user_id = ? LIMIT 1', [itemId, userId]);
+  if (!rows[0]) throw new HttpError(404, MESSAGES.notFound(itemId));
+  return rows[0];
 }
 
 async function getItem(userId, itemId) {
-  const effectiveUserId = userId || 'u-client-1';
-  const rows = await query(
-    'SELECT * FROM cart_items WHERE id = ? AND user_id = ? LIMIT 1',
-    [itemId, effectiveUserId],
-  );
-  if (!rows[0]) {
-    throw new HttpError(404, `Article du panier introuvable (${itemId}).`);
-  }
-  const dbProducts = await query('SELECT * FROM products WHERE id = ? LIMIT 1', [rows[0].product_id]);
-  return mapCartRow(rows[0], dbProducts[0]);
+  const row = await findRow(userId, itemId);
+  const products = await pricing.loadProducts([row.product_id]);
+  return present(row, products.get(row.product_id));
 }
 
-async function addItem(userId, payload) {
-  const effectiveUserId = userId || 'u-client-1';
-
-  const productInput = payload.product || {};
-  const productId = productInput.id || payload.productId || payload.id;
-  if (!productId) {
-    throw new HttpError(422, 'Le produit est obligatoire pour ajouter au panier.');
+/** Produit commandable : existe, disponible, restaurant validé. */
+async function orderableProduct(productId) {
+  const products = await pricing.loadProducts([productId]);
+  const product = products.get(productId);
+  if (!product) throw new HttpError(404, MESSAGES.productNotFound);
+  if (!product.isAvailable) throw new HttpError(409, MESSAGES.unavailable(product.name));
+  const restaurant = await pricing.loadRestaurant(product.restaurantId);
+  if (!restaurant || restaurant.status !== 'approved') {
+    throw new HttpError(409, MESSAGES.restaurantUnavailable);
   }
+  return product;
+}
 
-  let dbProducts = await query('SELECT * FROM products WHERE id = ? LIMIT 1', [productId]);
-  let dbProd = dbProducts[0];
+async function addItem(userId, payload = {}) {
+  const productId = pricing.productIdOf(payload);
+  if (!productId) throw new HttpError(422, MESSAGES.productRequired);
+  const product = await orderableProduct(productId);
+  const quantity = pricing.quantityOf(payload.quantity ?? 1);
+  const options = pricing.resolveOptions(product, payload.options);
+  const note = pricing.noteOf(payload.note);
+  const key = pricing.mergeKey(product.id, options, note);
 
-  const fullProduct = formatProduct(productInput, dbProd);
-  const restaurantId = fullProduct.restaurantId;
-
-  // Règle métier : un panier ne contient que les articles d'un seul restaurant
-  const existingCart = await getCart(effectiveUserId);
-  if (existingCart.length > 0) {
-    const currentRestId = existingCart[0].product.restaurantId;
-    if (currentRestId && restaurantId && currentRestId !== restaurantId) {
-      if (payload.clearExisting || payload.replace) {
-        await clearCart(effectiveUserId);
-      } else {
-        throw new HttpError(
-          409,
-          `Votre panier contient déjà des produits d'un autre restaurant. Videz votre panier pour commander chez un autre établissement.`,
-        );
-      }
+  const id = await withTransaction(async () => {
+    const existing = await getCart(userId);
+    const otherRestaurant = existing.find((item) => item.product.restaurantId !== product.restaurantId);
+    if (otherRestaurant) {
+      if (!(payload.clearExisting || payload.replace)) throw new HttpError(409, MESSAGES.otherRestaurant);
+      await query('DELETE FROM cart_items WHERE user_id = ?', [userId]);
     }
-  }
 
-  const quantityToAdd = Math.max(1, Math.min(MAX_QUANTITY_PER_ITEM, parseInt(payload.quantity, 10) || 1));
-  const options = Array.isArray(payload.options) ? payload.options : [];
-  const note = payload.note && payload.note.trim() ? payload.note.trim() : null;
-
-  const targetMergeKey = getMergeKey(productId, options, note);
-
-  // Recherche d'un article existant identique
-  let existingItem = null;
-  for (const item of existingCart) {
-    if (getMergeKey(item.product.id, item.options, item.note) === targetMergeKey) {
-      existingItem = item;
-      break;
+    const same = otherRestaurant
+      ? null
+      : existing.find((item) => pricing.mergeKey(item.product.id, item.options, item.note) === key);
+    if (same) {
+      const merged = Math.min(MAX_QUANTITY_PER_ITEM, same.quantity + quantity);
+      await query(
+        'UPDATE cart_items SET quantity = ?, updated_at = ? WHERE id = ? AND user_id = ?',
+        [merged, new Date().toISOString(), same.id, userId],
+      );
+      return same.id;
     }
-  }
 
-  if (existingItem) {
-    const updatedQty = Math.min(MAX_QUANTITY_PER_ITEM, existingItem.quantity + quantityToAdd);
+    const itemId = newId('ci');
+    const now = new Date().toISOString();
     await query(
-      'UPDATE cart_items SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
-      [updatedQty, existingItem.id, effectiveUserId],
+      `INSERT INTO cart_items (id, user_id, product_id, quantity, options, note, product_data, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [itemId, userId, product.id, quantity, JSON.stringify(options), note, JSON.stringify(product), now, now],
     );
-    return getItem(effectiveUserId, existingItem.id);
-  }
-
-  const newCartItemId = newId('ci');
-  const now = new Date().toISOString();
-
-  await query(
-    `INSERT INTO cart_items (id, user_id, product_id, quantity, options, note, product_data, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      newCartItemId,
-      effectiveUserId,
-      productId,
-      quantityToAdd,
-      JSON.stringify(options),
-      note,
-      JSON.stringify(fullProduct),
-      now,
-      now,
-    ],
-  );
-
-  return getItem(effectiveUserId, newCartItemId);
+    return itemId;
+  });
+  return getItem(userId, id);
 }
 
-async function updateItem(userId, itemId, payload) {
-  const effectiveUserId = userId || 'u-client-1';
-
-  const rows = await query(
-    'SELECT * FROM cart_items WHERE id = ? AND user_id = ? LIMIT 1',
-    [itemId, effectiveUserId],
-  );
-  if (!rows[0]) {
-    throw new HttpError(404, `Article du panier introuvable (${itemId}).`);
-  }
-
-  const newQuantity = parseInt(payload.quantity, 10);
-  if (Number.isInteger(newQuantity) && newQuantity <= 0) {
-    await deleteItem(effectiveUserId, itemId);
-    return { id: itemId, deleted: true };
-  }
-
-  const updates = [];
+/**
+ * `PUT /cart/items/:id` (JSON complet de `CartItem`) : quantité, options et
+ * note. Une quantité de 0 retire la ligne.
+ */
+async function updateItem(userId, itemId, payload = {}) {
+  const row = await findRow(userId, itemId);
+  const sets = [];
   const params = [];
 
-  if (Number.isInteger(newQuantity)) {
-    updates.push('quantity = ?');
-    params.push(Math.min(MAX_QUANTITY_PER_ITEM, Math.max(1, newQuantity)));
+  if (payload.quantity !== undefined) {
+    const quantity = pricing.quantityOf(payload.quantity, { allowZero: true });
+    if (quantity === 0) {
+      await deleteItem(userId, itemId);
+      return { id: itemId, deleted: true };
+    }
+    sets.push('quantity = ?');
+    params.push(quantity);
   }
-
   if (payload.options !== undefined) {
-    updates.push('options = ?');
-    params.push(JSON.stringify(Array.isArray(payload.options) ? payload.options : []));
+    const products = await pricing.loadProducts([row.product_id]);
+    const product = products.get(row.product_id);
+    if (!product) throw new HttpError(404, MESSAGES.productNotFound);
+    sets.push('options = ?');
+    params.push(JSON.stringify(pricing.resolveOptions(product, payload.options)));
   }
-
   if (payload.note !== undefined) {
-    updates.push('note = ?');
-    params.push(payload.note ? payload.note.trim() : null);
+    sets.push('note = ?');
+    params.push(pricing.noteOf(payload.note));
   }
-
-  if (payload.product) {
-    updates.push('product_data = ?');
-    params.push(JSON.stringify(payload.product));
+  if (sets.length) {
+    sets.push('updated_at = ?');
+    params.push(new Date().toISOString(), itemId, userId);
+    await query(`UPDATE cart_items SET ${sets.join(', ')} WHERE id = ? AND user_id = ?`, params);
   }
-
-  updates.push('updated_at = CURRENT_TIMESTAMP');
-  params.push(itemId, effectiveUserId);
-
-  await query(
-    `UPDATE cart_items SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`,
-    params,
-  );
-
-  return getItem(effectiveUserId, itemId);
+  return getItem(userId, itemId);
 }
 
 async function deleteItem(userId, itemId) {
-  const effectiveUserId = userId || 'u-client-1';
-  await query('DELETE FROM cart_items WHERE id = ? AND user_id = ?', [itemId, effectiveUserId]);
+  await query('DELETE FROM cart_items WHERE id = ? AND user_id = ?', [itemId, userId]);
   return { success: true, id: itemId };
 }
 
 async function clearCart(userId) {
-  const effectiveUserId = userId || 'u-client-1';
-  await query('DELETE FROM cart_items WHERE user_id = ?', [effectiveUserId]);
+  await query('DELETE FROM cart_items WHERE user_id = ?', [userId]);
   return { success: true };
 }
 
+/** Totaux du panier (`CartTotals.of`), avec un code promo éventuel. */
 async function getTotals(userId, promoCode = null) {
   const items = await getCart(userId);
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-
-  let restaurant = null;
-  if (items.length > 0 && items[0].product.restaurantId) {
-    const rests = await query('SELECT * FROM restaurants WHERE id = ? LIMIT 1', [
-      items[0].product.restaurantId,
-    ]);
-    restaurant = rests[0] || null;
-  }
-
-  const deliveryFee = items.length === 0 ? 0 : Number(restaurant?.delivery_fee ?? 2.5);
-  const serviceFee = calculateServiceFee(subtotal);
-  const discount = calculatePromoDiscount(promoCode, subtotal, deliveryFee);
-  const total = Math.max(0, Math.round((subtotal + deliveryFee + serviceFee - discount) * 100) / 100);
-
+  const restaurant = items.length ? await pricing.loadRestaurant(items[0].product.restaurantId) : null;
+  const base = pricing.totalsFor(subtotal, restaurant);
+  const discount = pricing.promoDiscount(promoCode, base.subtotal, base.deliveryFee);
+  const totals = pricing.totalsFor(subtotal, restaurant, discount || 0);
   return {
-    subtotal: Math.round(subtotal * 100) / 100,
-    deliveryFee: Math.round(deliveryFee * 100) / 100,
-    serviceFee: Math.round(serviceFee * 100) / 100,
-    discount: Math.round(discount * 100) / 100,
-    total,
+    ...totals,
+    promoCode: promoCode && discount != null ? String(promoCode).trim().toUpperCase() : null,
+    promoValid: promoCode ? discount != null : null,
     itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
     restaurantId: restaurant?.id || null,
     restaurantName: restaurant?.name || null,
+    minOrder: restaurant ? Number(restaurant.min_order) || 0 : 0,
+    isOpen: restaurant ? Number(restaurant.is_open) === 1 : null,
   };
 }
 
 module.exports = {
+  MESSAGES,
   getCart,
   getItem,
   addItem,
@@ -275,4 +223,3 @@ module.exports = {
   clearCart,
   getTotals,
 };
-

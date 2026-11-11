@@ -193,7 +193,9 @@ class CourierDetailPage extends ConsumerWidget {
                           for (final d in deliveries.take(10))
                             ListTile(
                               contentPadding: EdgeInsets.zero,
-                              title: Text('#${d.orderReference} • ${d.pickupName}'),
+                              title: Text(
+                                '#${d.orderReference} • ${d.pickupName}',
+                              ),
                               subtitle: Text(
                                 '${d.customerName} • ${Formatters.dateTime(d.createdAt)}',
                               ),
@@ -208,7 +210,8 @@ class CourierDetailPage extends ConsumerWidget {
                                   deliveryStatusChip(d.status),
                                 ],
                               ),
-                              onTap: () => context.go(BackRoutes.order(d.orderId)),
+                              onTap: () =>
+                                  context.go(BackRoutes.order(d.orderId)),
                             ),
                         ],
                       ),
@@ -235,9 +238,11 @@ class _Header extends StatelessWidget {
         children: [
           Stack(
             children: [
-              Avatar(name: c.fullName, imageUrl: c.avatarUrl, size: 76)
-                  .animate()
-                  .scaleXY(begin: 0.7, curve: Curves.easeOutBack),
+              Avatar(
+                name: c.fullName,
+                imageUrl: c.avatarUrl,
+                size: 76,
+              ).animate().scaleXY(begin: 0.7, curve: Curves.easeOutBack),
               Positioned(
                 right: 2,
                 bottom: 2,
@@ -283,9 +288,10 @@ class _Header extends StatelessWidget {
   }
 }
 
-final courierIdentityScanProvider = FutureProvider.family<CourierIdentityScan, String>(
-  (ref, id) => ref.watch(courierRepositoryProvider).identityScan(id),
-);
+final courierIdentityScanProvider =
+    FutureProvider.family<CourierIdentityScan, String>(
+      (ref, id) => ref.watch(courierRepositoryProvider).identityScan(id),
+    );
 
 /// Dossier lu à l'inscription : saisie du livreur et contrôle des trois photos.
 /// Affiché seulement dans le back office, et l'API refuse l'accès aux autres rôles.
@@ -318,9 +324,21 @@ class _IdentityScanCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppSizes.md),
-            infoText(Icons.badge_outlined, 'Nom saisi', '${dossier.firstName} ${dossier.lastName}'),
-            infoText(Icons.mail_outline_rounded, 'E-mail', dossier.email.isEmpty ? '—' : dossier.email),
-            infoText(Icons.phone_outlined, 'Téléphone', dossier.phone.isEmpty ? '—' : dossier.phone),
+            infoText(
+              Icons.badge_outlined,
+              'Nom saisi',
+              '${dossier.firstName} ${dossier.lastName}',
+            ),
+            infoText(
+              Icons.mail_outline_rounded,
+              'E-mail',
+              dossier.email.isEmpty ? '—' : dossier.email,
+            ),
+            infoText(
+              Icons.phone_outlined,
+              'Téléphone',
+              dossier.phone.isEmpty ? '—' : dossier.phone,
+            ),
             const SizedBox(height: AppSizes.sm),
             for (final doc in dossier.documents)
               Padding(
@@ -333,13 +351,18 @@ class _IdentityScanCard extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(doc.label.isEmpty ? doc.type.label : doc.label, style: context.text.titleSmall),
+                          Text(
+                            doc.label.isEmpty ? doc.type.label : doc.label,
+                            style: context.text.titleSmall,
+                          ),
                           Text(
                             doc.received
                                 ? 'Image reçue · ${doc.format ?? 'image'} · ${doc.bytes} octets'
                                 : 'Photo absente ou illisible',
                             style: context.text.bodySmall?.copyWith(
-                              color: doc.received ? AppColors.success : AppColors.error,
+                              color: doc.received
+                                  ? AppColors.success
+                                  : AppColors.error,
                             ),
                           ),
                           if (doc.type != DocumentType.insurance)
@@ -551,9 +574,8 @@ class _DocumentThumb extends StatelessWidget {
     return InkWell(
       onTap: () => showDialog<void>(
         context: context,
-        builder: (context) => Dialog(
-          child: InteractiveViewer(child: Image.memory(bytes)),
-        ),
+        builder: (context) =>
+            Dialog(child: InteractiveViewer(child: Image.memory(bytes))),
       ),
       child: thumb,
     );

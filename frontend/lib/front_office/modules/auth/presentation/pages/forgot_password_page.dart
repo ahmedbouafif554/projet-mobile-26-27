@@ -1,26 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 
+import '../../../../../core/auth/auth_service.dart';
 import '../../../../../core/constants/app_assets.dart';
 import '../../../../../core/theme/app_sizes.dart';
 import '../../../../../core/theme/theme_extensions.dart';
 import '../../../../../core/utils/validators.dart';
+import '../../../../../core/widgets/app_snackbar.dart';
 import '../../../../../core/widgets/app_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../router/front_routes.dart';
 import '../widgets/auth_header.dart';
 
-/// Mot de passe oublié : envoi (simulé) d'un lien de réinitialisation.
-class ForgotPasswordPage extends StatefulWidget {
+/// Mot de passe oublié : le serveur envoie un lien de réinitialisation.
+class ForgotPasswordPage extends ConsumerStatefulWidget {
   const ForgotPasswordPage({super.key});
 
   @override
-  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+  ConsumerState<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
   bool _loading = false;
@@ -36,13 +39,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
-    // Par sécurité, on ne dit pas si l'e-mail existe : même message pour tous.
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (mounted) {
-      setState(() {
-        _loading = false;
-        _sent = true;
-      });
+    try {
+      // Par sécurité, le serveur ne dit pas si l'e-mail existe : même
+      // message pour tous.
+      await ref
+          .read(authServiceProvider.notifier)
+          .requestPasswordReset(_email.text);
+      if (mounted) setState(() => _sent = true);
+    } catch (error) {
+      if (mounted) AppSnackbar.error(context, error);
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 

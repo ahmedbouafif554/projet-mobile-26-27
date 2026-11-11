@@ -60,8 +60,11 @@ function build(body, current) {
   if (!city) throw new HttpError(422, 'La ville est obligatoire');
   const latitude = Number(body.latitude ?? current?.latitude ?? 48.8566);
   const longitude = Number(body.longitude ?? current?.longitude ?? 2.3522);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    throw new HttpError(422, 'Coordonnées invalides');
+  if (
+    !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+    latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180
+  ) {
+    throw new HttpError(422, 'Coordonnées invalides : placez l’adresse sur la carte.');
   }
   return {
     label,

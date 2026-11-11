@@ -2,12 +2,12 @@
 
 const express = require('express');
 const asyncHandler = require('../../middleware/async');
-const { optionalAuth } = require('../../middleware/auth.middleware');
+const { authenticate } = require('../../middleware/auth.middleware');
 const panierCtrl = require('../controllers/panier.controller');
 
 const router = express.Router();
 
-router.use(optionalAuth);
+router.use(authenticate);
 
 // Totaux & calculs du panier
 router.get('/totals', asyncHandler(panierCtrl.getTotals));

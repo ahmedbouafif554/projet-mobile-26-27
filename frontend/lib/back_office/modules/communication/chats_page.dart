@@ -49,7 +49,9 @@ String chatTitle(
 ) {
   final others = chat.participantIds.where((id) => id != myId).toList();
   if (others.isEmpty) return chat.title;
-  return others.map((id) => participantName(id, users, restaurants)).join(' ↔ ');
+  return others
+      .map((id) => participantName(id, users, restaurants))
+      .join(' ↔ ');
 }
 
 /// Photo d'une conversation : le premier autre participant (image du
@@ -79,9 +81,9 @@ class ChatsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isAdmin = ref.watch(authServiceProvider).can(
-      Permission.superviseChats,
-    );
+    final isAdmin = ref
+        .watch(authServiceProvider)
+        .can(Permission.superviseChats);
     return BoPage(
       title: 'Conversations',
       subtitle: isAdmin
@@ -111,14 +113,10 @@ class ChatsPage extends ConsumerWidget {
                               compact: true,
                               icon: Icons.forum_outlined,
                               title: 'Sélectionnez une conversation',
-                              message:
-                                  'Les messages s’afficheront ici.',
+                              message: 'Les messages s’afficheront ici.',
                             ),
                           )
-                        : _Conversation(
-                            key: ValueKey(chatId),
-                            chatId: chatId!,
-                          ),
+                        : _Conversation(key: ValueKey(chatId), chatId: chatId!),
                   ),
                 ],
               );

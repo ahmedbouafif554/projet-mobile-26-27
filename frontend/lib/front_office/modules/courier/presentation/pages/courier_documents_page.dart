@@ -51,7 +51,9 @@ class _CourierDocumentsPageState extends ConsumerState<CourierDocumentsPage> {
               plateNumber: _vehicle == VehicleType.bike || plate.isEmpty
                   ? null
                   : plate.toUpperCase(),
-              zone: _zone.text.trim().isEmpty ? courier.zone : _zone.text.trim(),
+              zone: _zone.text.trim().isEmpty
+                  ? courier.zone
+                  : _zone.text.trim(),
             ),
           );
       if (mounted) AppSnackbar.success(context, 'Véhicule mis à jour');
@@ -96,127 +98,112 @@ class _CourierDocumentsPageState extends ConsumerState<CourierDocumentsPage> {
                   AppSizes.pagePadding,
                   AppSizes.xl,
                 ),
-                children:
-                    [
-                          const PageTitle('Documents et véhicule'),
-                          const SizedBox(height: AppSizes.md),
-                          _StatusBanner(status: courier.documentStatus),
-                          const SizedBox(height: AppSizes.lg),
-                          Text('Justificatifs', style: context.text.titleLarge),
-                          const SizedBox(height: AppSizes.sm),
-                          for (final doc in courier.documents)
-                            Container(
-                              margin: const EdgeInsets.only(bottom: AppSizes.sm),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: context.colors.surface,
-                                borderRadius: BorderRadius.circular(
-                                  AppSizes.radiusMd,
+                children: [
+                  const PageTitle('Documents et véhicule'),
+                  const SizedBox(height: AppSizes.md),
+                  _StatusBanner(status: courier.documentStatus),
+                  const SizedBox(height: AppSizes.lg),
+                  Text('Justificatifs', style: context.text.titleLarge),
+                  const SizedBox(height: AppSizes.sm),
+                  for (final doc in courier.documents)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: AppSizes.sm),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: context.colors.surface,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                        boxShadow: context.palette.softShadow,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(switch (doc.type) {
+                            DocumentType.idCard => Icons.badge_rounded,
+                            DocumentType.license => Icons.credit_card_rounded,
+                            DocumentType.insurance => Icons.shield_outlined,
+                          }, color: AppColors.primary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  doc.type.label,
+                                  style: context.text.titleSmall,
                                 ),
-                                boxShadow: context.palette.softShadow,
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    switch (doc.type) {
-                                      DocumentType.idCard => Icons.badge_rounded,
-                                      DocumentType.license =>
-                                        Icons.credit_card_rounded,
-                                      DocumentType.insurance =>
-                                        Icons.shield_outlined,
-                                    },
-                                    color: AppColors.primary,
+                                Text(
+                                  'Envoyé le ${Formatters.date(doc.uploadedAt)}',
+                                  style: context.text.bodySmall?.copyWith(
+                                    color: context.palette.textSecondary,
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          doc.type.label,
-                                          style: context.text.titleSmall,
-                                        ),
-                                        Text(
-                                          'Envoyé le ${Formatters.date(doc.uploadedAt)}',
-                                          style: context.text.bodySmall
-                                              ?.copyWith(
-                                                color: context
-                                                    .palette
-                                                    .textSecondary,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (doc.status == DocumentStatus.rejected)
-                                    TextButton(
-                                      onPressed: () => _resubmit(doc.type),
-                                      child: const Text('Renvoyer'),
-                                    )
-                                  else
-                                    documentStatusChip(doc.status),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          const SizedBox(height: AppSizes.lg),
-                          Text('Véhicule', style: context.text.titleLarge),
-                          const SizedBox(height: AppSizes.md),
-                          SegmentedButton<VehicleType>(
-                            showSelectedIcon: false,
-                            segments: const [
-                              ButtonSegment(
-                                value: VehicleType.bike,
-                                icon: Icon(Icons.pedal_bike_rounded),
-                                label: Text('Vélo'),
-                              ),
-                              ButtonSegment(
-                                value: VehicleType.scooter,
-                                icon: Icon(Icons.two_wheeler_rounded),
-                                label: Text('Scooter'),
-                              ),
-                              ButtonSegment(
-                                value: VehicleType.car,
-                                icon: Icon(Icons.directions_car_rounded),
-                                label: Text('Voiture'),
-                              ),
-                            ],
-                            selected: {_vehicle ?? courier.vehicle},
-                            onSelectionChanged: (s) =>
-                                setState(() => _vehicle = s.first),
                           ),
-                          const SizedBox(height: AppSizes.md),
-                          if (_vehicle != VehicleType.bike) ...[
-                            AppTextField(
-                              controller: _plate,
-                              label: 'Immatriculation',
-                              hint: 'AB-123-CD',
-                              prefixIcon: Icons.pin_outlined,
-                              textCapitalization: TextCapitalization.characters,
-                            ),
-                            const SizedBox(height: AppSizes.md),
-                          ],
-                          AppTextField(
-                            controller: _zone,
-                            label: 'Zone de livraison',
-                            prefixIcon: Icons.map_outlined,
-                          ),
-                          const SizedBox(height: AppSizes.md),
-                          const AppFormSection(
-                            title: 'Bon à savoir',
-                            subtitle:
-                                'Un changement de véhicule peut nécessiter de nouveaux justificatifs.',
-                          ),
-                          const SizedBox(height: AppSizes.lg),
-                          PrimaryButton(
-                            label: 'Enregistrer',
-                            isLoading: _saving,
-                            onPressed: () => _save(courier),
-                          ),
-                        ]
-                        .animate(interval: 40.ms)
-                        .fadeIn(duration: 300.ms)
-                        .slideY(begin: 0.05, end: 0),
+                          if (doc.status == DocumentStatus.rejected)
+                            TextButton(
+                              onPressed: () => _resubmit(doc.type),
+                              child: const Text('Renvoyer'),
+                            )
+                          else
+                            documentStatusChip(doc.status),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: AppSizes.lg),
+                  Text('Véhicule', style: context.text.titleLarge),
+                  const SizedBox(height: AppSizes.md),
+                  SegmentedButton<VehicleType>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(
+                        value: VehicleType.bike,
+                        icon: Icon(Icons.pedal_bike_rounded),
+                        label: Text('Vélo'),
+                      ),
+                      ButtonSegment(
+                        value: VehicleType.scooter,
+                        icon: Icon(Icons.two_wheeler_rounded),
+                        label: Text('Scooter'),
+                      ),
+                      ButtonSegment(
+                        value: VehicleType.car,
+                        icon: Icon(Icons.directions_car_rounded),
+                        label: Text('Voiture'),
+                      ),
+                    ],
+                    selected: {_vehicle ?? courier.vehicle},
+                    onSelectionChanged: (s) =>
+                        setState(() => _vehicle = s.first),
+                  ),
+                  const SizedBox(height: AppSizes.md),
+                  if (_vehicle != VehicleType.bike) ...[
+                    AppTextField(
+                      controller: _plate,
+                      label: 'Immatriculation',
+                      hint: 'AB-123-CD',
+                      prefixIcon: Icons.pin_outlined,
+                      textCapitalization: TextCapitalization.characters,
+                    ),
+                    const SizedBox(height: AppSizes.md),
+                  ],
+                  AppTextField(
+                    controller: _zone,
+                    label: 'Zone de livraison',
+                    prefixIcon: Icons.map_outlined,
+                  ),
+                  const SizedBox(height: AppSizes.md),
+                  const AppFormSection(
+                    title: 'Bon à savoir',
+                    subtitle:
+                        'Un changement de véhicule peut nécessiter de nouveaux justificatifs.',
+                  ),
+                  const SizedBox(height: AppSizes.lg),
+                  PrimaryButton(
+                    label: 'Enregistrer',
+                    isLoading: _saving,
+                    onPressed: () => _save(courier),
+                  ),
+                ].animate(interval: 40.ms).fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0),
               ),
       ),
     );

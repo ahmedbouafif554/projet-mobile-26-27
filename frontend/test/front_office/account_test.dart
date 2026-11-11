@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:superfaster/core/auth/auth_service.dart';
 import 'package:superfaster/core/theme/theme_mode_provider.dart';
@@ -62,6 +63,21 @@ void main() {
     await tester.enterText(form.at(0), 'Chez Léa');
     await tester.enterText(form.at(1), '4 rue du Temple');
     await tester.enterText(form.at(2), '75004');
+
+    // Sans position sur la carte, l'adresse n'est pas enregistrée.
+    await tester.tap(find.text('Enregistrer'));
+    await settle(tester, 400);
+    expect(
+      find.text('Placez votre adresse exacte sur la carte.'),
+      findsOneWidget,
+    );
+
+    // Le client place sa porte sur la carte, puis enregistre.
+    await tester.ensureVisible(find.byType(FlutterMap));
+    await settle(tester, 300);
+    await tester.tap(find.byType(FlutterMap));
+    await settle(tester, 1200);
+    expect(find.textContaining('GPS : '), findsOneWidget);
     await tester.tap(find.text('Enregistrer'));
     await settle(tester);
     expect(find.byType(AddressCard), findsNWidgets(4));

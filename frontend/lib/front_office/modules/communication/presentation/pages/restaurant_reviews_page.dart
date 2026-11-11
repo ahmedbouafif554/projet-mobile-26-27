@@ -116,7 +116,9 @@ class _RestaurantReviewsPageState extends ConsumerState<RestaurantReviewsPage> {
                                       end: all.isEmpty
                                           ? 0
                                           : all
-                                                    .where((r) => r.rating == star)
+                                                    .where(
+                                                      (r) => r.rating == star,
+                                                    )
                                                     .length /
                                                 all.length,
                                     ),
@@ -190,26 +192,30 @@ class _RestaurantReviewsPageState extends ConsumerState<RestaurantReviewsPage> {
               for (final (i, r) in visible.indexed)
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSizes.md),
-                  child: ReviewCard(
-                    review: r,
-                    footer: Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        onPressed: helpful.contains(r.id)
-                            ? null
-                            : () => ref
-                                  .read(helpfulReviewsProvider.notifier)
-                                  .mark(r),
-                        icon: Icon(
-                          helpful.contains(r.id)
-                              ? Icons.thumb_up_alt_rounded
-                              : Icons.thumb_up_alt_outlined,
-                          size: 18,
-                        ),
-                        label: Text('Utile (${r.helpfulCount})'),
-                      ),
-                    ),
-                  ).animate(delay: (40 * (i % 8)).ms).fadeIn().slideY(begin: 0.05),
+                  child:
+                      ReviewCard(
+                            review: r,
+                            footer: Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton.icon(
+                                onPressed: helpful.contains(r.id)
+                                    ? null
+                                    : () => ref
+                                          .read(helpfulReviewsProvider.notifier)
+                                          .mark(r),
+                                icon: Icon(
+                                  helpful.contains(r.id)
+                                      ? Icons.thumb_up_alt_rounded
+                                      : Icons.thumb_up_alt_outlined,
+                                  size: 18,
+                                ),
+                                label: Text('Utile (${r.helpfulCount})'),
+                              ),
+                            ),
+                          )
+                          .animate(delay: (40 * (i % 8)).ms)
+                          .fadeIn()
+                          .slideY(begin: 0.05),
                 ),
           ],
         ),

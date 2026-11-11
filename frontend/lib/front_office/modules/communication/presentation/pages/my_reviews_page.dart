@@ -123,7 +123,10 @@ class MyReviewsPage extends ConsumerWidget {
                           style: TextButton.styleFrom(
                             foregroundColor: AppColors.error,
                           ),
-                          icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            size: 18,
+                          ),
                           label: const Text('Supprimer'),
                         ),
                       ],

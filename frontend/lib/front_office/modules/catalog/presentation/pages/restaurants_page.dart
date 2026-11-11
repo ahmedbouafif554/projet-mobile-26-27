@@ -183,13 +183,14 @@ class RestaurantsPage extends ConsumerWidget {
                       }
                       final r = list[i - 1];
                       return RestaurantCard(
-                        key: ValueKey(r.id),
-                        restaurant: r,
-                        onTap: () => context.push(FrontRoutes.restaurant(r.id)),
-                      ).animate(delay: (40 * (i % 6)).ms).fadeIn().slideY(
-                        begin: 0.06,
-                        end: 0,
-                      );
+                            key: ValueKey(r.id),
+                            restaurant: r,
+                            onTap: () =>
+                                context.push(FrontRoutes.restaurant(r.id)),
+                          )
+                          .animate(delay: (40 * (i % 6)).ms)
+                          .fadeIn()
+                          .slideY(begin: 0.06, end: 0);
                     },
                   );
                 },

@@ -31,6 +31,8 @@ const LIMITS = Object.freeze({
   phoneLength: 32,
   emailLength: 255,
   urlLength: 2048,
+  // Photo du menu en base64 : ~2 Mo d'image.
+  menuImageLength: 2_800_000,
   promoLength: 120,
   sectionLength: 60,
   menuSections: 30,

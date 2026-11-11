@@ -64,7 +64,14 @@ class _ReviewFormState extends ConsumerState<_ReviewForm> {
   late final Set<String> _photos = {...?widget.existing?.photos};
   bool _saving = false;
 
-  static const _labels = ['', 'Décevant 😞', 'Moyen 😐', 'Bien 🙂', 'Très bien 😋', 'Excellent ! 🤩'];
+  static const _labels = [
+    '',
+    'Décevant 😞',
+    'Moyen 😐',
+    'Bien 🙂',
+    'Très bien 😋',
+    'Excellent ! 🤩',
+  ];
   static const _tags = [
     'Délicieux',
     'Bien chaud',
@@ -93,7 +100,8 @@ class _ReviewFormState extends ConsumerState<_ReviewForm> {
           id: '',
           restaurantId: widget.order.restaurantId,
           userId: user.id,
-          userName: '${user.firstName} ${user.lastName.isEmpty ? '' : '${user.lastName[0]}.'}',
+          userName:
+              '${user.firstName} ${user.lastName.isEmpty ? '' : '${user.lastName[0]}.'}',
           userAvatar: user.avatarUrl,
           orderId: widget.order.id,
           rating: _rating,
@@ -150,7 +158,9 @@ class _ReviewFormState extends ConsumerState<_ReviewForm> {
       ),
       children:
           [
-                PageTitle(widget.existing == null ? 'Votre avis' : 'Modifier mon avis'),
+                PageTitle(
+                  widget.existing == null ? 'Votre avis' : 'Modifier mon avis',
+                ),
                 const SizedBox(height: AppSizes.lg),
                 Text(
                   o.restaurantName,
@@ -195,7 +205,11 @@ class _ReviewFormState extends ConsumerState<_ReviewForm> {
                   ),
                   child: Column(
                     children: [
-                      subRating('Plats', _food, (v) => setState(() => _food = v)),
+                      subRating(
+                        'Plats',
+                        _food,
+                        (v) => setState(() => _food = v),
+                      ),
                       subRating(
                         'Livraison',
                         _delivery,
@@ -221,7 +235,9 @@ class _ReviewFormState extends ConsumerState<_ReviewForm> {
                         onPressed: () {
                           final text = _comment.text.trim();
                           if (text.contains(tag)) return;
-                          _comment.text = text.isEmpty ? tag : '$text, ${tag.toLowerCase()}';
+                          _comment.text = text.isEmpty
+                              ? tag
+                              : '$text, ${tag.toLowerCase()}';
                         },
                       ),
                   ],
@@ -298,7 +314,9 @@ class _ReviewFormState extends ConsumerState<_ReviewForm> {
                 ),
                 const SizedBox(height: AppSizes.lg),
                 PrimaryButton(
-                  label: widget.existing == null ? 'Publier mon avis' : 'Enregistrer',
+                  label: widget.existing == null
+                      ? 'Publier mon avis'
+                      : 'Enregistrer',
                   icon: Icons.send_rounded,
                   isLoading: _saving,
                   onPressed: _submit,

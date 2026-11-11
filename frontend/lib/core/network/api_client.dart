@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../auth/auth_service.dart';
 import '../auth/session_store.dart';
 import '../config/app_config.dart';
 
@@ -41,6 +42,15 @@ Dio createDio(Ref ref, {String baseUrl = AppConfig.apiBaseUrl}) {
         final token = ref.read(authTokenProvider);
         if (token != null) options.headers['Authorization'] = 'Bearer $token';
         handler.next(options);
+      },
+      onError: (error, handler) {
+        // Session expirée ou révoquée (mot de passe changé, compte supprimé) :
+        // retour à l'écran de connexion au lieu d'erreurs en cascade.
+        final sentToken = error.requestOptions.headers['Authorization'] != null;
+        if (error.response?.statusCode == 401 && sentToken) {
+          ref.read(authServiceProvider.notifier).logout();
+        }
+        handler.next(error);
       },
     ),
   );

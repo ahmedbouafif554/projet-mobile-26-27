@@ -77,14 +77,23 @@ class _AccountPageState extends ConsumerState<AccountPage> {
   Future<void> _savePassword() async {
     if (!_passwordKey.currentState!.validate()) return;
     setState(() => _savingPassword = true);
-    // Mock : aucun mot de passe n'est stocké, on simule l'appel.
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    if (!mounted) return;
-    for (final c in [_current, _new, _confirm]) {
-      c.clear();
+    try {
+      await ref
+          .read(authServiceProvider.notifier)
+          .changePassword(
+            currentPassword: _current.text,
+            newPassword: _new.text,
+          );
+      if (!mounted) return;
+      for (final c in [_current, _new, _confirm]) {
+        c.clear();
+      }
+      AppSnackbar.success(context, 'Mot de passe modifié');
+    } catch (error) {
+      if (mounted) AppSnackbar.error(context, error);
+    } finally {
+      if (mounted) setState(() => _savingPassword = false);
     }
-    setState(() => _savingPassword = false);
-    AppSnackbar.success(context, 'Mot de passe modifié');
   }
 
   Future<void> _logout() async {

@@ -39,7 +39,10 @@ class _Bounds {
 Offset restaurantPosition(Restaurant r) {
   final seed = r.id.codeUnits.fold(7, (h, c) => (h * 31 + c) & 0x7fffffff);
   final random = math.Random(seed);
-  return Offset(0.12 + random.nextDouble() * 0.76, 0.14 + random.nextDouble() * 0.7);
+  return Offset(
+    0.12 + random.nextDouble() * 0.76,
+    0.14 + random.nextDouble() * 0.7,
+  );
 }
 
 /// Carte en direct (admin) : livreurs, restaurants et courses en cours sur
@@ -93,9 +96,8 @@ class _MapPageState extends ConsumerState<MapPage>
             ),
             label: Text(status.label),
             selected: _shown.contains(status),
-            onSelected: (on) => setState(
-              () => on ? _shown.add(status) : _shown.remove(status),
-            ),
+            onSelected: (on) =>
+                setState(() => on ? _shown.add(status) : _shown.remove(status)),
           ),
         FilterChip(
           avatar: const Icon(
@@ -186,9 +188,7 @@ class _MapPageState extends ConsumerState<MapPage>
                     left: 12,
                     bottom: 12,
                     child: _Legend(
-                      online: couriers
-                          .where((c) => c.status.isOnline)
-                          .length,
+                      online: couriers.where((c) => c.status.isOnline).length,
                       active: deliveries.length,
                     ),
                   ),
@@ -358,16 +358,15 @@ class _Legend extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 10,
-            height: 10,
-            decoration: const BoxDecoration(
-              color: AppColors.success,
-              shape: BoxShape.circle,
-            ),
-          ).animate(onPlay: (c) => c.repeat(reverse: true)).fade(
-            begin: 0.3,
-            duration: 800.ms,
-          ),
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: AppColors.success,
+                  shape: BoxShape.circle,
+                ),
+              )
+              .animate(onPlay: (c) => c.repeat(reverse: true))
+              .fade(begin: 0.3, duration: 800.ms),
           const SizedBox(width: 8),
           Text('$online en ligne', style: context.text.labelLarge),
           const SizedBox(width: 14),

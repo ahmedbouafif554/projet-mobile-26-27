@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_service.dart';
 import '../../../../../core/auth/biometric_login.dart';
 import '../../../../../core/auth/permissions.dart';
+import '../../../../../core/config/app_config.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_sizes.dart';
 import '../../../../../core/theme/theme_extensions.dart';
@@ -32,8 +33,12 @@ class LoginPage extends ConsumerStatefulWidget {
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   // Pré-remplis avec les comptes de démo pour tester rapidement.
-  final _email = TextEditingController(text: DemoAccounts.client);
-  final _password = TextEditingController(text: DemoAccounts.password);
+  final _email = TextEditingController(
+    text: AppConfig.demoMode ? DemoAccounts.client : '',
+  );
+  final _password = TextEditingController(
+    text: AppConfig.demoMode ? DemoAccounts.password : '',
+  );
   UserRole _role = UserRole.client;
   bool _submitted = false;
   bool _loading = false;
@@ -86,9 +91,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  /// Connexion sociale simulée : compte de démo du rôle choisi.
-  Future<void> _socialLogin(SocialProvider provider) =>
-      _run(() => ref.read(authServiceProvider.notifier).loginAs(_role));
+  /// Connexion Google : vérifiée par le serveur (compte de démo du rôle
+  /// choisi en mode démonstration).
+  Future<void> _socialLogin(SocialProvider provider) => _run(
+    () => ref
+        .read(authServiceProvider.notifier)
+        .loginWithGoogle(role: _role, space: Permissions.spaceOf(_role)),
+  );
 
   /// Déverrouille la session client déjà enregistrée sur cet appareil.
   Future<void> _biometricLogin() async {
@@ -113,13 +122,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       }
       return;
     }
-    await _run(
-      () async {
-        ref
-            .read(authServiceProvider.notifier)
-            .restoreBiometricSession(user: saved.user, token: saved.token);
-      },
-    );
+    await _run(() async {
+      ref
+          .read(authServiceProvider.notifier)
+          .restoreBiometricSession(user: saved.user, token: saved.token);
+    });
   }
 
   @override
@@ -203,13 +210,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             OutlinedButton.icon(
                               onPressed: _loading ? null : _biometricLogin,
                               icon: const Icon(Icons.face_rounded),
-                              label: const Text('Connexion par reconnaissance faciale'),
+                              label: const Text(
+                                'Connexion par reconnaissance faciale',
+                              ),
                             ),
                           ],
-                          const SizedBox(height: AppSizes.lg),
-                          const OrDivider(),
-                          const SizedBox(height: AppSizes.lg),
-                          SocialButtons(onTap: _socialLogin),
+                          if (AppConfig.googleSignInEnabled) ...[
+                            const SizedBox(height: AppSizes.lg),
+                            const OrDivider(),
+                            const SizedBox(height: AppSizes.lg),
+                            SocialButtons(onTap: _socialLogin),
+                          ],
                           const SizedBox(height: AppSizes.lg),
                           Wrap(
                             alignment: WrapAlignment.center,

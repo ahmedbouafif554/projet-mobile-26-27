@@ -83,7 +83,12 @@ class _UsersPageState extends ConsumerState<UsersPage> {
           runSpacing: AppSizes.sm,
           children: [
             pill('Tous', null, AppColors.primary, Icons.groups_rounded),
-            pill('Clients', UserRole.client, AppColors.info, Icons.person_rounded),
+            pill(
+              'Clients',
+              UserRole.client,
+              AppColors.info,
+              Icons.person_rounded,
+            ),
             pill(
               'Livreurs',
               UserRole.courier,
@@ -102,7 +107,12 @@ class _UsersPageState extends ConsumerState<UsersPage> {
               AppColors.secondary,
               Icons.admin_panel_settings_rounded,
             ),
-            pill('Bloqués', UserStatus.blocked, AppColors.error, Icons.block_rounded),
+            pill(
+              'Bloqués',
+              UserStatus.blocked,
+              AppColors.error,
+              Icons.block_rounded,
+            ),
           ],
         ),
         boGap,

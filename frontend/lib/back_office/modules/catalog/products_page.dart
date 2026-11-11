@@ -151,8 +151,10 @@ class _ProductsPageState extends ConsumerState<ProductsPage> {
               label: 'Prix',
               numeric: true,
               sortValue: (p) => p.price,
-              cell: (context, p) =>
-                  Text(Formatters.price(p.price), style: context.text.titleSmall),
+              cell: (context, p) => Text(
+                Formatters.price(p.price),
+                style: context.text.titleSmall,
+              ),
             ),
             AppTableColumn(
               label: 'Disponible',

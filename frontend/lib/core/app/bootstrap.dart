@@ -3,12 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../auth/session_store.dart';
 import '../utils/formatters.dart';
 
 /// Démarrage commun aux deux applications (main_front.dart, main_back.dart).
 Future<void> bootstrap(Widget app) async {
   WidgetsFlutterBinding.ensureInitialized();
   await Formatters.init();
+  // Session enregistrée : l'utilisateur reste connecté entre deux lancements.
+  await loadSession();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
   );

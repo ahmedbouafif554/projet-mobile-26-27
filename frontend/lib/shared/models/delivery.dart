@@ -34,6 +34,11 @@ class Delivery {
     this.assignedAt,
     this.pickedUpAt,
     this.deliveredAt,
+    this.customerPhone,
+    this.pickupLat,
+    this.pickupLng,
+    this.dropoffLat,
+    this.dropoffLng,
   });
 
   final String id;
@@ -57,6 +62,15 @@ class Delivery {
   final DateTime? assignedAt;
   final DateTime? pickedUpAt;
   final DateTime? deliveredAt;
+
+  /// Téléphone du client (seulement pour le livreur de la course et l'admin).
+  final String? customerPhone;
+
+  /// Positions du restaurant (retrait) et du client (dépôt), pour le GPS.
+  final double? pickupLat;
+  final double? pickupLng;
+  final double? dropoffLat;
+  final double? dropoffLng;
 
   double get earnings => fee + tip;
 
@@ -82,7 +96,15 @@ class Delivery {
     assignedAt: parseDateOrNull(json['assignedAt']),
     pickedUpAt: parseDateOrNull(json['pickedUpAt']),
     deliveredAt: parseDateOrNull(json['deliveredAt']),
+    customerPhone: json['customerPhone'] as String?,
+    pickupLat: _coordinate(json['pickupLat']),
+    pickupLng: _coordinate(json['pickupLng']),
+    dropoffLat: _coordinate(json['dropoffLat']),
+    dropoffLng: _coordinate(json['dropoffLng']),
   );
+
+  static double? _coordinate(Object? value) =>
+      value is num ? value.toDouble() : double.tryParse('${value ?? ''}');
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -102,6 +124,11 @@ class Delivery {
     'assignedAt': assignedAt?.toIso8601String(),
     'pickedUpAt': pickedUpAt?.toIso8601String(),
     'deliveredAt': deliveredAt?.toIso8601String(),
+    'customerPhone': customerPhone,
+    'pickupLat': pickupLat,
+    'pickupLng': pickupLng,
+    'dropoffLat': dropoffLat,
+    'dropoffLng': dropoffLng,
   };
 
   Delivery copyWith({
@@ -142,5 +169,10 @@ class Delivery {
     deliveredAt: deliveredAt == keep
         ? this.deliveredAt
         : deliveredAt as DateTime?,
+    customerPhone: customerPhone,
+    pickupLat: pickupLat,
+    pickupLng: pickupLng,
+    dropoffLat: dropoffLat,
+    dropoffLng: dropoffLng,
   );
 }

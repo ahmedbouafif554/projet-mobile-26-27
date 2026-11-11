@@ -1,8 +1,15 @@
 'use strict';
 
+/**
+ * Parcours complet, avec les appels exacts des dépôts Flutter
+ * (ApiCartRepository, ApiOrderRepository, ApiDeliveryRepository,
+ * ApiCourierRepository) et de vraies sessions JWT (POST /auth/login).
+ */
+
 const request = require('supertest');
 const app = require('../src/app');
-const { init, reset, close } = require('../src/data/db');
+const { init, reset, close, query } = require('../src/data/db');
+const { ADDRESS } = require('./helpers');
 
 beforeAll(async () => {
   await init();
@@ -10,189 +17,111 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await reset();
+  await query("UPDATE restaurants SET owner_id = 'u-resto-1' WHERE id = 'rest_demo'");
 });
 
 afterAll(async () => {
   await close();
 });
 
-describe('E2E Frontend <-> Backend Link : Module 3 (Panier & Commandes)', () => {
-  test('Flux complet Front Office & Back Office : Panier -> Validation -> Commande -> Cuisine -> Suivi', async () => {
-    const userId = 'u-client-1';
-    const restaurantId = 'rest_demo';
+async function session(email, space, role) {
+  const res = await request(app)
+    .post('/api/auth/login')
+    .send({ email, password: 'demo1234', space, ...(role ? { role } : {}) });
+  expect(res.status).toBe(200);
+  return { Authorization: `Bearer ${res.body.token}` };
+}
 
-    // ── 1. FRONT OFFICE : Consultation du panier initial ─────────────────────
-    const emptyCart = await request(app)
-      .get('/api/cart/items')
-      .query({ userId });
-    expect(emptyCart.status).toBe(200);
-    expect(emptyCart.body).toEqual([]);
+describe('E2E Front Office ↔ Back Office : panier → commande → cuisine → livraison', () => {
+  test('parcours complet avec de vraies sessions', async () => {
+    const alex = await session('alex.martin@exemple.fr', 'frontOffice', 'client');
+    const marc = await session('contact@burgerfactory.fr', 'backOffice');
+    const karim = await session('karim.benali@superfaster.fr', 'frontOffice', 'courier');
+    const admin = await session('admin@superfaster.fr', 'backOffice');
 
-    // ── 2. FRONT OFFICE : Ajout d'articles au panier ─────────────────────────
-    // Ajout d'un burger avec options et note
-    const item1 = await request(app)
+    // ── 1. Client : panier (CartController.add) ────────────────────────────
+    expect((await request(app).get('/api/cart/items').set(alex)).body).toEqual([]);
+    const burger = await request(app)
       .post('/api/cart/items')
-      .query({ userId })
-      .send({
-        product: {
-          id: 'prod_1',
-          restaurantId: 'rest_demo',
-          name: 'Classic Burger',
-          price: 9.9,
-          imageUrl: 'https://images.unsplash.com/photo-burger',
-          section: 'Burgers',
-        },
-        quantity: 1,
-        options: [{ id: 'opt_cheddar', name: 'Extra Cheddar', price: 1.0 }],
-        note: 'Bien cuit svp',
-      });
-    expect(item1.status).toBe(201);
-    expect(item1.body.id).toMatch(/^ci_/);
-    expect(item1.body.product.name).toBe('Classic Burger');
-    expect(item1.body.options).toHaveLength(1);
+      .set(alex)
+      .send({ id: '', product: { id: 'prod_1', restaurantId: 'rest_demo', name: 'Classic Burger', price: 9.9 }, quantity: 2, options: [], note: 'Bien cuit' });
+    expect(burger.status).toBe(201);
+    await request(app).post('/api/cart/items').set(alex).send({ id: '', product: { id: 'prod_3' }, quantity: 1, options: [], note: null });
+    const cart = (await request(app).get('/api/cart/items').set(alex)).body;
+    expect(cart).toHaveLength(2);
 
-    // Ajout du même article pour tester la fusion automatique
-    const item1Duplicate = await request(app)
-      .post('/api/cart/items')
-      .query({ userId })
-      .send({
-        product: { id: 'prod_1', restaurantId: 'rest_demo', price: 9.9 },
-        quantity: 1,
-        options: [{ id: 'opt_cheddar', name: 'Extra Cheddar', price: 1.0 }],
-        note: 'Bien cuit svp',
-      });
-    expect(item1Duplicate.status).toBe(201);
-    expect(item1Duplicate.body.id).toBe(item1.body.id);
-    expect(item1Duplicate.body.quantity).toBe(2);
-
-    // Ajout d'une portion de frites
-    const item2 = await request(app)
-      .post('/api/cart/items')
-      .query({ userId })
-      .send({
-        product: {
-          id: 'prod_3',
-          restaurantId: 'rest_demo',
-          name: 'Frites',
-          price: 3.5,
-          section: 'Accompagnements',
-        },
-        quantity: 1,
-      });
-    expect(item2.status).toBe(201);
-
-    // ── 3. FRONT OFFICE : Vérification des articles & calcul des totaux ──────
-    const cartList = await request(app)
-      .get('/api/cart/items')
-      .query({ userId });
-    expect(cartList.status).toBe(200);
-    expect(cartList.body).toHaveLength(2);
-
-    // Totaux : 2 * (9.9 + 1.0) + 1 * 3.5 = 21.80 + 3.50 = 25.30
-    const totals = await request(app)
-      .get('/api/cart/totals')
-      .query({ userId, promoCode: 'BIENVENUE' });
-    expect(totals.status).toBe(200);
-    expect(totals.body.subtotal).toBe(25.3);
-    expect(totals.body.discount).toBe(5.0); // -5 € BIENVENUE car subtotal >= 15 €
-    expect(totals.body.total).toBeGreaterThan(0);
-
-    // ── 4. FRONT OFFICE : Validation de la commande (Checkout) ───────────────
-    const checkoutRes = await request(app)
+    // ── 2. Client : commande (MyOrdersController.place → Order.toJson) ──────
+    const placed = await request(app)
       .post('/api/orders')
+      .set(alex)
       .send({
-        userId,
-        restaurantId,
+        id: '',
+        reference: '',
+        userId: 'u-client-1',
         customerName: 'Alex Martin',
-        deliveryAddress: {
-          id: 'a-1',
-          userId,
-          label: 'Maison',
-          street: '12 rue de la Paix',
-          postalCode: '75002',
-          city: 'Paris',
-          type: 'home',
-          instructions: 'Digicode 4521, 3e étage',
-          isDefault: true,
-          latitude: 48.8686,
-          longitude: 2.3312,
-        },
-        items: cartList.body,
-        deliveryFee: totals.body.deliveryFee,
-        serviceFee: totals.body.serviceFee,
-        discount: totals.body.discount,
+        restaurantId: 'rest_demo',
+        restaurantName: 'SuperBurger Demo',
+        items: cart,
+        deliveryAddress: ADDRESS,
+        deliveryFee: 2.5,
+        serviceFee: 1.17,
+        discount: 5,
+        status: 'pending',
+        paymentMethod: 'cash',
+        paymentStatus: 'pending',
         promoCode: 'BIENVENUE',
-        paymentMethod: 'card',
-        paymentStatus: 'paid',
-        note: 'Livrer sans sonner svp',
+        note: 'Livrer sans sonner',
+        history: [{ status: 'pending', at: new Date().toISOString(), note: null }],
+        createdAt: new Date().toISOString(),
       });
+    expect(placed.status).toBe(201);
+    const order = placed.body;
+    // 2 × 9,90 + 3,50 = 23,30 ; + 2,50 livraison + 1,17 service − 5 promo.
+    expect(order).toMatchObject({ status: 'pending', subtotal: 23.3, discount: 5, totalAmount: 21.97 });
+    expect((await request(app).get('/api/cart/items').set(alex)).body).toEqual([]);
+    expect((await request(app).get('/api/orders').set(alex).query({ userId: 'u-client-1' })).body.map((o) => o.id)).toEqual([order.id]);
 
-    expect(checkoutRes.status).toBe(201);
-    const order = checkoutRes.body;
-    expect(order.id).toMatch(/^ord_/);
-    expect(order.reference).toMatch(/^CMD-/);
-    expect(order.status).toBe('pending');
-    expect(order.items).toHaveLength(2);
-    expect(order.deliveryAddress.street).toBe('12 rue de la Paix');
+    // ── 3. Restaurateur : cuisine (OrdersController.updateStatus) ───────────
+    const kitchen = await request(app).get('/api/orders').set(marc).query({ restaurantId: 'rest_demo' });
+    expect(kitchen.body.map((o) => o.id)).toContain(order.id);
+    for (const status of ['accepted', 'preparing']) {
+      const res = await request(app).patch(`/api/orders/${order.id}/status`).set(marc).send({ status, note: null });
+      expect(res.status).toBe(200);
+    }
 
-    // Vérifier que le panier a été automatiquement vidé suite à la commande
-    const cartAfterOrder = await request(app)
-      .get('/api/cart/items')
-      .query({ userId });
-    expect(cartAfterOrder.status).toBe(200);
-    expect(cartAfterOrder.body).toHaveLength(0);
+    // ── 4. Livreur : course proposée, acceptée (AvailableDeliveriesController) ──
+    const offers = await request(app).get('/api/deliveries').set(karim).query({ status: 'waiting' });
+    const offer = offers.body.find((d) => d.orderId === order.id);
+    expect(offer).toBeDefined();
+    expect(offer.otpCode).toBeUndefined();
+    expect((await request(app).patch(`/api/deliveries/${offer.id}/assign`).set(karim).send({ courierId: 'c-1' })).status).toBe(200);
+    expect((await request(app).patch('/api/couriers/c-1/status').set(karim).send({ status: 'busy' })).status).toBe(200);
 
-    // ── 5. BACK OFFICE : Réception par le restaurateur en Cuisine (Kanban) ───
-    // Le restaurateur consulte ses commandes reçues
-    const kitchenOrders = await request(app)
-      .get('/api/orders')
-      .query({ restaurantId });
-    expect(kitchenOrders.status).toBe(200);
-    const foundInKitchen = kitchenOrders.body.find((o) => o.id === order.id);
-    expect(foundInKitchen).toBeDefined();
-    expect(foundInKitchen.status).toBe('pending');
+    // Le restaurant termine la préparation ; le back office appelle aussi
+    // _ensureDelivery (POST /deliveries) : la course existante est renvoyée.
+    expect((await request(app).patch(`/api/orders/${order.id}/status`).set(marc).send({ status: 'ready' })).status).toBe(200);
+    const ensured = await request(app).post('/api/deliveries').set(marc).send({ orderId: order.id, fee: 99 });
+    expect(ensured.status).toBe(200);
+    expect(ensured.body.id).toBe(offer.id);
 
-    // ── 6. BACK OFFICE : Transition vers "accepted" (Acceptée) ───────────────
-    const accepted = await request(app)
-      .patch(`/api/orders/${order.id}/status`)
-      .send({ status: 'accepted', note: 'Commande acceptée par le restaurant' });
-    expect(accepted.status).toBe(200);
-    expect(accepted.body.status).toBe('accepted');
+    // ── 5. Livreur : récupérée → en route → livrée (MyDeliveriesController.advance) ──
+    for (const [deliveryStatus, orderStatus] of [['pickedUp', 'delivering'], ['inTransit', 'delivering'], ['delivered', 'delivered']]) {
+      const step = await request(app).patch(`/api/deliveries/${offer.id}/status`).set(karim).send({ status: deliveryStatus });
+      expect(step.status).toBe(200);
+      // Le front renvoie ensuite le statut de la commande : sans effet.
+      const echo = await request(app).patch(`/api/orders/${order.id}/status`).set(karim).send({ status: orderStatus });
+      expect(echo.status).toBe(200);
+    }
 
-    // ── 7. BACK OFFICE : Transition vers "preparing" (En préparation) ────────
-    const preparing = await request(app)
-      .patch(`/api/orders/${order.id}/status`)
-      .send({ status: 'preparing', note: 'Cuisson des steaks en cours' });
-    expect(preparing.status).toBe(200);
-    expect(preparing.body.status).toBe('preparing');
-
-    // ── 8. BACK OFFICE : Transition vers "ready" (Prête pour livreur) ────────
-    const ready = await request(app)
-      .patch(`/api/orders/${order.id}/status`)
-      .send({ status: 'ready', note: 'Commande prête au comptoir' });
-    expect(ready.status).toBe(200);
-    expect(ready.body.status).toBe('ready');
-
-    // ── 9. FRONT OFFICE : Suivi en direct (Live Tracking & Timeline) ─────────
-    const tracking = await request(app).get(`/api/orders/${order.id}/tracking`);
-    expect(tracking.status).toBe(200);
-    expect(tracking.body.delivery).toBeDefined();
-    expect(tracking.body.steps).toHaveLength(5);
-
-    const timeline = await request(app).get(`/api/orders/${order.id}/timeline`);
-    expect(timeline.status).toBe(200);
-    expect(timeline.body.length).toBeGreaterThanOrEqual(4);
-    expect(timeline.body.map((e) => e.status)).toEqual(
-      expect.arrayContaining(['pending', 'accepted', 'preparing', 'ready']),
-    );
-
-    // ── 10. BACK OFFICE : Statistiques du restaurant mises à jour ────────────
-    const stats = await request(app)
-      .get('/api/oussema/commandes/stats')
-      .query({ restaurantId });
-    expect(stats.status).toBe(200);
-    expect(stats.body.totalOrders).toBeGreaterThanOrEqual(1);
-    expect(stats.body.totalRevenue).toBeGreaterThan(0);
+    // ── 6. Résultat visible par chacun ───────────────────────────────────────
+    const tracked = (await request(app).get(`/api/orders/${order.id}`).set(alex)).body;
+    expect(tracked.status).toBe('delivered');
+    // Espèces encaissées par le livreur à la remise.
+    expect(tracked.paymentStatus).toBe('paid');
+    expect(tracked.history.map((e) => e.status)).toEqual(['pending', 'accepted', 'preparing', 'ready', 'delivering', 'delivered']);
+    const me = (await request(app).get('/api/couriers').set(karim).query({ userId: 'u-courier-1' })).body[0];
+    expect(me.status).toBe('available');
+    const stats = (await request(app).get('/api/orders/stats').set(admin)).body;
+    expect(stats.byStatus.delivered).toBe(1);
   });
 });
-

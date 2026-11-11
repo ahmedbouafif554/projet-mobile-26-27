@@ -119,13 +119,14 @@ class MyOrdersController extends AsyncNotifier<List<Order>> {
 }
 
 /// Une commande du client (fiche, suivi).
-final orderProvider = FutureProvider.autoDispose.family<Order, String>(
-  (ref, id) async {
-    // Se recharge quand la liste change (annulation, progression…).
-    ref.watch(myOrdersProvider);
-    return ref.watch(orderRepositoryProvider).getById(id);
-  },
-);
+final orderProvider = FutureProvider.autoDispose.family<Order, String>((
+  ref,
+  id,
+) async {
+  // Se recharge quand la liste change (annulation, progression…).
+  ref.watch(myOrdersProvider);
+  return ref.watch(orderRepositoryProvider).getById(id);
+});
 
 /// Suivi en temps réel (démo) : fait avancer la commande d'une étape
 /// (appelé toutes les quelques secondes par la page de suivi). Renvoie le

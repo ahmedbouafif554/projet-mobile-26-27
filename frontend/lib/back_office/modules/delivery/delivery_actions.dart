@@ -59,7 +59,9 @@ Future<void> setCourierStatus(
   CourierStatus status,
 ) async {
   try {
-    await ref.read(couriersControllerProvider.notifier).setStatus(courier, status);
+    await ref
+        .read(couriersControllerProvider.notifier)
+        .setStatus(courier, status);
     if (context.mounted) {
       AppSnackbar.success(context, '${courier.fullName} : ${status.label}');
     }
@@ -137,7 +139,9 @@ Future<void> assignCourier(
   );
   if (courier == null || !context.mounted) return;
   try {
-    await ref.read(deliveriesControllerProvider.notifier).assign(delivery, courier);
+    await ref
+        .read(deliveriesControllerProvider.notifier)
+        .assign(delivery, courier);
     if (context.mounted) {
       AppSnackbar.success(
         context,

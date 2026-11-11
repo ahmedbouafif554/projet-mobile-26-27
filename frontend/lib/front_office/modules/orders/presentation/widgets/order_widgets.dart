@@ -15,26 +15,30 @@ class TotalsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget line(String label, double value, {bool bold = false, Color? color}) =>
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: (bold ? context.text.titleMedium : context.text.bodyMedium)
-                      ?.copyWith(color: color),
-                ),
-              ),
-              Text(
-                Formatters.price(value),
-                style: (bold ? context.text.titleMedium : context.text.bodyMedium)
-                    ?.copyWith(color: color),
-              ),
-            ],
+    Widget line(
+      String label,
+      double value, {
+      bool bold = false,
+      Color? color,
+    }) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: (bold ? context.text.titleMedium : context.text.bodyMedium)
+                  ?.copyWith(color: color),
+            ),
           ),
-        );
+          Text(
+            Formatters.price(value),
+            style: (bold ? context.text.titleMedium : context.text.bodyMedium)
+                ?.copyWith(color: color),
+          ),
+        ],
+      ),
+    );
     return Container(
       padding: const EdgeInsets.all(AppSizes.md),
       decoration: BoxDecoration(

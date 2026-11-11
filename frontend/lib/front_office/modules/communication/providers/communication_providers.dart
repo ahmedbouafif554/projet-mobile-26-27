@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/auth/auth_service.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../shared/models/models.dart';
 import '../../../../shared/providers/chat_providers.dart';
 import '../../../../shared/repositories/repository_providers.dart';
@@ -45,7 +48,10 @@ class NotificationsController extends AsyncNotifier<List<AppNotification>> {
   /// Suppression (balayage). Une campagne envoyée à tous n'est masquée que
   /// pour la session.
   Future<void> remove(AppNotification notification) async {
-    state = AsyncData([for (final n in _items) if (n.id != notification.id) n]);
+    state = AsyncData([
+      for (final n in _items)
+        if (n.id != notification.id) n,
+    ]);
     if (notification.userId != null) {
       await ref.read(notificationRepositoryProvider).delete(notification.id);
     }
@@ -112,12 +118,43 @@ final myChatsProvider = AsyncNotifierProvider<MyChatsController, List<Chat>>(
 );
 
 class MyChatsController extends AsyncNotifier<List<Chat>> {
+  /// Conversations tenues par le serveur (sinon : démonstration en mémoire).
+  static bool get _server => !AppConfig.useMockData || AppConfig.useApiAuth;
+
   @override
   Future<List<Chat>> build() async {
     final userId = ref.watch(authServiceProvider.select((a) => a.user?.id));
     ref.watch(chatsRevisionProvider);
     if (userId == null) return const [];
+    if (_server) {
+      // Nouveaux messages et non lus : relus régulièrement.
+      final timer = Timer(const Duration(seconds: 10), ref.invalidateSelf);
+      ref.onDispose(timer.cancel);
+    }
     return ref.watch(chatRepositoryProvider).forUser(userId);
+  }
+
+  /// Conversation avec le livreur d'une commande (créée au besoin).
+  Future<Chat> chatWithCourier(Order order) async {
+    final chats = await future;
+    final existing = chats
+        .where((c) => c.orderId == order.id && c.type == ChatType.courier)
+        .firstOrNull;
+    if (existing != null) return existing;
+    final created = await ref
+        .read(chatRepositoryProvider)
+        .create(
+          Chat(
+            id: '',
+            type: ChatType.courier,
+            title: 'Votre livreur',
+            subtitle: 'Commande #${order.reference}',
+            orderId: order.id,
+            lastMessageAt: DateTime.now(),
+          ),
+        );
+    ref.invalidateSelf();
+    return created;
   }
 
   Future<void> markRead(Chat chat) async {
@@ -149,18 +186,20 @@ class MyChatsController extends AsyncNotifier<List<Chat>> {
             isOnline: true,
           ),
         );
-    await ref
-        .read(messageRepositoryProvider)
-        .create(
-          Message(
-            id: '',
-            chatId: created.id,
-            senderId: 'u-admin',
-            senderName: 'Support',
-            text: 'Bonjour ! Comment pouvons-nous vous aider ?',
-            sentAt: DateTime.now(),
-          ),
-        );
+    if (!_server) {
+      await ref
+          .read(messageRepositoryProvider)
+          .create(
+            Message(
+              id: '',
+              chatId: created.id,
+              senderId: 'u-admin',
+              senderName: 'Support',
+              text: 'Bonjour ! Comment pouvons-nous vous aider ?',
+              sentAt: DateTime.now(),
+            ),
+          );
+    }
     ref.invalidateSelf();
     return created;
   }
@@ -204,9 +243,10 @@ final restaurantReviewsProvider = FutureProvider.family<List<Review>, String>(
 );
 
 /// Avis écrits par le client connecté (CRUD).
-final myReviewsProvider = AsyncNotifierProvider<MyReviewsController, List<Review>>(
-  MyReviewsController.new,
-);
+final myReviewsProvider =
+    AsyncNotifierProvider<MyReviewsController, List<Review>>(
+      MyReviewsController.new,
+    );
 
 class MyReviewsController extends AsyncNotifier<List<Review>> {
   @override

@@ -129,89 +129,90 @@ class _CategoryTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = category;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: AppCard(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            ReorderableDragStartListener(
-              index: index,
-              child: MouseRegion(
-                cursor: SystemMouseCursors.grab,
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Icon(
-                    Icons.drag_indicator_rounded,
-                    color: context.palette.textSecondary,
+          padding: const EdgeInsets.only(bottom: 10),
+          child: AppCard(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                ReorderableDragStartListener(
+                  index: index,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.grab,
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Icon(
+                        Icons.drag_indicator_rounded,
+                        color: context.palette.textSecondary,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            SizedBox(
-              width: 28,
-              child: Text(
-                '${index + 1}',
-                style: context.text.titleSmall?.copyWith(
-                  color: context.palette.textSecondary,
-                ),
-              ),
-            ),
-            Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Color(c.colorValue),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text(c.emoji, style: const TextStyle(fontSize: 24)),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(c.name, style: context.text.titleSmall),
-                  Text(
-                    '$restaurantCount restaurant${restaurantCount > 1 ? 's' : ''}'
-                    '${c.isActive ? '' : ' • masquée'}',
-                    style: context.text.bodySmall?.copyWith(
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 28,
+                  child: Text(
+                    '${index + 1}',
+                    style: context.text.titleSmall?.copyWith(
                       color: context.palette.textSecondary,
                     ),
                   ),
-                ],
-              ),
+                ),
+                Container(
+                  width: 48,
+                  height: 48,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Color(c.colorValue),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(c.emoji, style: const TextStyle(fontSize: 24)),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(c.name, style: context.text.titleSmall),
+                      Text(
+                        '$restaurantCount restaurant${restaurantCount > 1 ? 's' : ''}'
+                        '${c.isActive ? '' : ' • masquée'}',
+                        style: context.text.bodySmall?.copyWith(
+                          color: context.palette.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Tooltip(
+                  message: c.isActive ? 'Visible' : 'Masquée',
+                  child: Switch(
+                    value: c.isActive,
+                    onChanged: (on) => ref
+                        .read(categoriesControllerProvider.notifier)
+                        .save(c.copyWith(isActive: on), isNew: false),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Modifier',
+                  onPressed: () =>
+                      showAppForm(context, CategoryForm(category: c)),
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+                IconButton(
+                  tooltip: 'Supprimer',
+                  onPressed: () => _delete(context, ref),
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.error,
+                  ),
+                ),
+              ],
             ),
-            Tooltip(
-              message: c.isActive ? 'Visible' : 'Masquée',
-              child: Switch(
-                value: c.isActive,
-                onChanged: (on) => ref
-                    .read(categoriesControllerProvider.notifier)
-                    .save(c.copyWith(isActive: on), isNew: false),
-              ),
-            ),
-            IconButton(
-              tooltip: 'Modifier',
-              onPressed: () => showAppForm(context, CategoryForm(category: c)),
-              icon: const Icon(Icons.edit_outlined),
-            ),
-            IconButton(
-              tooltip: 'Supprimer',
-              onPressed: () => _delete(context, ref),
-              icon: const Icon(
-                Icons.delete_outline_rounded,
-                color: AppColors.error,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ).animate(delay: (40 * index).ms).fadeIn(duration: 300.ms).slideX(
-      begin: 0.04,
-      end: 0,
-    );
+          ),
+        )
+        .animate(delay: (40 * index).ms)
+        .fadeIn(duration: 300.ms)
+        .slideX(begin: 0.04, end: 0);
   }
 }
 
@@ -237,7 +238,18 @@ class _CategoryFormState extends ConsumerState<CategoryForm> {
     0xFFF0F0F3,
   ];
   static const _emojis = [
-    '🍔', '🍕', '🍣', '🥗', '🍜', '🌮', '🍰', '🛒', '🥐', '🍗', '🥙', '☕',
+    '🍔',
+    '🍕',
+    '🍣',
+    '🥗',
+    '🍜',
+    '🌮',
+    '🍰',
+    '🛒',
+    '🥐',
+    '🍗',
+    '🥙',
+    '☕',
   ];
 
   late final _name = TextEditingController(text: widget.category?.name);

@@ -8,6 +8,7 @@ import '../../shared/models/restaurant.dart';
 import '../../shared/models/user.dart';
 import '../../shared/repositories/repository_providers.dart';
 import '../config/app_config.dart';
+import 'google_auth.dart';
 import 'session_store.dart';
 import '../network/api_client.dart';
 import '../network/api_exception.dart';
@@ -45,12 +46,39 @@ class AuthService extends Notifier<AuthState> {
       return const AuthState();
     }
     try {
-      return AuthState(
-        user: User.fromJson(Map<String, dynamic>.from(rawUser)),
-      );
+      final user = User.fromJson(Map<String, dynamic>.from(rawUser));
+      // Session reprise : le serveur confirme qu'elle est toujours valide.
+      if (AppConfig.useApiAuth) Future.microtask(() => _confirmSession(token));
+      return AuthState(user: user);
     } catch (_) {
       writeSession(null);
       return const AuthState();
+    }
+  }
+
+  /// Relit le profil avec le jeton enregistré. Jeton révoqué ou expiré,
+  /// compte bloqué ou supprimé : déconnexion. Hors connexion : la session
+  /// est gardée (l'appli fonctionne dès que le réseau revient).
+  Future<void> _confirmSession(String token) async {
+    try {
+      final response = await _dio().get(
+        '/auth/me',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      if (ref.read(authTokenProvider) != token) return;
+      final user = User.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+      state = AuthState(user: user);
+      _remember(user, token);
+    } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      if ((status == 401 || status == 403) &&
+          ref.read(authTokenProvider) == token) {
+        logout();
+      }
+    } catch (_) {
+      // Réponse illisible : on garde la session telle quelle.
     }
   }
 
@@ -220,6 +248,21 @@ class AuthService extends Notifier<AuthState> {
     required String email,
     required String password,
   }) async {
+    if (AppConfig.useApiAuth) {
+      final body = await _post('/auth/register-restaurant', {
+        'restaurantName': restaurantName.trim(),
+        'cuisine': cuisine.trim(),
+        'address': address.trim(),
+        'phone': phone.trim(),
+        'firstName': firstName.trim(),
+        'lastName': lastName.trim(),
+        'email': email.trim(),
+        'password': password,
+      });
+      return Restaurant.fromJson(
+        Map<String, dynamic>.from(body['restaurant'] as Map),
+      );
+    }
     final users = ref.read(userRepositoryProvider);
     if (await users.findByEmail(email) != null) {
       throw const ApiException('Un compte existe déjà avec cet e-mail.');
@@ -261,11 +304,62 @@ class AuthService extends Notifier<AuthState> {
   /// Vérifie le code reçu par SMS (mock : [demoOtpCode]) puis ouvre la
   /// session du compte créé à l'inscription.
   Future<User> verifyOtp({required String userId, required String code}) async {
+    if (AppConfig.useApiAuth) {
+      return _acceptSession(
+        await _post('/auth/verify-otp', {'userId': userId, 'code': code}),
+      );
+    }
     if (code != demoOtpCode) {
       throw const ApiException('Code incorrect, veuillez réessayer.');
     }
     final user = await ref.read(userRepositoryProvider).getById(userId);
     return _open(user, AppSpace.frontOffice);
+  }
+
+  /// Connexion avec Google. En mode API, l'ID token Google est vérifié par
+  /// le serveur (création d'un compte client si besoin). En démonstration,
+  /// le compte de démo du rôle choisi est ouvert.
+  Future<User> loginWithGoogle({UserRole? role, AppSpace? space}) async {
+    if (!AppConfig.useApiAuth) return loginAs(role ?? UserRole.client);
+    if (!AppConfig.googleSignInEnabled) {
+      throw const ApiException("La connexion Google n'est pas configurée.");
+    }
+    final idToken = await GoogleAuth.idToken();
+    return _acceptSession(
+      await _post('/auth/google', {
+        'idToken': idToken,
+        if (role != null) 'role': role.name,
+        if (space != null) 'space': space.name,
+      }),
+    );
+  }
+
+  /// « Mot de passe oublié » : le serveur envoie un lien par e-mail (même
+  /// réponse que le compte existe ou non).
+  Future<void> requestPasswordReset(String email) async {
+    if (!AppConfig.useApiAuth) {
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      return;
+    }
+    await _post('/auth/forgot-password', {'email': email.trim()});
+  }
+
+  /// Nouveau mot de passe depuis le compte. Le serveur ferme les autres
+  /// sessions et renvoie un nouveau jeton pour cet appareil.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    if (!AppConfig.useApiAuth) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      return;
+    }
+    _acceptSession(
+      await _post('/auth/change-password', {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      }, token: ref.read(authTokenProvider)),
+    );
   }
 
   User _open(User user, AppSpace? space) {
@@ -317,6 +411,8 @@ class AuthService extends Notifier<AuthState> {
   }
 
   void logout() {
+    if (state.user == null && ref.read(authTokenProvider) == null) return;
+    GoogleAuth.signOut();
     ref.read(authTokenProvider.notifier).set(null);
     writeSession(null);
     state = const AuthState();
@@ -338,10 +434,17 @@ class AuthService extends Notifier<AuthState> {
 
   Future<Map<String, dynamic>> _post(
     String path,
-    Map<String, dynamic> data,
-  ) async {
+    Map<String, dynamic> data, {
+    String? token,
+  }) async {
     try {
-      final response = await _dio().post(path, data: data);
+      final response = await _dio().post(
+        path,
+        data: data,
+        options: token == null
+            ? null
+            : Options(headers: {'Authorization': 'Bearer $token'}),
+      );
       final body = response.data;
       if (body is Map<String, dynamic>) return body;
       if (body is Map) return Map<String, dynamic>.from(body);

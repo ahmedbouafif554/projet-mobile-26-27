@@ -151,7 +151,10 @@ class NotificationsPage extends ConsumerWidget {
                             ),
                           ),
                           for (final (i, n) in entry.value.indexed)
-                            _NotificationTile(key: ValueKey(n.id), notification: n)
+                            _NotificationTile(
+                                  key: ValueKey(n.id),
+                                  notification: n,
+                                )
                                 .animate(delay: (30 * i).ms)
                                 .fadeIn()
                                 .slideX(begin: 0.04, end: 0),
@@ -204,7 +207,9 @@ class _NotificationTile extends ConsumerWidget {
         child: Material(
           color: n.isRead
               ? context.colors.surface
-              : AppColors.primary.withValues(alpha: context.isDark ? 0.14 : 0.06),
+              : AppColors.primary.withValues(
+                  alpha: context.isDark ? 0.14 : 0.06,
+                ),
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           child: InkWell(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),

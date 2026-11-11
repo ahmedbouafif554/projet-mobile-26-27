@@ -1,5 +1,7 @@
 'use strict';
 
+const HttpError = require('../../errors/http-error');
+
 /**
  * Calcule la distance orthodromique (formule de Haversine) entre deux points GPS en kilomètres.
  */
@@ -41,7 +43,23 @@ function estimateDurationMinutes(distanceKm, vehicle = 'scooter') {
   return Math.max(10, Math.round(transitMinutes + bufferMinutes));
 }
 
+/**
+ * Vérifie une position GPS reçue (adresse placée sur la carte).
+ * Renvoie `{ latitude, longitude }`, `null` si elle est absente, ou lève une
+ * erreur 422 si elle est hors limites (latitude -90..90, longitude -180..180).
+ */
+function parseCoordinates(latitude, longitude) {
+  if ((latitude == null || latitude === '') && (longitude == null || longitude === '')) return null;
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    throw new HttpError(422, "Position de l'adresse invalide : placez-la sur la carte.");
+  }
+  return { latitude: lat, longitude: lng };
+}
+
 module.exports = {
   haversineDistance,
   estimateDurationMinutes,
+  parseCoordinates,
 };

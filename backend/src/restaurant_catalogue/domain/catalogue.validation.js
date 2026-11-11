@@ -88,6 +88,23 @@ function imageUrl(value) {
   return url;
 }
 
+const IMAGE_DATA_URI = /^data:image\/(png|jpe?g|webp|gif|heic|heif);base64,[A-Za-z0-9+/]+=*$/i;
+
+/** Photo du menu : image importée (data URI base64) ou lien web ; null si vide. */
+function menuImage(value) {
+  if (value == null || value === '') return null;
+  if (typeof value !== 'string') throw invalid('La photo du menu est invalide.');
+  const image = value.trim();
+  if (!image) return null;
+  if (image.length > LIMITS.menuImageLength) {
+    throw invalid('La photo du menu est trop lourde (2 Mo maximum).');
+  }
+  if (!IMAGE_DATA_URI.test(image) && !WEB_URL.test(image)) {
+    throw invalid('La photo du menu doit être une image (JPEG, PNG, WebP…).');
+  }
+  return image;
+}
+
 /** Identifiant fourni par le client : `''` s'il est vide (le service en génère un). */
 function requestedId(value) {
   const id = optionalText(value, "L'identifiant", LIMITS.idLength);
@@ -162,6 +179,7 @@ function restaurantInput(body) {
       maxItems: LIMITS.menuSections,
       maxLength: LIMITS.sectionLength,
     }),
+    menuImageUrl: menuImage(body.menuImageUrl),
     isOpen: bool(body.isOpen, "L'ouverture", true),
     isPopular: bool(body.isPopular, 'La mise en avant', false),
     promo: optionalText(body.promo, "L'offre", LIMITS.promoLength) || null,

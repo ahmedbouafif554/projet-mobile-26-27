@@ -2,12 +2,15 @@
 
 const express = require('express');
 const asyncHandler = require('../../middleware/async');
-const { optionalAuth } = require('../../middleware/auth.middleware');
+const { authenticate } = require('../../middleware/auth.middleware');
 const commandeCtrl = require('../controllers/commande.controller');
+const { schemaReady: deliverySchemaReady } = require('../../imed_livraison_livreur/data/schema');
 
 const router = express.Router();
 
-router.use(optionalAuth);
+router.use(authenticate);
+// Le cycle de vie d'une commande crée et met à jour sa course de livraison.
+router.use(deliverySchemaReady);
 
 // Statistiques globales ou par restaurant
 router.get('/stats', asyncHandler(commandeCtrl.getStats));

@@ -1,91 +1,64 @@
 'use strict';
 
 const commandeService = require('../services/commande.service');
-const panierService = require('../services/panier.service');
 
 async function create(req, res) {
-  const userId = req.body.userId || req.auth?.id || 'u-client-1';
-  const order = await commandeService.createOrder({
-    ...req.body,
-    userId,
-  });
-
-  // Si la commande provient du panier, on peut vider le panier automatiquement
-  if (req.body.clearCart !== false) {
-    try {
-      await panierService.clearCart(userId);
-    } catch (_) {}
-  }
-
-  res.status(201).json(order);
+  res.status(201).json(await commandeService.createOrder(req.auth, req.body || {}));
 }
 
 async function getById(req, res) {
-  const order = await commandeService.getOrderById(req.params.id);
-  res.json(order);
+  res.json(await commandeService.getOrderFor(req.auth, req.params.id));
 }
 
 async function list(req, res) {
-  const orders = await commandeService.listOrders(req.query);
-  res.json(orders);
+  res.json(await commandeService.listOrders(req.auth, req.query));
 }
 
 async function update(req, res) {
-  const updated = await commandeService.updateOrder(req.params.id, req.body, {
-    actorId: req.auth?.id,
-    role: req.auth?.role,
-    note: req.body?.note,
-  });
-  res.json(updated);
+  res.json(await commandeService.updateOrder(req.auth, req.params.id, req.body || {}));
 }
 
 async function updateStatus(req, res) {
-  const updated = await commandeService.updateOrderStatus(req.params.id, req.body.status, {
-    actorId: req.auth?.id,
-    role: req.auth?.role,
-    note: req.body.note,
-  });
-  res.json(updated);
+  const body = req.body || {};
+  res.json(await commandeService.updateOrderStatus(req.auth, req.params.id, body.status, { note: body.note }));
 }
 
 async function cancel(req, res) {
-  const cancelled = await commandeService.cancelOrder(req.params.id, {
-    actorId: req.auth?.id,
-    role: req.auth?.role,
-    reason: req.body.reason,
-  });
-  res.json(cancelled);
+  res.json(await commandeService.cancelOrder(req.auth, req.params.id, { reason: req.body?.reason }));
+}
+
+async function refund(req, res) {
+  res.json(await commandeService.refundOrder(req.auth, req.params.id));
 }
 
 async function remove(req, res) {
-  const result = await commandeService.deleteOrder(req.params.id);
-  res.status(200).json(result);
+  res.json(await commandeService.deleteOrder(req.auth, req.params.id));
 }
 
 async function getTimeline(req, res) {
-  const timeline = await commandeService.getOrderTimeline(req.params.id);
-  res.json(timeline);
+  res.json(await commandeService.getOrderTimeline(req.auth, req.params.id));
 }
 
 async function getStats(req, res) {
-  const stats = await commandeService.getOrderStats(req.query);
-  res.json(stats);
+  res.json(await commandeService.getOrderStats(req.auth, req.query));
 }
 
-const livraisonService = require('../services/livraison.service');
-
-async function refund(req, res) {
-  const refunded = await commandeService.updateOrderStatus(req.params.id, 'refunded', {
-    actorId: req.auth?.id,
-    role: req.auth?.role || 'admin',
-    note: req.body?.reason || 'Remboursement de la commande',
-  });
-  res.json(refunded);
-}
-
+/** Suivi : la course liée à la commande (positions, étapes). */
 async function getTracking(req, res) {
-  const tracking = await livraisonService.getDeliveryTracking(req.params.id);
-  res.json(tracking);
+  await commandeService.readableRow(req.auth, req.params.id);
+  const livraisons = require('../../imed_livraison_livreur').livraisonService;
+  const [delivery] = await livraisons.list({ orderId: req.params.id }, { anonymous: false, id: req.auth.id, role: 'admin' });
+  const order = await commandeService.getOrderById(req.params.id);
+  if (!delivery) {
+    res.json({ order, delivery: null, steps: order.timeline });
+    return;
+  }
+  const tracking = await livraisons.tracking(delivery.id, { anonymous: false, id: req.auth.id, role: 'admin' });
+  // Le code de remise reste réservé au client de la commande.
+  if (req.auth.role !== 'admin' && req.auth.id !== order.userId && tracking.delivery) {
+    delete tracking.delivery.otpCode;
+  }
+  res.json({ order, ...tracking });
 }
 
 module.exports = {

@@ -96,10 +96,7 @@ class _ProductFormState extends ConsumerState<ProductForm> {
     final restaurant = restaurants
         .where((r) => r.id == _restaurantId)
         .firstOrNull;
-    final sections = {
-      ...?restaurant?.menuSections,
-      ?_p?.section,
-    }.toList();
+    final sections = {...?restaurant?.menuSections, ?_p?.section}.toList();
 
     return AppForm(
       title: isNew ? 'Nouveau produit' : 'Modifier le produit',

@@ -30,6 +30,7 @@ Future<void> _loadFont(String family) async {
 Future<void> setUpAppTestEnvironment() async {
   AppTheme.useGoogleFonts = false;
   AppConfig.useApiAuth = false;
+  AppConfig.useApiAvisNotifications = false;
   AppConfig.mockLatencyMin = Duration.zero;
   AppConfig.mockLatencyMax = Duration.zero;
   await Formatters.init();

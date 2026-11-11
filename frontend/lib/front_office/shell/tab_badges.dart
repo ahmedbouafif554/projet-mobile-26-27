@@ -30,9 +30,8 @@ final TabBadge cartCountBadge = cartProvider.select(
 
 /// Commandes en cours du client (onglet Commandes).
 final TabBadge activeOrdersBadge = myOrdersProvider.select(
-  (orders) => orders.whenData(
-    (list) => list.where((o) => o.status.isActive).length,
-  ),
+  (orders) =>
+      orders.whenData((list) => list.where((o) => o.status.isActive).length),
 );
 
 /// Courses proposées au livreur (onglet Livraisons).

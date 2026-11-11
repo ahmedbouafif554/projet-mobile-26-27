@@ -110,7 +110,9 @@ class HomePage extends ConsumerWidget {
         SliverToBoxAdapter(child: carousel(popular)),
       ],
       if (offers.isNotEmpty) ...[
-        const SliverToBoxAdapter(child: SectionHeader(title: 'Offres du moment')),
+        const SliverToBoxAdapter(
+          child: SectionHeader(title: 'Offres du moment'),
+        ),
         SliverToBoxAdapter(child: carousel(offers)),
       ],
       SliverToBoxAdapter(
@@ -130,10 +132,14 @@ class HomePage extends ConsumerWidget {
         sliver: SliverList.separated(
           itemCount: sorted.length,
           separatorBuilder: (_, _) => const SizedBox(height: AppSizes.md),
-          itemBuilder: (_, i) => RestaurantCard(
-            restaurant: sorted[i],
-            onTap: () => open(sorted[i]),
-          ).animate(delay: (40 * (i % 6)).ms).fadeIn().slideY(begin: 0.06, end: 0),
+          itemBuilder: (_, i) =>
+              RestaurantCard(
+                    restaurant: sorted[i],
+                    onTap: () => open(sorted[i]),
+                  )
+                  .animate(delay: (40 * (i % 6)).ms)
+                  .fadeIn()
+                  .slideY(begin: 0.06, end: 0),
         ),
       ),
     ];
