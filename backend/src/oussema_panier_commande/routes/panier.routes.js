@@ -4,6 +4,7 @@ const express = require('express');
 const asyncHandler = require('../../middleware/async');
 const { authenticate } = require('../../middleware/auth.middleware');
 const panierCtrl = require('../controllers/panier.controller');
+const { cartLimiter } = require('../../middleware/rate-limit.middleware');
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ router.get('/items/totals', asyncHandler(panierCtrl.getTotals));
 
 // Support complet pour ApiCartRepository de Flutter (/cart/items)
 router.get('/items', asyncHandler(panierCtrl.listItems));
-router.post('/items', asyncHandler(panierCtrl.addItem));
+router.post('/items', cartLimiter, asyncHandler(panierCtrl.addItem));
 router.delete('/items', asyncHandler(panierCtrl.clearCart));
 router.get('/items/:id', asyncHandler(panierCtrl.getItemById));
 router.put('/items/:id', asyncHandler(panierCtrl.updateItem));
@@ -24,7 +25,7 @@ router.delete('/items/:id', asyncHandler(panierCtrl.deleteItem));
 
 // Support pour routes directes (/cart ou /panier)
 router.get('/', asyncHandler(panierCtrl.listItems));
-router.post('/', asyncHandler(panierCtrl.addItem));
+router.post('/', cartLimiter, asyncHandler(panierCtrl.addItem));
 router.delete('/', asyncHandler(panierCtrl.clearCart));
 router.get('/:id', asyncHandler(panierCtrl.getItemById));
 router.put('/:id', asyncHandler(panierCtrl.updateItem));

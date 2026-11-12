@@ -1,8 +1,11 @@
 require('dotenv').config();
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const config = require('./config');
+const socketService = require('./services/socket.service');
+const stripeCtrl = require('./oussema_panier_commande/controllers/stripe.controller');
 
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
@@ -13,6 +16,7 @@ const restaurantCatalogue = require('./restaurant_catalogue');
 const imedLivraisonLivreur = require('./imed_livraison_livreur');
 const avisNotification = require('./avis_notification');
 const messagerie = require('./messagerie');
+const { globalLimiter } = require('./middleware/rate-limit.middleware');
 
 const app = express();
 
@@ -43,8 +47,13 @@ app.use(
   ),
 );
 if (process.env.NODE_ENV !== 'test') app.use(morgan('dev'));
+
+// ── Webhook Stripe — AVANT express.json() pour recevoir le body RAW ──────────
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), stripeCtrl.stripeWebhook);
+
 app.use(express.json({ limit: '12mb' }));
 app.use(express.urlencoded({ extended: true, limit: '12mb' }));
+app.use(globalLimiter);
 
 // ── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
@@ -92,6 +101,20 @@ app.use('/api/deliveries', oussemaModule.livraisonRoutes);
 // ── Health check ────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok', app: 'SuperFaster API' }));
 
+// ── Socket.IO info (debug Flutter) ──────────────────────────────────────────
+app.get('/api/socket/info', (_req, res) => {
+  res.json({
+    socketIO: true,
+    endpoint: process.env.PUBLIC_URL || 'ws://localhost:3001',
+    transports: ['websocket', 'polling'],
+    rooms: 'delivery:{id}',
+    events: {
+      client_to_server: ['join:delivery', 'leave:delivery', 'courier:location'],
+      server_to_client: ['delivery:location', 'delivery:status', 'delivery:assigned'],
+    },
+  });
+});
+
 // ── 404 handler ─────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));
 
@@ -131,8 +154,11 @@ if (require.main === module) {
     .then(() => messagerie.init())
     .then(() => {
       const PORT = process.env.PORT || 3001;
-      app.listen(PORT, () => {
+      const server = http.createServer(app);
+      socketService.init(server);
+      server.listen(PORT, () => {
         console.log(`SuperFaster API running on http://localhost:${PORT}`);
+        console.log(`Socket.IO running on ws://localhost:${PORT}`);
       });
     })
     .catch((error) => {

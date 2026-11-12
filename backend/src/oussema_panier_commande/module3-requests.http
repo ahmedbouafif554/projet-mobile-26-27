@@ -148,3 +148,15 @@ Content-Type: application/json
 ### 19. Statistiques globales ou par restaurant
 GET {{baseUrl}}/oussema/commandes/stats?restaurantId=rest_demo
 
+### 20. Liste des commandes avec Pagination
+GET {{baseUrl}}/orders?page=1&limit=5
+
+### 21. Créer un PaymentIntent Stripe pour paiement en ligne
+# Remplacer :orderId par l'id d'une commande existante
+POST {{baseUrl}}/orders/:orderId/payment-intent
+Content-Type: application/json
+
+### 22. Vérifier les informations du serveur Socket.IO
+GET {{baseUrl}}/socket/info
+
+

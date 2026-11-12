@@ -5,6 +5,8 @@ const asyncHandler = require('../../middleware/async');
 const { authenticate } = require('../../middleware/auth.middleware');
 const commandeCtrl = require('../controllers/commande.controller');
 const { schemaReady: deliverySchemaReady } = require('../../imed_livraison_livreur/data/schema');
+const { orderCreateLimiter } = require('../../middleware/rate-limit.middleware');
+const stripeCtrl = require('../controllers/stripe.controller');
 
 const router = express.Router();
 
@@ -19,7 +21,7 @@ router.get('/stats', asyncHandler(commandeCtrl.getStats));
 router.get('/', asyncHandler(commandeCtrl.list));
 
 // Création d'une commande
-router.post('/', asyncHandler(commandeCtrl.create));
+router.post('/', orderCreateLimiter, asyncHandler(commandeCtrl.create));
 
 // Détail d'une commande
 router.get('/:id', asyncHandler(commandeCtrl.getById));
@@ -48,5 +50,8 @@ router.patch('/:id/cancel', asyncHandler(commandeCtrl.cancel));
 // Remboursement de commande (POST & PATCH pour compatibilité Flutter ApiOrderRepository)
 router.post('/:id/refund', asyncHandler(commandeCtrl.refund));
 router.patch('/:id/refund', asyncHandler(commandeCtrl.refund));
+
+// Paiement Stripe en ligne (card / Apple Pay)
+router.post('/:id/payment-intent', asyncHandler(stripeCtrl.createPaymentIntent));
 
 module.exports = router;

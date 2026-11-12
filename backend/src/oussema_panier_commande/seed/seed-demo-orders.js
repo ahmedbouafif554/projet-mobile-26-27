@@ -60,7 +60,7 @@ async function seedModule3() {
         deliveryAddress: ADDRESS,
         note: sample.note,
         promoCode: sample.promoCode,
-        paymentMethod: sample.paymentMethod || 'card',
+        paymentMethod: sample.paymentMethod || 'cash',
         clearCart: false,
         items: sample.items.map(([id, quantity]) => ({ product: { id }, quantity })),
       });

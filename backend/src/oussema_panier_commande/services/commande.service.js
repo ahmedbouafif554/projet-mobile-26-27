@@ -280,9 +280,30 @@ async function listOrders(actor, filters = {}) {
     params.push(...statuses);
   }
 
-  const sql = `${ORDER_SELECT}${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY o.created_at DESC, o.id DESC`;
-  const rows = await query(sql, params);
-  if (rows.length === 0) return [];
+  // Pagination — only applied when ?page or ?limit are explicitly provided
+  const wantsPagination = filters.page !== undefined || filters.limit !== undefined;
+  const page = Math.max(1, parseInt(filters.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(filters.limit, 10) || 20));
+  const offset = (page - 1) * limit;
+
+  const baseSql = `${ORDER_SELECT}${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY o.created_at DESC, o.id DESC`;
+
+  let total = null;
+  let rows;
+  if (wantsPagination) {
+    const countSql = `SELECT COUNT(*) as total FROM orders o${where.length ? ` WHERE ${where.join(' AND ')}` : ''}`;
+    const [{ total: countTotal }] = await query(countSql, params);
+    total = Number(countTotal);
+    const paginatedSql = baseSql + ` LIMIT ${limit} OFFSET ${offset}`;
+    rows = await query(paginatedSql, params);
+  } else {
+    rows = await query(baseSql, params);
+  }
+
+  if (rows.length === 0) {
+    if (!wantsPagination) return [];
+    return { data: [], pagination: { page, limit, total: total || 0, totalPages: 0, hasNext: false, hasPrev: false } };
+  }
 
   const ids = rows.map((o) => o.id);
   const marks = ids.map(() => '?').join(',');
@@ -298,7 +319,25 @@ async function listOrders(actor, filters = {}) {
   };
   const itemsBy = group(items);
   const eventsBy = group(events);
-  return rows.map((o) => presentOrder(o, itemsBy.get(o.id) || [], eventsBy.get(o.id) || []));
+
+  const data = rows.map((o) => presentOrder(o, itemsBy.get(o.id) || [], eventsBy.get(o.id) || []));
+
+  if (!wantsPagination) {
+    return data;
+  }
+
+  const totalPages = Math.ceil(total / limit);
+  return {
+    data,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    },
+  };
 }
 
 async function getOrderTimeline(actor, orderId) {

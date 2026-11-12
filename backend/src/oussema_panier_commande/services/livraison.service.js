@@ -9,6 +9,7 @@ const {
   COURIER_FEE_SHARE,
 } = require('../domain/livraison.constants');
 const { haversineDistance, estimateDurationMinutes } = require('./geo.utils');
+const socketService = require('../../services/socket.service');
 
 function mapDelivery(row) {
   if (!row) return null;
@@ -239,6 +240,13 @@ async function assignCourier(deliveryId, courierId) {
     );
   });
 
+  // Émettre l'assignation en temps réel via Socket.IO
+  socketService.emitDeliveryAssigned(deliveryId, {
+    courierName: `${courier.first_name} ${courier.last_name}`,
+    courierPhone: courier.phone,
+    courierVehicle: courier.vehicle || 'scooter',
+  });
+
   return getDeliveryById(deliveryId);
 }
 
@@ -335,6 +343,9 @@ async function updateDeliveryStatus(deliveryId, nextStatus, { courierId = null, 
       );
     }
   });
+
+  // Émettre le changement de statut en temps réel via Socket.IO
+  socketService.emitDeliveryStatus(deliveryId, normalizedStatus, DELIVERY_STATUS_LABELS[normalizedStatus] || normalizedStatus);
 
   return getDeliveryById(deliveryId);
 }

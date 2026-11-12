@@ -47,7 +47,7 @@ async function updateStatus(req, res) {
 }
 
 async function updateLocation(req, res) {
-  const result = await livraisonService.updateCourierLocation(req.params.courierId, req.body);
+  const result = await livraisonService.updateCourierLocation(req.params.id, req.body);
   res.json(result);
 }
 

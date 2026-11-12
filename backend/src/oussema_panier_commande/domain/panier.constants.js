@@ -31,7 +31,6 @@ function calculatePromoDiscount(code, subtotal, deliveryFee = 2.5) {
     case 'SUPER10':
       return Math.round(subtotal * 0.10 * 100) / 100;
     case 'BIENVENUE':
-    case 'SUPER5':
       return subtotal >= 15 ? 5.0 : 0;
     case 'LIVRAISON':
       return deliveryFee;
