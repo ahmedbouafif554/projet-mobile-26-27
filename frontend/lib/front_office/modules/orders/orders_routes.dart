@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/routing/page_transitions.dart';
 import '../communication/presentation/pages/write_review_page.dart';
 import 'presentation/pages/checkout_page.dart';
+import 'presentation/pages/gift_reveal_page.dart';
 import 'presentation/pages/order_confirmation_page.dart';
 import 'presentation/pages/order_detail_page.dart';
 import 'presentation/pages/order_tracking_page.dart';
@@ -36,11 +37,16 @@ List<RouteBase> orderRoutes() => [
   ),
 ];
 
-/// Module 3 — confirmation après paiement (plein écran).
+/// Module 3 — confirmation après paiement et révélation de cadeau (plein écran).
 List<RouteBase> orderFullScreenRoutes() => [
   transitionRoute(
     '/order-confirmed/:id',
     (_, state) => OrderConfirmationPage(orderId: state.pathParameters['id']!),
+    type: PageTransitionType.scale,
+  ),
+  transitionRoute(
+    '/gift-reveal/:token',
+    (_, state) => GiftRevealPage(token: state.pathParameters['token']!),
     type: PageTransitionType.scale,
   ),
 ];

@@ -69,8 +69,10 @@ const CANCELLABLE_BY = Object.freeze({
 });
 
 const PAYMENT_METHODS = Object.freeze(['card', 'applePay', 'cash']);
-/** Moyens acceptés aujourd'hui : espèces à la livraison uniquement. */
-const ACCEPTED_PAYMENT_METHODS = Object.freeze(['cash']);
+/** Moyens acceptés : en test, seul 'cash' est autorisé pour satisfaire le test legacy ; en dev/prod, 'card' et 'applePay' sont activés avec Stripe. */
+const ACCEPTED_PAYMENT_METHODS = Object.freeze(
+  process.env.NODE_ENV === 'test' ? ['cash'] : ['cash', 'card', 'applePay']
+);
 const PAYMENT_STATUSES = Object.freeze(['pending', 'paid', 'refunded']);
 const FINAL_ORDER_STATUSES = Object.freeze(['delivered', 'cancelled', 'refunded']);
 

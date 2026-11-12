@@ -32,8 +32,8 @@ enum PaymentMethod {
   const PaymentMethod(this.label);
   final String label;
 
-  /// Moyens proposés : paiement en espèces à la livraison uniquement.
-  static const available = [PaymentMethod.cash];
+  /// Moyens proposés : carte bancaire (Stripe) et espèces à la livraison.
+  static const available = [PaymentMethod.card, PaymentMethod.cash];
 }
 
 enum PaymentStatus {

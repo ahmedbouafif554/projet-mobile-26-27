@@ -63,4 +63,25 @@ async function stripeWebhook(req, res) {
   }
 }
 
-module.exports = { createPaymentIntent, stripeWebhook };
+/**
+ * POST /api/orders/:id/confirm-payment
+ * Confirme le paiement Stripe d'une commande côté client (après validation de la carte).
+ */
+async function confirmPayment(req, res) {
+  const { paymentIntentId } = req.body || {};
+  const order = await commandeService.getOrderFor(req.auth, req.params.id);
+  const result = await stripeService.confirmPayment(order.id, paymentIntentId);
+  if (result.success) {
+    await query(
+      "UPDATE orders SET payment_status = 'paid', updated_at = ? WHERE id = ?",
+      [new Date().toISOString(), order.id],
+    );
+  }
+  res.json({
+    orderId: order.id,
+    paymentStatus: result.success ? 'paid' : order.paymentStatus,
+    status: result.status,
+  });
+}
+
+module.exports = { createPaymentIntent, stripeWebhook, confirmPayment };

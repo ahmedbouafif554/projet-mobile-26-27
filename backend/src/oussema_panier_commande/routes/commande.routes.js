@@ -7,8 +7,13 @@ const commandeCtrl = require('../controllers/commande.controller');
 const { schemaReady: deliverySchemaReady } = require('../../imed_livraison_livreur/data/schema');
 const { orderCreateLimiter } = require('../../middleware/rate-limit.middleware');
 const stripeCtrl = require('../controllers/stripe.controller');
+const giftCtrl = require('../controllers/gift.controller');
+const tipCtrl = require('../controllers/tip.controller');
 
 const router = express.Router();
+
+// Cadeau – Révélation publique via QR token (accessible au destinataire sans session préalable)
+router.post('/gifts/reveal', asyncHandler(giftCtrl.revealGift));
 
 router.use(authenticate);
 // Le cycle de vie d'une commande crée et met à jour sa course de livraison.
@@ -16,6 +21,11 @@ router.use(deliverySchemaReady);
 
 // Statistiques globales ou par restaurant
 router.get('/stats', asyncHandler(commandeCtrl.getStats));
+
+// Routes statiques AVANT les routes paramétrées /:id
+
+// Pourboires – Historique livreur
+router.get('/couriers/:courierId/tips', asyncHandler(tipCtrl.getCourierTips));
 
 // Liste des commandes (avec filtres ?userId=, ?restaurantId=, ?status=)
 router.get('/', asyncHandler(commandeCtrl.list));
@@ -53,5 +63,14 @@ router.patch('/:id/refund', asyncHandler(commandeCtrl.refund));
 
 // Paiement Stripe en ligne (card / Apple Pay)
 router.post('/:id/payment-intent', asyncHandler(stripeCtrl.createPaymentIntent));
+router.post('/:id/confirm-payment', asyncHandler(stripeCtrl.confirmPayment));
+
+// Cadeau – Gift Orders (sub-routes par orderId)
+router.post('/:id/gift', asyncHandler(giftCtrl.addGift));
+router.get('/:id/gift', asyncHandler(giftCtrl.getGift));
+
+// Pourboires – Tips pour les livreurs
+router.post('/:id/tip', asyncHandler(tipCtrl.addTip));
+router.get('/:id/tip', asyncHandler(tipCtrl.getTip));
 
 module.exports = router;

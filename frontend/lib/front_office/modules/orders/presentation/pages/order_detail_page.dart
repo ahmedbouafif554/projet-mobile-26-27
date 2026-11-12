@@ -20,7 +20,10 @@ import '../../../../router/front_routes.dart';
 import '../../../communication/providers/communication_providers.dart';
 import '../../providers/cart_controller.dart';
 import '../../providers/orders_providers.dart';
+import '../../providers/gift_tip_providers.dart';
+import '../widgets/livreur_tip_dialog.dart';
 import '../widgets/order_widgets.dart';
+import '../widgets/qr_gift_card.dart';
 import 'orders_page.dart';
 
 /// Détail d'une commande du client : étapes, articles, montants, adresse,
@@ -81,6 +84,8 @@ class OrderDetailPage extends ConsumerWidget {
                     .value
                     ?.any((r) => r.orderId == o.id) ??
                 false;
+            final giftAsync = ref.watch(orderGiftProvider(o.id));
+            final tipsAsync = ref.watch(orderTipProvider(o.id));
             return ListView(
               padding: const EdgeInsets.fromLTRB(
                 AppSizes.pagePadding,
@@ -228,6 +233,142 @@ class OrderDetailPage extends ConsumerWidget {
                     ),
                   ),
                 ),
+                if (giftAsync.value != null) ...[
+                  const SizedBox(height: AppSizes.lg),
+                  TitledBlock(
+                    title: 'Commande Cadeau 🎁',
+                    trailing: TextButton.icon(
+                      icon: const Icon(Icons.qr_code_2_rounded, size: 16),
+                      label: const Text('Révélation QR'),
+                      onPressed: () =>
+                          context.push('/gift-reveal/${giftAsync.value!.qrCode}'),
+                    ),
+                    child: DigitalGiftCardWidget(gift: giftAsync.value!),
+                  ),
+                ],
+                const SizedBox(height: AppSizes.lg),
+                TitledBlock(
+                  title: 'Pourboire livreur 🛵',
+                  trailing: TextButton.icon(
+                    icon: const Icon(Icons.favorite_outline_rounded, size: 16),
+                    label: const Text('Donner / modifier'),
+                    onPressed: () =>
+                        LivreurTipBottomSheet.show(context, order: o),
+                  ),
+                  child: tipsAsync.when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (_, _) => const SizedBox.shrink(),
+                    data: (tips) {
+                      if (tips.isEmpty) {
+                        return SurfaceCard(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.delivery_dining_rounded,
+                                  color: Colors.amber,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Aucun pourboire laissé',
+                                      style: TextStyle(fontWeight: FontWeight.w600),
+                                    ),
+                                    Text(
+                                      '100% reversé directement à votre livreur.',
+                                      style: context.text.bodySmall?.copyWith(
+                                        color: context.palette.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () =>
+                                    LivreurTipBottomSheet.show(context, order: o),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.amber,
+                                  foregroundColor: Colors.black87,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                ),
+                                child: const Text('Donner un tip'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      final totalTips =
+                          tips.fold<double>(0, (sum, t) => sum + t.amount);
+                      return SurfaceCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.favorite_rounded,
+                                  color: Colors.amber,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Pourboire envoyé : ${Formatters.price(totalTips)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Text(
+                                    'Reçu par le livreur ✓',
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            for (final tip in tips) ...[
+                              if (tip.thankYouMessage != null &&
+                                  tip.thankYouMessage!.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  '« ${tip.thankYouMessage} »',
+                                  style: context.text.bodySmall?.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
                 const SizedBox(height: AppSizes.lg),
                 Wrap(
                   spacing: AppSizes.sm,
@@ -239,6 +380,14 @@ class OrderDetailPage extends ConsumerWidget {
                       label: 'Contacter le restaurant',
                       onTap: () => _contact(context, ref, o),
                     ),
+                    if (o.status == OrderStatus.delivering ||
+                        o.status == OrderStatus.delivered)
+                      _Action(
+                        icon: Icons.volunteer_activism_rounded,
+                        label: 'Pourboire livreur',
+                        onTap: () =>
+                            LivreurTipBottomSheet.show(context, order: o),
+                      ),
                     if (o.status == OrderStatus.delivered && !reviewed)
                       _Action(
                         icon: Icons.star_outline_rounded,

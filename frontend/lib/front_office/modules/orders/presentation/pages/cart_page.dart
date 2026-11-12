@@ -125,6 +125,8 @@ class CartPage extends ConsumerWidget {
                         ),
                         const SizedBox(height: AppSizes.sm),
                         TotalsCard(totals: totals),
+                        const SizedBox(height: AppSizes.sm),
+                        const _StripeTrustBadge(),
                         if (belowMinimum) ...[
                           const SizedBox(height: AppSizes.md),
                           _MinimumNotice(
@@ -357,6 +359,80 @@ class _CheckoutBar extends StatelessWidget {
           Formatters.price(total),
           style: context.text.titleMedium?.copyWith(color: Colors.white),
         ),
+      ),
+    );
+  }
+}
+
+class _StripeTrustBadge extends StatelessWidget {
+  const _StripeTrustBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF635BFF).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+        border: Border.all(color: const Color(0xFF635BFF).withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF635BFF),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Icon(
+              Icons.lock_rounded,
+              color: Colors.white,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Paiement sécurisé Stripe',
+                      style: context.text.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF635BFF),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'DÉMO',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  'Cartes Visa, Mastercard & Espèces à la livraison',
+                  style: context.text.bodySmall?.copyWith(
+                    color: context.palette.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

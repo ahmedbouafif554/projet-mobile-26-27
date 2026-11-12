@@ -12,6 +12,7 @@ import '../../../../../core/utils/formatters.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../router/front_routes.dart';
 import '../../providers/orders_providers.dart';
+import '../../providers/gift_tip_providers.dart';
 
 /// Confirmation animée après le paiement.
 class OrderConfirmationPage extends ConsumerWidget {
@@ -22,6 +23,7 @@ class OrderConfirmationPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final order = ref.watch(orderProvider(orderId)).value;
+    final gift = ref.watch(orderGiftProvider(orderId)).value;
     final eta = DateTime.now().add(const Duration(minutes: 30));
     return Scaffold(
       body: SafeArea(
@@ -91,6 +93,57 @@ class OrderConfirmationPage extends ConsumerWidget {
                   ],
                 ),
               ).animate().fadeIn(delay: 600.ms).scaleXY(begin: 0.95),
+              if (gift != null) ...[
+                const SizedBox(height: AppSizes.md),
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.md),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: gift.giftCardDesign.colors),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                    boxShadow: [
+                      BoxShadow(
+                        color: gift.giftCardDesign.colors.first.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Text(gift.giftCardDesign.emoji, style: const TextStyle(fontSize: 28)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Cadeau pour ${gift.recipientName} 🎁',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const Text(
+                              'QR code de révélation & prix masqués prêts',
+                              style: TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black87,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                        ),
+                        onPressed: () => context.push('/gift-reveal/${gift.qrCode}'),
+                        child: const Text('Voir le QR', style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(delay: 750.ms).slideY(begin: 0.1, end: 0),
+              ],
               const Spacer(),
               PrimaryButton(
                 label: 'Suivre ma commande',

@@ -28,6 +28,7 @@ import '../../../../router/front_routes.dart';
 import '../../../auth/presentation/widgets/address_map_field.dart';
 import '../../../communication/providers/communication_providers.dart';
 import '../../providers/orders_providers.dart';
+import '../widgets/livreur_tip_dialog.dart';
 
 /// Livreur assigné à une commande (nom, téléphone, véhicule, note).
 class TrackedCourier {
@@ -639,6 +640,18 @@ class _BottomPanel extends ConsumerWidget {
                       icon: Icons.call_rounded,
                       tooltip: 'Appeler',
                       onTap: () => Launcher.call(context, courier.phone),
+                    ),
+                    const SizedBox(width: 8),
+                    CircleIconButton(
+                      icon: Icons.volunteer_activism_rounded,
+                      tooltip: 'Pourboire livreur',
+                      backgroundColor: Colors.amber,
+                      iconColor: Colors.black87,
+                      onTap: () => LivreurTipBottomSheet.show(
+                        context,
+                        order: order,
+                        courierName: courier.name,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     CircleIconButton(
