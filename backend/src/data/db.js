@@ -415,24 +415,24 @@ function seed() {
     'a-1',
     'u-client-1',
     'Maison',
-    '12 rue de la Paix',
-    '75002',
-    'Paris',
+    'Avenue Habib Bourguiba',
+    '2080',
+    'Ariana',
     'home',
-    'Digicode 4521, 3e étage',
+    'Étage 2, Appt 5',
     1,
-    48.8686,
-    2.3312,
+    36.9068,
+    10.1836,
   );
 
   const insertCourier = db.prepare(
     `INSERT INTO couriers
       (id, user_id, first_name, last_name, phone, avatar_url, vehicle, plate_number, status,
        rating, completed_deliveries, total_earnings, zone, latitude, longitude, joined_at)
-     VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, 0, 'Paris', ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, 0, 'Ariana', ?, ?, ?)`,
   );
-  insertCourier.run('c-1', 'u-courier-1', 'Karim', 'Benali', '+33 6 23 45 67 21', 'scooter', 'GH-482-PK', 'available', 4.9, 280, 48.8662, 2.3501, now);
-  insertCourier.run('c-6', 'u-courier-6', 'Mehdi', 'Ziani', '+33 6 20 42 64 18', 'bike', null, 'offline', 5, 0, 48.8566, 2.3522, now);
+  insertCourier.run('c-1', 'u-courier-1', 'Karim', 'Benali', '+216 23 456 721', 'scooter', 'GH-482-PK', 'available', 4.9, 280, 36.9034, 10.1838, now);
+  insertCourier.run('c-6', 'u-courier-6', 'Mehdi', 'Ziani', '+216 20 426 418', 'bike', null, 'offline', 5, 0, 36.9020, 10.1850, now);
 
   const insertDoc = db.prepare(
     `INSERT INTO courier_documents (courier_id, type, status, image_data, uploaded_at) VALUES (?, ?, ?, NULL, ?)`,
@@ -446,8 +446,8 @@ function seed() {
     `INSERT INTO restaurants
       (id, name, description, address, phone, email, category, latitude, longitude, rating,
        is_open, owner_id, created_at, status, cuisine, min_order, delivery_fee)
-     VALUES ('rest_demo', 'SuperBurger Demo', 'Burgers de démonstration', '10 rue Démo', '0100000000',
-             'demo@superburger.fr', 'burgers', 48.8699, 2.3305, 4.6, 1, NULL, ?, 'approved', 'burgers', 5, 2.5)`,
+     VALUES ('rest_demo', 'SuperBurger Demo', 'Burgers de démonstration', 'Av. Hédi Nouira, Ennasr 2', '71800000',
+             'demo@superburger.tn', 'burgers', 36.9015, 10.1865, 4.6, 1, NULL, ?, 'approved', 'burgers', 5, 2.5)`,
   ).run(now);
 
   const insertProduct = db.prepare(

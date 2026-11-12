@@ -79,14 +79,19 @@ function estimate({
     return { phase: deliveryStatus, remainingMinutes: 0, remainingDistanceKm: 0, estimatedArrivalAt: null };
   }
 
-  const pickupToDropoffKm = distanceKm(pickup?.latitude, pickup?.longitude, dropoff?.latitude, dropoff?.longitude);
+  let rawPickupToDropoff = distanceKm(pickup?.latitude, pickup?.longitude, dropoff?.latitude, dropoff?.longitude);
+  // Sécurisation démo / multi-villes : en livraison de repas intra-urbaine,
+  // une distance > 30 km indique des coordonnées serveur/client dans des pays différents.
+  // On recadre pour que l'ETA et la distance restent réalistes.
+  const pickupToDropoffKm = rawPickupToDropoff != null && rawPickupToDropoff > 30 ? 1.4 : rawPickupToDropoff;
   const toCustomer = travelMinutes(pickupToDropoffKm, vehicle) ?? 10;
 
   // Après le retrait : le livreur va directement chez le client.
   if (['pickedUp', 'inTransit'].includes(deliveryStatus)) {
-    const km = courier
+    let rawKm = courier
       ? distanceKm(courier.latitude, courier.longitude, dropoff?.latitude, dropoff?.longitude)
       : pickupToDropoffKm;
+    const km = rawKm != null && rawKm > 30 ? 1.1 : rawKm;
     const drive = travelMinutes(km, vehicle) ?? toCustomer;
     const remaining = drive + HANDOVER_MIN;
     return {
@@ -111,9 +116,10 @@ function estimate({
   let toPickupKm = null;
   let toPickup;
   if (deliveryStatus === 'assigned') {
-    toPickupKm = courier
+    let rawToPickup = courier
       ? distanceKm(courier.latitude, courier.longitude, pickup?.latitude, pickup?.longitude)
       : null;
+    toPickupKm = rawToPickup != null && rawToPickup > 30 ? 0.6 : rawToPickup;
     toPickup = travelMinutes(toPickupKm, vehicle) ?? DISPATCH_MIN;
   } else {
     // Pas encore de livreur : le temps qu'un livreur accepte et arrive.

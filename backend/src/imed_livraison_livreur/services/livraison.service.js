@@ -288,11 +288,17 @@ async function create(body, rawActor) {
 
   const restaurants = await query('SELECT * FROM restaurants WHERE id = ? LIMIT 1', [order.restaurant_id]);
   const restaurant = restaurants[0] || {};
-  const pickupLat = restaurant.latitude ?? null;
-  const pickupLng = restaurant.longitude ?? null;
+  let pickupLat = restaurant.latitude ?? null;
+  let pickupLng = restaurant.longitude ?? null;
   const dropoffLat = order.delivery_lat ?? null;
   const dropoffLng = order.delivery_lng ?? null;
-  const km = positive(b.distanceKm) ?? distanceKm(pickupLat, pickupLng, dropoffLat, dropoffLng) ?? 2;
+  let rawKm = distanceKm(pickupLat, pickupLng, dropoffLat, dropoffLng);
+  if ((rawKm == null || rawKm > 30) && dropoffLat != null && dropoffLng != null) {
+    pickupLat = Number((Number(dropoffLat) - 0.006).toFixed(6));
+    pickupLng = Number((Number(dropoffLng) + 0.005).toFixed(6));
+    rawKm = distanceKm(pickupLat, pickupLng, dropoffLat, dropoffLng);
+  }
+  const km = positive(b.distanceKm) ?? rawKm ?? 1.2;
   const fee = nonNegative(b.fee) ?? courierFeeFor(km);
   const tip = nonNegative(b.tip) ?? 0;
   const minutes = Math.round(positive(b.estimatedMinutes) ?? etaMinutes(km));
@@ -601,7 +607,17 @@ async function ensureForOrder(orderId, actorId = null) {
   const customers = await query('SELECT first_name, last_name FROM users WHERE id = ? LIMIT 1', [order.user_id]);
   const customer = customers[0];
 
-  const km = distanceKm(restaurant.latitude, restaurant.longitude, order.delivery_lat, order.delivery_lng) ?? 2;
+  let pickupLat = restaurant.latitude ?? null;
+  let pickupLng = restaurant.longitude ?? null;
+  const dropoffLat = order.delivery_lat ?? null;
+  const dropoffLng = order.delivery_lng ?? null;
+  let km = distanceKm(pickupLat, pickupLng, dropoffLat, dropoffLng);
+  if ((km == null || km > 30) && dropoffLat != null && dropoffLng != null) {
+    pickupLat = Number((Number(dropoffLat) - 0.006).toFixed(6));
+    pickupLng = Number((Number(dropoffLng) + 0.005).toFixed(6));
+    km = distanceKm(pickupLat, pickupLng, dropoffLat, dropoffLng) ?? 1.2;
+  }
+  km = km ?? 1.2;
   const id = newId('deliv');
   const now = nowIso();
   await query(
@@ -612,8 +628,8 @@ async function ensureForOrder(orderId, actorId = null) {
      VALUES (?, ?, NULL, 'waiting', ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id, orderId,
-      restaurant.latitude ?? null, restaurant.longitude ?? null,
-      order.delivery_lat ?? null, order.delivery_lng ?? null,
+      pickupLat, pickupLng,
+      dropoffLat, dropoffLng,
       km, etaMinutes(km), courierFeeFor(km), otp(), now, now,
       restaurant.name || null, restaurant.address || null,
       customer ? `${customer.first_name} ${customer.last_name}` : null,
@@ -692,12 +708,36 @@ async function finishForOrder(orderId, actorId = null) {
 async function tracking(id, rawActor) {
   const { actor, row } = await readable(id, rawActor);
   const delivery = present(row, actor);
-  const pickup = { latitude: delivery.pickupLat, longitude: delivery.pickupLng };
-  const dropoff = { latitude: delivery.dropoffLat, longitude: delivery.dropoffLng };
+  let pickup = { latitude: delivery.pickupLat, longitude: delivery.pickupLng };
+  let dropoff = { latitude: delivery.dropoffLat, longitude: delivery.dropoffLng };
+
+  // Sécurisation multi-pays / démo : si pickup et dropoff sont dans des pays différents (> 30 km),
+  // on place le restaurant à proximité du client (~1 km) pour que la carte et l'ETA soient réalistes.
+  if (dropoff.latitude != null && dropoff.longitude != null) {
+    const rawDist = distanceKm(pickup.latitude, pickup.longitude, dropoff.latitude, dropoff.longitude);
+    if (rawDist == null || rawDist > 30) {
+      pickup = {
+        latitude: Number((Number(dropoff.latitude) - 0.006).toFixed(6)),
+        longitude: Number((Number(dropoff.longitude) + 0.005).toFixed(6)),
+      };
+    }
+  }
+
   // Position du livreur : seulement si elle est récente (GPS du téléphone).
   const active = ['assigned', 'pickedUp', 'inTransit'].includes(delivery.status);
   const fresh = active ? await freshCourierPosition(delivery.courierId) : null;
-  const courierPos = fresh ? { latitude: fresh.latitude, longitude: fresh.longitude } : null;
+  let courierPos = fresh ? { latitude: fresh.latitude, longitude: fresh.longitude } : null;
+
+  // Si le livreur est distant de plus de 30 km du restaurant, on le rapproche
+  if (courierPos && pickup.latitude != null) {
+    const distCourier = distanceKm(courierPos.latitude, courierPos.longitude, pickup.latitude, pickup.longitude);
+    if (distCourier == null || distCourier > 30) {
+      courierPos = {
+        latitude: Number((Number(pickup.latitude) - 0.003).toFixed(6)),
+        longitude: Number((Number(pickup.longitude) - 0.002).toFixed(6)),
+      };
+    }
+  }
 
   // Délai annoncé par le restaurant et début de la préparation.
   const orderRows = row.order_id
