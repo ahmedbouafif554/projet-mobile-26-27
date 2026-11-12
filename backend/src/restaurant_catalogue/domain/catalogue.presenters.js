@@ -1,12 +1,23 @@
 'use strict';
 
 const { toIso } = require('../../data/db');
-const { RESTAURANT_STATUSES, RESTAURANT_DEFAULTS } = require('./catalogue.constants');
+const {
+  RESTAURANT_STATUSES,
+  RESTAURANT_DEFAULTS,
+  GEO_STATUSES,
+  LOCATED,
+  NUTRI_SCORES,
+  ALLERGENS,
+} = require('./catalogue.constants');
 
 /**
  * Forme JSON exacte de `Restaurant.toJson()`, `Product.toJson()` et
- * `Category.toJson()` du frontend (plus latitude, longitude et e-mail du
- * restaurant, utilisés par le module Commandes).
+ * `Category.toJson()` du frontend (plus l'e-mail du restaurant, utilisé par
+ * le module Commandes).
+ *
+ * `distanceKm` et `estimatedMinutes` sont recalculés par le service quand la
+ * position du client est connue ; sinon `distanceKm` est la valeur enregistrée
+ * et `estimatedMinutes` vaut `null`.
  *
  * Les lignes créées avant ce module n'ont pas toujours les nouvelles colonnes :
  * `cuisine` et `section` retombent alors sur l'ancienne colonne `category`.
@@ -51,6 +62,10 @@ function presentRestaurant(row, categoryIds = []) {
     email: row.email || '',
     latitude: numberOr(row.latitude, RESTAURANT_DEFAULTS.latitude),
     longitude: numberOr(row.longitude, RESTAURANT_DEFAULTS.longitude),
+    locationStatus: GEO_STATUSES.includes(row.geo_status) ? row.geo_status : 'pending',
+    // Coordonnées fiables : le restaurant apparaît sur la carte et dans « près de moi ».
+    hasLocation: LOCATED.includes(row.geo_status),
+    estimatedMinutes: null,
     menuSections: jsonList(row.menu_sections).filter((s) => typeof s === 'string'),
     menuImageUrl: row.menu_image_url || null,
     isOpen: flag(row.is_open),
@@ -76,6 +91,9 @@ function presentProduct(row) {
     isAvailable: flag(row.is_available),
     isPopular: flag(row.is_popular),
     calories: row.calories == null ? null : Number(row.calories),
+    barcode: row.barcode || null,
+    nutriScore: NUTRI_SCORES.includes(row.nutri_score) ? row.nutri_score : null,
+    allergens: jsonList(row.allergens).filter((code) => Object.hasOwn(ALLERGENS, code)),
   };
 }
 

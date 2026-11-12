@@ -344,6 +344,79 @@ class _BannerTag extends StatelessWidget {
   }
 }
 
+/// Localisation de l'adresse sur la carte (OpenStreetMap, côté serveur) :
+/// sans coordonnées fiables, le restaurant n'apparaît ni sur la carte ni
+/// dans « Près de moi » ; il peut être relocalisé.
+class _LocationLine extends ConsumerStatefulWidget {
+  const _LocationLine({required this.restaurant});
+
+  final Restaurant restaurant;
+
+  @override
+  ConsumerState<_LocationLine> createState() => _LocationLineState();
+}
+
+class _LocationLineState extends ConsumerState<_LocationLine> {
+  bool _busy = false;
+
+  Future<void> _relocate() async {
+    setState(() => _busy = true);
+    try {
+      final updated = await ref
+          .read(restaurantsControllerProvider.notifier)
+          .relocate(widget.restaurant);
+      if (!mounted) return;
+      AppSnackbar.success(
+        context,
+        updated.hasLocation
+            ? 'Adresse localisée sur la carte'
+            : 'Adresse toujours introuvable : vérifiez-la',
+      );
+    } catch (error) {
+      if (mounted) AppSnackbar.error(context, error);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final r = widget.restaurant;
+    final located = r.hasLocation;
+    final color = located ? AppColors.success : AppColors.warning;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSizes.sm),
+      child: Row(
+        children: [
+          Icon(
+            located ? Icons.where_to_vote_rounded : Icons.wrong_location_outlined,
+            size: 18,
+            color: color,
+          ),
+          const SizedBox(width: AppSizes.sm),
+          Expanded(
+            child: Text(
+              r.locationStatus.label,
+              style: context.text.bodySmall?.copyWith(color: color),
+            ),
+          ),
+          if (!located)
+            TextButton.icon(
+              onPressed: _busy ? null : _relocate,
+              icon: _busy
+                  ? const SizedBox.square(
+                      dimension: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.my_location_rounded, size: 18),
+              label: const Text('Relocaliser'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _InfoCard extends StatelessWidget {
   const _InfoCard({required this.restaurant});
 
@@ -361,6 +434,7 @@ class _InfoCard extends StatelessWidget {
           Text(r.description, style: context.text.bodyMedium),
           const SizedBox(height: AppSizes.sm),
           infoText(Icons.place_outlined, 'Adresse', r.address),
+          _LocationLine(restaurant: r),
           infoText(Icons.phone_outlined, 'Téléphone', r.phone),
           infoText(
             Icons.timer_outlined,

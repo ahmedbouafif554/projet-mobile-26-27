@@ -1,3 +1,6 @@
+import '../../../core/network/api_client.dart';
+import '../../../core/network/api_exception.dart';
+import '../../models/food_info.dart';
 import '../../models/product.dart';
 import '../base/api_crud_repository.dart';
 import 'product_repository.dart';
@@ -22,4 +25,11 @@ class ApiProductRepository extends ApiCrudRepository<Product>
   @override
   Future<Product> setAvailability(String id, bool isAvailable) =>
       patch(id, 'availability', {'isAvailable': isAvailable});
+
+  @override
+  Future<BarcodeProduct> lookupBarcode(String barcode) => runApi(() async {
+    final code = barcode.replaceAll(RegExp(r'[\s-]'), '');
+    final response = await dio.get('$path/lookup/$code');
+    return BarcodeProduct.fromJson(jsonMap(response.data));
+  });
 }

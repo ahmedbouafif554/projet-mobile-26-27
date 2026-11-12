@@ -14,7 +14,7 @@ const RESTAURANT_KEYS = [
 ];
 const PRODUCT_KEYS = [
   'id', 'restaurantId', 'categoryId', 'name', 'description', 'price', 'imageUrl', 'section',
-  'optionGroups', 'isAvailable', 'isPopular', 'calories',
+  'optionGroups', 'isAvailable', 'isPopular', 'calories', 'barcode', 'nutriScore', 'allergens',
 ];
 const CATEGORY_KEYS = ['id', 'name', 'emoji', 'colorValue', 'position', 'isActive'];
 

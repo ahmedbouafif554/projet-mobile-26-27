@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../../core/auth/auth_service.dart';
+import '../../../../core/location/geocoding_service.dart';
 import '../../../../shared/models/models.dart';
 import '../../../../shared/repositories/repository_providers.dart';
 
@@ -15,15 +17,69 @@ final categoriesProvider = FutureProvider<List<Category>>((ref) async {
   return all.where((c) => c.isActive).toList();
 });
 
-/// Restaurants validés (les demandes en attente ne sont pas visibles).
+/// Position GPS du téléphone (service partagé, remplaçable dans les tests).
+final geocodingServiceProvider = Provider<GeocodingService>(
+  (ref) => GeocodingService(),
+);
+
+/// Position du client pour « Près de moi » : null tant qu'il ne l'a pas
+/// demandée (aucune autorisation n'est réclamée à l'ouverture de l'app).
+class UserLocation {
+  const UserLocation({this.position, this.isLocating = false});
+
+  final LatLng? position;
+  final bool isLocating;
+}
+
+final userLocationProvider =
+    NotifierProvider<UserLocationNotifier, UserLocation>(
+      UserLocationNotifier.new,
+    );
+
+class UserLocationNotifier extends Notifier<UserLocation> {
+  @override
+  UserLocation build() => const UserLocation();
+
+  /// Demande la position du téléphone. Lève [LocationException] (message
+  /// lisible) si la localisation est désactivée ou refusée.
+  Future<LatLng> locate() async {
+    final previous = state.position;
+    state = UserLocation(position: previous, isLocating: true);
+    try {
+      final position = await ref
+          .read(geocodingServiceProvider)
+          .currentPosition();
+      state = UserLocation(position: position);
+      return position;
+    } catch (_) {
+      state = UserLocation(position: previous);
+      rethrow;
+    }
+  }
+
+  /// Oublie la position : retour aux distances et délais habituels.
+  void clear() => state = const UserLocation();
+}
+
+/// Restaurants validés (les demandes en attente ne sont pas visibles), avec
+/// la distance et le délai estimés depuis le client quand sa position est
+/// connue.
 final restaurantsProvider = FutureProvider<List<Restaurant>>((ref) async {
-  final all = await ref.watch(restaurantRepositoryProvider).getAll();
+  final repository = ref.watch(restaurantRepositoryProvider);
+  final position = ref.watch(userLocationProvider.select((l) => l.position));
+  final all = position == null
+      ? await repository.getAll()
+      : await repository.getAllNear(position);
   return all.where((r) => r.isVisible).toList();
 });
 
-final restaurantProvider = FutureProvider.family<Restaurant, String>(
-  (ref, id) => ref.watch(restaurantRepositoryProvider).getById(id),
-);
+final restaurantProvider = FutureProvider.family<Restaurant, String>((ref, id) {
+  final repository = ref.watch(restaurantRepositoryProvider);
+  final position = ref.watch(userLocationProvider.select((l) => l.position));
+  return position == null
+      ? repository.getById(id)
+      : repository.getByIdNear(id, position);
+});
 
 /// Menu d'un restaurant.
 final restaurantProductsProvider = FutureProvider.family<List<Product>, String>(
@@ -68,6 +124,7 @@ class FavoritesController extends AsyncNotifier<Set<String>> {
 /// Tri de la liste des restaurants.
 enum RestaurantSort {
   recommended('Recommandés'),
+  nearest('Plus proches'),
   rating('Mieux notés'),
   fastest('Plus rapides'),
   cheapest('Livraison la moins chère');
@@ -133,10 +190,20 @@ class RestaurantFilter {
           if (a.isPopular != b.isPopular) return a.isPopular ? -1 : 1;
           return b.rating.compareTo(a.rating);
         });
+      case RestaurantSort.nearest:
+        // Restaurants localisés d'abord (distance réelle), les autres ensuite.
+        list.sort((a, b) {
+          if (a.hasLocation != b.hasLocation) return a.hasLocation ? -1 : 1;
+          return a.distanceKm.compareTo(b.distanceKm);
+        });
       case RestaurantSort.rating:
         list.sort((a, b) => b.rating.compareTo(a.rating));
       case RestaurantSort.fastest:
-        list.sort((a, b) => a.deliveryMinutes.compareTo(b.deliveryMinutes));
+        list.sort(
+          (a, b) => (a.estimatedMinutes ?? a.deliveryMinutes).compareTo(
+            b.estimatedMinutes ?? b.deliveryMinutes,
+          ),
+        );
       case RestaurantSort.cheapest:
         list.sort((a, b) => a.deliveryFee.compareTo(b.deliveryFee));
     }

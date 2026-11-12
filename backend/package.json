@@ -11,7 +11,8 @@
     "test:module4": "node --experimental-sqlite ./node_modules/jest/bin/jest.js tests/imed-livraison-livreur.test.js",
     "test:module5": "node --experimental-sqlite ./node_modules/jest/bin/jest.js tests/avis-notification.test.js",
     "seed:module3": "node --experimental-sqlite src/oussema_panier_commande/seed/seed-demo-orders.js",
-    "seed:catalogue": "node src/restaurant_catalogue/seed/seed-demo-catalogue.js"
+    "seed:catalogue": "node --experimental-sqlite src/restaurant_catalogue/seed/seed-demo-catalogue.js",
+    "geocode:catalogue": "node --experimental-sqlite src/restaurant_catalogue/seed/geocode-catalogue.js"
   },
   "jest": {
     "testEnvironment": "node",

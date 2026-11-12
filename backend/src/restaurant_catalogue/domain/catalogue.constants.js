@@ -21,6 +21,49 @@ const CATEGORY_DEFAULTS = Object.freeze({
   colorValue: 0xffffe8d9,
 });
 
+/**
+ * Localisation d'un restaurant (adresse → coordonnées GPS) :
+ *  - pending   : pas encore géocodé (ou géolocalisation désactivée) ;
+ *  - ok        : coordonnées trouvées par OpenStreetMap ;
+ *  - not_found : adresse inconnue d'OpenStreetMap ;
+ *  - error     : service indisponible, à réessayer ;
+ *  - manual    : coordonnées saisies à la main.
+ */
+const GEO_STATUSES = Object.freeze(['pending', 'ok', 'not_found', 'error', 'manual']);
+
+/** Statuts dont les coordonnées sont fiables (distance et carte). */
+const LOCATED = Object.freeze(['ok', 'manual']);
+
+/**
+ * Délai estimé : le délai annoncé par le restaurant couvre les premiers
+ * kilomètres, puis on ajoute le trajet d'un scooter en ville (≈ 20 km/h).
+ */
+const DELIVERY_ESTIMATE = Object.freeze({ includedKm: 2, minutesPerKm: 3 });
+
+/** Nutri-Score affiché sur les produits alimentaires. */
+const NUTRI_SCORES = Object.freeze(['a', 'b', 'c', 'd', 'e']);
+
+/**
+ * Les 14 allergènes à déclaration obligatoire (règlement UE n° 1169/2011),
+ * avec les identifiants d'Open Food Facts.
+ */
+const ALLERGENS = Object.freeze({
+  gluten: 'Gluten',
+  crustaceans: 'Crustacés',
+  eggs: 'Œufs',
+  fish: 'Poisson',
+  peanuts: 'Arachides',
+  soybeans: 'Soja',
+  milk: 'Lait',
+  nuts: 'Fruits à coque',
+  celery: 'Céleri',
+  mustard: 'Moutarde',
+  'sesame-seeds': 'Sésame',
+  'sulphur-dioxide-and-sulphites': 'Sulfites',
+  lupin: 'Lupin',
+  molluscs: 'Mollusques',
+});
+
 /** Bornes de validation (longueurs en caractères, montants en euros). */
 const LIMITS = Object.freeze({
   idLength: 64,
@@ -49,6 +92,7 @@ const LIMITS = Object.freeze({
   maxCalories: 10000,
   maxReviewCount: 1000000,
   maxColorValue: 0xffffffff,
+  maxRadiusKm: 50,
 });
 
 /** Catégories créées avec la table (les mêmes que le catalogue mock du frontend). */
@@ -83,6 +127,16 @@ const MESSAGES = Object.freeze({
   productInUse:
     'Ce produit figure dans des commandes : rendez-le indisponible plutôt que de le supprimer.',
   availabilityRequired: 'isAvailable : vrai ou faux attendu.',
+  coordinatesPair: 'La latitude et la longitude vont ensemble.',
+  radiusNeedsPosition: 'Le rayon (radiusKm) demande une latitude et une longitude.',
+  geocodingDisabled: 'La géolocalisation des adresses est désactivée sur ce serveur.',
+  geocodingUnavailable: 'Le service de géolocalisation ne répond pas, réessayez dans un instant.',
+  barcodeRequired: 'Le code-barres est obligatoire.',
+  invalidBarcode: 'Code-barres invalide : 8, 12, 13 ou 14 chiffres avec une clé de contrôle correcte.',
+  duplicateBarcode: 'Ce code-barres est déjà utilisé par un autre produit de ce restaurant.',
+  barcodeNotFound: 'Aucun produit ne correspond à ce code-barres sur Open Food Facts.',
+  barcodeServiceUnavailable: 'Open Food Facts ne répond pas, réessayez dans un instant.',
+  invalidNutriScore: 'Nutri-Score invalide (A, B, C, D ou E).',
 });
 
 module.exports = {
@@ -90,6 +144,11 @@ module.exports = {
   APPROVED,
   RESTAURANT_DEFAULTS,
   CATEGORY_DEFAULTS,
+  GEO_STATUSES,
+  LOCATED,
+  DELIVERY_ESTIMATE,
+  NUTRI_SCORES,
+  ALLERGENS,
   LIMITS,
   DEFAULT_CATEGORIES,
   MESSAGES,

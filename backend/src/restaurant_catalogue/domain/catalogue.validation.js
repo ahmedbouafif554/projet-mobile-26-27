@@ -6,6 +6,8 @@ const {
   RESTAURANT_STATUSES,
   RESTAURANT_DEFAULTS,
   CATEGORY_DEFAULTS,
+  NUTRI_SCORES,
+  ALLERGENS,
   LIMITS,
   MESSAGES,
 } = require('./catalogue.constants');
@@ -210,6 +212,57 @@ function restaurantInput(body) {
 
 // ── Produit ─────────────────────────────────────────────────────────────────
 
+/** Clé de contrôle GS1 : somme pondérée 3-1-3… depuis la droite, modulo 10. */
+function hasValidCheckDigit(code) {
+  const digits = code.split('').map(Number);
+  const check = digits.pop();
+  const sum = digits
+    .reverse()
+    .reduce((total, digit, index) => total + digit * (index % 2 === 0 ? 3 : 1), 0);
+  return (10 - (sum % 10)) % 10 === check;
+}
+
+/**
+ * Code-barres GS1 (EAN-8, UPC-A, EAN-13, GTIN-14) : `null` s'il est vide.
+ * Espaces et tirets saisis par l'utilisateur sont ignorés.
+ */
+function barcode(value) {
+  if (value == null) return null;
+  if (typeof value !== 'string') throw invalid(MESSAGES.invalidBarcode);
+  const code = value.replace(/[\s-]/g, '');
+  if (!code) return null;
+  if (!/^\d+$/.test(code) || ![8, 12, 13, 14].includes(code.length) || !hasValidCheckDigit(code)) {
+    throw invalid(MESSAGES.invalidBarcode);
+  }
+  return code;
+}
+
+/** Code-barres obligatoire (recherche Open Food Facts). */
+function requiredBarcode(value) {
+  const code = barcode(value);
+  if (!code) throw invalid(MESSAGES.barcodeRequired);
+  return code;
+}
+
+function nutriScore(value) {
+  if (value == null || value === '') return null;
+  const grade = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!NUTRI_SCORES.includes(grade)) throw invalid(MESSAGES.invalidNutriScore);
+  return grade;
+}
+
+/** Allergènes : identifiants parmi les 14 à déclaration obligatoire. */
+function allergens(value) {
+  const codes = textList(value, {
+    label: 'Les allergènes',
+    maxItems: Object.keys(ALLERGENS).length,
+    maxLength: LIMITS.idLength,
+  });
+  const unknown = codes.find((code) => !Object.hasOwn(ALLERGENS, code));
+  if (unknown) throw invalid(`Allergène inconnu : ${unknown}.`);
+  return codes;
+}
+
 function optionInput(option, label, newId) {
   if (!option || typeof option !== 'object' || Array.isArray(option)) {
     throw invalid(`${label} : choix invalide.`);
@@ -292,6 +345,9 @@ function productInput(body, newId) {
       "L'onglet du menu est obligatoire.",
     ),
     optionGroups: optionGroupsInput(body.optionGroups, newId),
+    barcode: barcode(body.barcode),
+    nutriScore: nutriScore(body.nutriScore),
+    allergens: allergens(body.allergens),
     isAvailable: bool(body.isAvailable, 'La disponibilité', true),
     isPopular: bool(body.isPopular, 'La mise en avant', false),
     calories:
@@ -324,6 +380,41 @@ function categoryInput(body) {
   };
 }
 
+// ── Position du client ──────────────────────────────────────────────────────
+
+function present(value) {
+  return value != null && value !== '';
+}
+
+/**
+ * Position du client (`?latitude=&longitude=&radiusKm=`) : `null` si elle
+ * n'est pas donnée. Latitude et longitude vont ensemble.
+ */
+function nearbyInput(params) {
+  const hasLatitude = present(params.latitude);
+  const hasLongitude = present(params.longitude);
+  if (!hasLatitude && !hasLongitude) {
+    if (present(params.radiusKm)) throw invalid(MESSAGES.radiusNeedsPosition);
+    return null;
+  }
+  if (hasLatitude !== hasLongitude) throw invalid(MESSAGES.coordinatesPair);
+  return {
+    latitude: number(params.latitude, { label: 'La latitude', min: -90, max: 90 }),
+    longitude: number(params.longitude, { label: 'La longitude', min: -180, max: 180 }),
+    radiusKm: present(params.radiusKm)
+      ? number(params.radiusKm, { label: 'Le rayon', min: 0.1, max: LIMITS.maxRadiusKm })
+      : null,
+  };
+}
+
+/** Coordonnées saisies à la main dans le corps de la requête (les deux ou aucune). */
+function hasManualCoordinates(body) {
+  const hasLatitude = body.latitude != null;
+  const hasLongitude = body.longitude != null;
+  if (hasLatitude !== hasLongitude) throw invalid(MESSAGES.coordinatesPair);
+  return hasLatitude;
+}
+
 /** Nouvel ordre des catégories : identifiants uniques. */
 function orderedIdsInput(value) {
   if (!Array.isArray(value) || value.length === 0) {
@@ -341,4 +432,7 @@ module.exports = {
   productInput,
   categoryInput,
   orderedIdsInput,
+  requiredBarcode,
+  nearbyInput,
+  hasManualCoordinates,
 };

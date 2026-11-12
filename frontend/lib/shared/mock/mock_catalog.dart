@@ -291,11 +291,30 @@ class MockCatalog {
     address: address,
     phone: _phone(int.parse(id.substring(1))),
     menuSections: _sections[category] ?? const [],
+    latitude: _positions[id]?.$1,
+    longitude: _positions[id]?.$2,
+    locationStatus: _positions.containsKey(id)
+        ? RestaurantLocationStatus.ok
+        : RestaurantLocationStatus.pending,
     isPopular: popular,
     promo: promo,
     status: status,
     createdAt: _now.subtract(Duration(days: createdDaysAgo)),
   );
+
+  /// Coordonnées des adresses, telles que trouvées par OpenStreetMap.
+  static const Map<String, (double, double)> _positions = {
+    'r1': (48.86335, 2.36939),
+    'r2': (48.87726, 2.33927),
+    'r3': (48.86720, 2.33604),
+    'r4': (48.86615, 2.36640),
+    'r5': (48.86883, 2.33531),
+    'r6': (48.85346, 2.37959),
+    'r7': (48.86206, 2.36395),
+    'r8': (48.85072, 2.37798),
+    'r9': (48.85891, 2.38318),
+    'r10': (48.84465, 2.32779),
+  };
 
   /// « 01 43 17 23 45 »
   static String _phone(int n) => '01 43 ${10 + n * 7} ${20 + n * 3} 45';

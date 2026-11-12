@@ -4,9 +4,10 @@ const HttpError = require('../../errors/http-error');
 const { query, newId, toSqlDate } = require('../../data/db');
 const { MESSAGES } = require('../domain/catalogue.constants');
 const { presentProduct } = require('../domain/catalogue.presenters');
-const { requestedId, productInput } = require('../domain/catalogue.validation');
+const { requestedId, productInput, requiredBarcode } = require('../domain/catalogue.validation');
 const access = require('./access.service');
 const categories = require('./category.service');
+const barcodes = require('./barcode.service');
 const { insertRow, updateRow, findById, isForeignKeyError } = require('./sql.utils');
 
 const FIELDS = [
@@ -18,6 +19,9 @@ const FIELDS = [
   'imageUrl',
   'section',
   'optionGroups',
+  'barcode',
+  'nutriScore',
+  'allergens',
   'isAvailable',
   'isPopular',
   'calories',
@@ -41,6 +45,9 @@ function toRow(input) {
     image_url: input.imageUrl || null,
     section: input.section,
     option_groups: JSON.stringify(input.optionGroups),
+    barcode: input.barcode,
+    nutri_score: input.nutriScore,
+    allergens: JSON.stringify(input.allergens),
     is_available: input.isAvailable ? 1 : 0,
     is_popular: input.isPopular ? 1 : 0,
     calories: input.calories,
@@ -49,6 +56,16 @@ function toRow(input) {
 
 function findRow(id) {
   return findById('products', id);
+}
+
+/** Un code-barres n'apparaît qu'une fois dans le menu d'un restaurant. */
+async function assertBarcodeAvailable(input, productId = null) {
+  if (!input.barcode) return;
+  const rows = await query('SELECT id FROM products WHERE restaurant_id = ? AND barcode = ?', [
+    input.restaurantId,
+    input.barcode,
+  ]);
+  if (rows.some((row) => row.id !== productId)) throw new HttpError(409, MESSAGES.duplicateBarcode);
 }
 
 function findRestaurant(id) {
@@ -141,6 +158,7 @@ async function create(actor, body) {
 
   const input = productInput({ ...body, restaurantId }, newId);
   if (input.categoryId) await categories.assertExist([input.categoryId]);
+  await assertBarcodeAvailable(input);
   const id = requestedId(body.id) || newId('prod');
   if (await findRow(id)) throw new HttpError(409, MESSAGES.duplicateId);
 
@@ -168,6 +186,7 @@ async function update(actor, id, body) {
   if (input.categoryId && input.categoryId !== current.categoryId) {
     await categories.assertExist([input.categoryId]);
   }
+  await assertBarcodeAvailable(input, id);
 
   await updateRow('products', id, toRow(input));
   return presentProduct(await findRow(id));
@@ -193,4 +212,21 @@ async function remove(actor, id) {
   }
 }
 
-module.exports = { list, forRestaurant, get, create, update, setAvailability, remove };
+/**
+ * Fiche pré-remplie depuis Open Food Facts pour un code-barres
+ * (`GET /products/lookup/:barcode`). Rien n'est enregistré.
+ */
+async function lookupBarcode(value) {
+  return barcodes.lookup(requiredBarcode(value));
+}
+
+module.exports = {
+  list,
+  forRestaurant,
+  get,
+  create,
+  update,
+  setAvailability,
+  remove,
+  lookupBarcode,
+};

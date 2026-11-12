@@ -1,3 +1,4 @@
+import 'food_info.dart';
 import 'json_utils.dart';
 
 /// Choix possible dans un groupe d'options (« Grand », « Bacon »…).
@@ -94,6 +95,9 @@ class Product {
     this.isAvailable = true,
     this.isPopular = false,
     this.calories,
+    this.barcode,
+    this.nutriScore,
+    this.allergens = const [],
   });
 
   final String id;
@@ -113,6 +117,13 @@ class Product {
   final bool isPopular;
   final int? calories;
 
+  /// Code-barres EAN (produits d'épicerie), unique dans un restaurant.
+  final String? barcode;
+  final NutriScore? nutriScore;
+
+  /// Allergènes à déclaration obligatoire (clés de [Allergens.labels]).
+  final List<String> allergens;
+
   factory Product.fromJson(Map<String, dynamic> json) => Product(
     id: json['id'] as String,
     restaurantId: json['restaurantId'] as String,
@@ -126,6 +137,9 @@ class Product {
     isAvailable: json['isAvailable'] as bool? ?? true,
     isPopular: json['isPopular'] as bool? ?? false,
     calories: (json['calories'] as num?)?.toInt(),
+    barcode: json['barcode'] as String?,
+    nutriScore: NutriScore.fromCode(json['nutriScore']),
+    allergens: parseStrings(json['allergens']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -141,6 +155,9 @@ class Product {
     'isAvailable': isAvailable,
     'isPopular': isPopular,
     'calories': calories,
+    'barcode': barcode,
+    'nutriScore': nutriScore?.name,
+    'allergens': allergens,
   };
 
   Product copyWith({
@@ -156,6 +173,9 @@ class Product {
     bool? isAvailable,
     bool? isPopular,
     Object? calories = keep,
+    Object? barcode = keep,
+    Object? nutriScore = keep,
+    List<String>? allergens,
   }) => Product(
     id: id ?? this.id,
     restaurantId: restaurantId ?? this.restaurantId,
@@ -169,5 +189,10 @@ class Product {
     isAvailable: isAvailable ?? this.isAvailable,
     isPopular: isPopular ?? this.isPopular,
     calories: calories == keep ? this.calories : calories as int?,
+    barcode: barcode == keep ? this.barcode : barcode as String?,
+    nutriScore: nutriScore == keep
+        ? this.nutriScore
+        : nutriScore as NutriScore?,
+    allergens: allergens ?? this.allergens,
   );
 }

@@ -4,15 +4,21 @@ const HttpError = require('../../errors/http-error');
 const { query, withTransaction, newId, toSqlDate } = require('../../data/db');
 const users = require('../../services/users.service');
 const { MESSAGES: ROLE_MESSAGES } = require('../../domain/roles');
+const settings = require('../catalogue.config');
 const { APPROVED, MESSAGES } = require('../domain/catalogue.constants');
 const { presentRestaurant } = require('../domain/catalogue.presenters');
 const {
   requestedId,
   restaurantInput,
   restaurantStatus,
+  nearbyInput,
+  hasManualCoordinates,
 } = require('../domain/catalogue.validation');
 const access = require('./access.service');
 const categories = require('./category.service');
+const geocoding = require('./geocoding.service');
+const { ExternalServiceError } = require('./http.client');
+const { distanceKm, roundKm, estimatedMinutes } = require('./geo.utils');
 const {
   placeholders,
   insertRow,
@@ -151,13 +157,92 @@ async function assertOwnerAvailable(ownerId, { restaurantId = null, mustBePendin
   }
 }
 
+// ── Localisation (OpenStreetMap) ────────────────────────────────────────────
+
+/**
+ * Colonnes de localisation d'une adresse. Un échec du service n'empêche
+ * jamais d'enregistrer : le restaurant est marqué `error` et sera relocalisé
+ * plus tard (`npm run geocode:catalogue`). Appelé hors transaction.
+ */
+async function locate(address, { force = false } = {}) {
+  if (!settings.geocodingEnabled) return { geo_status: 'pending', geocoded_at: null };
+  try {
+    const result = await geocoding.geocode(address, { force });
+    const geocodedAt = toSqlDate(new Date());
+    return result.found
+      ? { latitude: result.latitude, longitude: result.longitude, geo_status: 'ok', geocoded_at: geocodedAt }
+      : { geo_status: 'not_found', geocoded_at: geocodedAt };
+  } catch (error) {
+    if (error instanceof ExternalServiceError) return { geo_status: 'error', geocoded_at: null };
+    throw error;
+  }
+}
+
+function manualLocation(input) {
+  return {
+    latitude: input.latitude,
+    longitude: input.longitude,
+    geo_status: 'manual',
+    geocoded_at: toSqlDate(new Date()),
+  };
+}
+
+/**
+ * Localisation après une modification : coordonnées déplacées à la main →
+ * `manual` ; adresse changée, ou jamais localisée / en erreur → nouveau
+ * géocodage ; sinon inchangée (`{}`).
+ */
+async function relocation(current, input, changes) {
+  const moved = ['latitude', 'longitude'].some(
+    (key) => changes[key] != null && Math.abs(input[key] - current[key]) > 1e-7,
+  );
+  if (moved) return manualLocation(input);
+  const addressChanged =
+    geocoding.addressKey(input.address) !== geocoding.addressKey(current.address);
+  const notLocatedYet = ['pending', 'error'].includes(current.locationStatus);
+  if (addressChanged || (notLocatedYet && settings.geocodingEnabled)) return locate(input.address);
+  return {};
+}
+
+/** Distance (km) et délai estimé depuis la position du client. */
+function withDistance(restaurant, km) {
+  return {
+    ...restaurant,
+    distanceKm: roundKm(km),
+    estimatedMinutes: estimatedMinutes(restaurant.deliveryMinutes, km),
+  };
+}
+
+/**
+ * Du plus proche au plus loin. Les restaurants sans coordonnées fiables
+ * suivent, sauf si un rayon est demandé (distance inconnue → exclus).
+ */
+function sortByDistance(restaurants, origin) {
+  const located = [];
+  const others = [];
+  for (const restaurant of restaurants) {
+    if (!restaurant.hasLocation) {
+      others.push(restaurant);
+      continue;
+    }
+    const km = distanceKm(origin, restaurant);
+    if (origin.radiusKm == null || km <= origin.radiusKm) located.push({ km, restaurant });
+  }
+  located.sort((a, b) => a.km - b.km);
+  const sorted = located.map(({ km, restaurant }) => withDistance(restaurant, km));
+  return origin.radiusKm == null ? [...sorted, ...others] : sorted;
+}
+
 // ── Lecture ─────────────────────────────────────────────────────────────────
 
 /**
  * Restaurants visibles par `actor` (plus récents d'abord).
  * Filtres : `?categoryId=`, `?status=`.
+ * Avec `?latitude=&longitude=` (et `&radiusKm=`) : distance et délai estimés,
+ * du plus proche au plus loin.
  */
 async function list(actor, filters = {}) {
+  const origin = nearbyInput(filters);
   const conditions = [];
   const params = [];
   const visibility = await access.visibilityFilter(actor, 'r');
@@ -178,13 +263,19 @@ async function list(actor, filters = {}) {
     `SELECT r.* FROM restaurants r ${where} ORDER BY r.created_at DESC, r.id`,
     params,
   );
-  return present(rows);
+  const restaurants = await present(rows);
+  return origin ? sortByDistance(restaurants, origin) : restaurants;
 }
 
-async function get(actor, id) {
+/** Fiche d'un restaurant ; avec `?latitude=&longitude=`, sa distance du client. */
+async function get(actor, id, params = {}) {
+  const origin = nearbyInput(params);
   const row = await findRow(id);
   await access.assertCanView(actor, row);
-  return presentOne(row);
+  const restaurant = await presentOne(row);
+  return origin && restaurant.hasLocation
+    ? withDistance(restaurant, distanceKm(origin, restaurant))
+    : restaurant;
 }
 
 // ── Écriture ────────────────────────────────────────────────────────────────
@@ -200,9 +291,11 @@ async function create(actor, body) {
     throw new HttpError(403, ROLE_MESSAGES.forbidden);
   }
   const admin = access.isAdmin(actor);
+  const fields = admin ? body : pick(body, OWNER_FIELDS);
   const input = restaurantInput(
-    admin ? body : { ...pick(body, OWNER_FIELDS), ownerId: actor ? actor.id : body.ownerId },
+    admin ? fields : { ...fields, ownerId: actor ? actor.id : body.ownerId },
   );
+  const manual = hasManualCoordinates(fields);
   if (!admin && !input.ownerId) throw new HttpError(422, MESSAGES.ownerRequired);
 
   const id = requestedId(body.id) || newId('rest');
@@ -210,11 +303,14 @@ async function create(actor, body) {
   if (input.ownerId) await assertOwnerAvailable(input.ownerId, { mustBePending: !actor });
   await categories.assertExist(input.categoryIds);
 
+  // Avant la transaction : l'appel à OpenStreetMap ne bloque pas la base.
+  const location = manual ? manualLocation(input) : await locate(input.address);
   const status = admin ? input.status || APPROVED : 'pending';
   await withTransaction(async () => {
     await insertRow('restaurants', {
       id,
       ...toRow(input, status),
+      ...location,
       created_at: toSqlDate(new Date().toISOString()),
     });
     await writeCategoryLinks(id, input.categoryIds);
@@ -228,7 +324,12 @@ async function update(actor, id, body) {
   await access.assertCanManage(actor, row);
   const admin = access.isAdmin(actor);
   const current = await presentOne(row);
-  const input = restaurantInput({ ...current, ...pick(body, admin ? ADMIN_FIELDS : OWNER_FIELDS) });
+  const changes = pick(body, admin ? ADMIN_FIELDS : OWNER_FIELDS);
+  // Coordonnées absentes (null) : on garde celles connues, jamais les valeurs par défaut.
+  for (const key of ['latitude', 'longitude']) {
+    if (changes[key] == null) delete changes[key];
+  }
+  const input = restaurantInput({ ...current, ...changes });
 
   if (input.ownerId && input.ownerId !== current.ownerId) {
     await assertOwnerAvailable(input.ownerId, { restaurantId: id });
@@ -236,12 +337,42 @@ async function update(actor, id, body) {
   // Seules les catégories ajoutées sont vérifiées.
   await categories.assertExist(input.categoryIds.filter((c) => !current.categoryIds.includes(c)));
 
+  const location = await relocation(current, input, changes);
   const status = input.status || current.status;
   await withTransaction(async () => {
-    await updateRow('restaurants', id, toRow(input, status));
+    await updateRow('restaurants', id, { ...toRow(input, status), ...location });
     await writeCategoryLinks(id, input.categoryIds);
   });
   return presentOne(await findRow(id));
+}
+
+/** Relocalise l'adresse tout de suite, sans le cache (administrateur ou restaurateur). */
+async function relocate(actor, id) {
+  const row = await findRow(id);
+  await access.assertCanManage(actor, row);
+  if (!settings.geocodingEnabled) throw new HttpError(503, MESSAGES.geocodingDisabled);
+  const location = await locate(row.address, { force: true });
+  if (location.geo_status === 'error') throw new HttpError(502, MESSAGES.geocodingUnavailable);
+  await updateRow('restaurants', id, location);
+  return presentOne(await findRow(id));
+}
+
+/**
+ * Localise les restaurants jamais localisés ou en erreur
+ * (`npm run geocode:catalogue`). Renvoie le nombre de restaurants par résultat.
+ */
+async function locatePending() {
+  if (!settings.geocodingEnabled) throw new HttpError(503, MESSAGES.geocodingDisabled);
+  const rows = await query(
+    "SELECT id, address FROM restaurants WHERE geo_status IN ('pending', 'error') ORDER BY created_at, id",
+  );
+  const counts = { ok: 0, not_found: 0, error: 0 };
+  for (const row of rows) {
+    const location = await locate(row.address);
+    await updateRow('restaurants', row.id, location);
+    counts[location.geo_status] += 1;
+  }
+  return counts;
 }
 
 /**
@@ -273,4 +404,4 @@ async function remove(id) {
   }
 }
 
-module.exports = { list, get, create, update, setStatus, remove };
+module.exports = { list, get, create, update, setStatus, remove, relocate, locatePending };

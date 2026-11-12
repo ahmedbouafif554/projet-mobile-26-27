@@ -13,10 +13,12 @@ import '../../../../../core/widgets/selectable_chip.dart';
 import '../../../../../core/widgets/shimmer_box.dart';
 import '../../../../router/front_routes.dart';
 import '../../../../shared/catalog_widgets.dart';
+import '../../catalog_routes.dart';
 import '../../providers/catalog_providers.dart';
+import '../widgets/near_me.dart';
 
-/// Tous les restaurants avec filtres (catégorie, tri, livraison offerte,
-/// mieux notés, promos, ouverts).
+/// Tous les restaurants avec filtres (catégorie, tri, près de moi, livraison
+/// offerte, mieux notés, promos, ouverts) et accès à la carte.
 class RestaurantsPage extends ConsumerWidget {
   const RestaurantsPage({super.key});
 
@@ -26,6 +28,7 @@ class RestaurantsPage extends ConsumerWidget {
     final notifier = ref.read(restaurantFilterProvider.notifier);
     final restaurants = ref.watch(restaurantsProvider);
     final categories = ref.watch(categoriesProvider).value ?? const [];
+    final location = ref.watch(userLocationProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -43,6 +46,12 @@ class RestaurantsPage extends ConsumerWidget {
               child: Row(
                 children: [
                   const Expanded(child: PageTitle('Restaurants')),
+                  IconButton.filledTonal(
+                    tooltip: 'Voir sur la carte',
+                    onPressed: () => context.push(restaurantsMapPath),
+                    icon: const Icon(Icons.map_outlined),
+                  ),
+                  const SizedBox(width: AppSizes.sm),
                   Badge(
                     isLabelVisible: filter.activeCount > 0,
                     backgroundColor: AppColors.primary,
@@ -86,6 +95,17 @@ class RestaurantsPage extends ConsumerWidget {
                   vertical: 4,
                 ),
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: AppSizes.sm),
+                    child: SelectableChip(
+                      label: location.isLocating
+                          ? 'Localisation…'
+                          : 'Près de moi',
+                      icon: Icons.near_me_rounded,
+                      selected: location.position != null,
+                      onTap: () => toggleNearMe(context, ref),
+                    ),
+                  ),
                   for (final (label, icon, selected, onTap) in [
                     (
                       'Livraison offerte',
@@ -212,6 +232,24 @@ class RestaurantsPage extends ConsumerWidget {
 class _SortSheet extends ConsumerWidget {
   const _SortSheet();
 
+  /// « Plus proches » demande d'abord la position du client.
+  Future<void> _choose(
+    BuildContext context,
+    WidgetRef ref,
+    RestaurantSort? sort,
+  ) async {
+    if (sort == null) return;
+    final needsPosition =
+        sort == RestaurantSort.nearest &&
+        ref.read(userLocationProvider).position == null;
+    if (needsPosition && !await locateCustomer(context, ref)) return;
+    if (!context.mounted) return;
+    final filter = ref.read(restaurantFilterProvider);
+    ref
+        .read(restaurantFilterProvider.notifier)
+        .update(filter.copyWith(sort: sort));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(restaurantFilterProvider);
@@ -237,7 +275,7 @@ class _SortSheet extends ConsumerWidget {
                 activeColor: AppColors.primary,
                 contentPadding: EdgeInsets.zero,
                 title: Text(sort.label),
-                onChanged: (s) => notifier.update(filter.copyWith(sort: s)),
+                onChanged: (s) => _choose(context, ref, s),
               ),
             const SizedBox(height: AppSizes.sm),
             Row(

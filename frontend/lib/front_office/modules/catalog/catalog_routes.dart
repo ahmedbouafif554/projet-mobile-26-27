@@ -5,7 +5,11 @@ import '../../router/front_routes.dart';
 import '../communication/presentation/pages/restaurant_reviews_page.dart';
 import 'presentation/pages/favorites_page.dart';
 import 'presentation/pages/restaurant_page.dart';
+import 'presentation/pages/restaurants_map_page.dart';
 import 'presentation/pages/restaurants_page.dart';
+
+/// Carte des restaurants (sous la liste de l'onglet Explorer).
+const restaurantsMapPath = '${FrontRoutes.restaurants}/map';
 
 /// Fiche d'un restaurant et ses avis (dans l'onglet qui l'ouvre).
 GoRoute _restaurantRoute() => transitionRoute(
@@ -22,7 +26,11 @@ GoRoute _restaurantRoute() => transitionRoute(
 
 /// Module 2 — sous-écrans de l'onglet Explorer.
 List<RouteBase> exploreRoutes() => [
-  transitionRoute('restaurants', (_, _) => const RestaurantsPage()),
+  transitionRoute(
+    'restaurants',
+    (_, _) => const RestaurantsPage(),
+    routes: [transitionRoute('map', (_, _) => const RestaurantsMapPage())],
+  ),
   _restaurantRoute(),
 ];
 

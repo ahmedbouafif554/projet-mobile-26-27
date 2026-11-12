@@ -25,6 +25,9 @@ router.post('/', optionalAuth, asyncHandler(restaurantCtrl.create));
 // Modification : admin ou restaurateur du restaurant
 router.put('/:id', authenticate, asyncHandler(restaurantCtrl.update));
 
+// Relocaliser l'adresse avec OpenStreetMap : admin ou restaurateur du restaurant
+router.post('/:id/geocode', authenticate, asyncHandler(restaurantCtrl.relocate));
+
 // Validation / refus / suspension et suppression : admin
 router.patch('/:id/status', authenticate, requireAdmin, asyncHandler(restaurantCtrl.updateStatus));
 router.delete('/:id', authenticate, requireAdmin, asyncHandler(restaurantCtrl.remove));

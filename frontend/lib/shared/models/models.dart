@@ -8,6 +8,7 @@ export 'category.dart';
 export 'chat.dart';
 export 'courier.dart';
 export 'delivery.dart';
+export 'food_info.dart';
 export 'message.dart';
 export 'order.dart';
 export 'product.dart';

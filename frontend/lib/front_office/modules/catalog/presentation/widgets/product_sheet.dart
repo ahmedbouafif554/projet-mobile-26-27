@@ -205,6 +205,10 @@ class _ProductSheetState extends ConsumerState<ProductSheet> {
                                         label: '${p.calories} kcal',
                                       ),
                                     ],
+                                    if (p.nutriScore != null) ...[
+                                      const Spacer(),
+                                      _NutriScoreBadge(score: p.nutriScore!),
+                                    ],
                                   ],
                                 ),
                                 const SizedBox(height: AppSizes.sm),
@@ -214,6 +218,10 @@ class _ProductSheetState extends ConsumerState<ProductSheet> {
                                     color: context.palette.textSecondary,
                                   ),
                                 ),
+                                if (p.allergens.isNotEmpty) ...[
+                                  const SizedBox(height: AppSizes.sm),
+                                  _AllergensLine(codes: p.allergens),
+                                ],
                                 for (final group in p.optionGroups) ...[
                                   const SizedBox(height: AppSizes.lg),
                                   _GroupHeader(group: group),
@@ -397,4 +405,58 @@ class _OptionTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Nutri-Score du produit, dans sa couleur officielle.
+class _NutriScoreBadge extends StatelessWidget {
+  const _NutriScoreBadge({required this.score});
+
+  final NutriScore score;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: 'Nutri-Score ${score.letter}',
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Color(score.colorValue),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        'Nutri-Score ${score.letter}',
+        style: context.text.labelMedium?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+  );
+}
+
+/// « Allergènes : Lait, Fruits à coque » (règlement UE n° 1169/2011).
+class _AllergensLine extends StatelessWidget {
+  const _AllergensLine({required this.codes});
+
+  final List<String> codes;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Icon(
+        Icons.warning_amber_rounded,
+        size: 18,
+        color: AppColors.warning,
+      ),
+      const SizedBox(width: 6),
+      Expanded(
+        child: Text(
+          'Allergènes : ${codes.map(Allergens.label).join(', ')}',
+          style: context.text.bodySmall?.copyWith(
+            color: context.palette.textSecondary,
+          ),
+        ),
+      ),
+    ],
+  );
 }

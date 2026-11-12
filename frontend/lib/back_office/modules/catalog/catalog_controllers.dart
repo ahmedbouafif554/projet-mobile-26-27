@@ -40,6 +40,10 @@ class RestaurantsController extends EntityListController<Restaurant> {
         }
         ref.invalidate(usersControllerProvider);
       });
+
+  /// Relocalise l'adresse sur la carte (OpenStreetMap, côté serveur).
+  Future<Restaurant> relocate(Restaurant restaurant) =>
+      run(() => repository.relocate(restaurant.id));
 }
 
 /// Catégories (Module 2, admin) : CRUD et ordre d'affichage.

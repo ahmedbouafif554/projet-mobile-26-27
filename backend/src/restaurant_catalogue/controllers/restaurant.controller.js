@@ -8,7 +8,11 @@ async function list(req, res) {
 }
 
 async function getById(req, res) {
-  res.json(await restaurantService.get(req.auth, req.params.id));
+  res.json(await restaurantService.get(req.auth, req.params.id, req.query));
+}
+
+async function relocate(req, res) {
+  res.json(await restaurantService.relocate(req.auth, req.params.id));
 }
 
 async function listProducts(req, res) {
@@ -32,4 +36,13 @@ async function remove(req, res) {
   res.status(204).send();
 }
 
-module.exports = { list, getById, listProducts, create, update, updateStatus, remove };
+module.exports = {
+  list,
+  getById,
+  listProducts,
+  create,
+  update,
+  updateStatus,
+  relocate,
+  remove,
+};

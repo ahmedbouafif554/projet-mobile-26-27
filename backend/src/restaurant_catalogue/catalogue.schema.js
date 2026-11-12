@@ -1,7 +1,12 @@
 'use strict';
 
 const { query, withTransaction, toSqlDate } = require('../data/db');
-const { RESTAURANT_STATUSES, DEFAULT_CATEGORIES } = require('./domain/catalogue.constants');
+const {
+  RESTAURANT_STATUSES,
+  GEO_STATUSES,
+  NUTRI_SCORES,
+  DEFAULT_CATEGORIES,
+} = require('./domain/catalogue.constants');
 
 /**
  * Tables SQLite du module Restaurants & Catalogue.
@@ -13,14 +18,18 @@ const { RESTAURANT_STATUSES, DEFAULT_CATEGORIES } = require('./domain/catalogue.
  *  - ajoute les colonnes du module qui manquent ; les colonnes déjà lues par
  *    le module Commandes ne sont jamais modifiées ;
  *  - crée `categories` (remplie avec les catégories par défaut),
- *    `restaurant_categories` et les index.
+ *    `restaurant_categories`, les caches des API externes (`geocode_cache`,
+ *    `barcode_lookups`) et les index.
  *
  * Le schéma est lu avec des SELECT (`sqlite_master`, `pragma_table_info`) :
  * ils renvoient des lignes quel que soit le pilote utilisé par db.js.
  */
 
 const NOW = "(strftime('%Y-%m-%dT%H:%M:%fZ','now'))";
-const STATUSES = RESTAURANT_STATUSES.map((status) => `'${status}'`).join(',');
+const quoted = (values) => values.map((value) => `'${value}'`).join(',');
+const STATUSES = quoted(RESTAURANT_STATUSES);
+const GEO = quoted(GEO_STATUSES);
+const SCORES = quoted(NUTRI_SCORES);
 
 const BASE_COLUMNS = {
   restaurants: [
@@ -74,6 +83,9 @@ const MODULE_COLUMNS = {
     ['promo', 'TEXT'],
     // Photo de la carte importée depuis le téléphone (data URI) ou lien web.
     ['menu_image_url', 'TEXT'],
+    // Localisation de l'adresse (OpenStreetMap) : voir GEO_STATUSES.
+    ['geo_status', `TEXT NOT NULL DEFAULT 'pending' CHECK(geo_status IN (${GEO}))`],
+    ['geocoded_at', 'TEXT'],
   ],
   products: [
     // NULL pour les produits d'avant le module : l'onglet reprend `category`.
@@ -81,6 +93,14 @@ const MODULE_COLUMNS = {
     ['option_groups', "TEXT NOT NULL DEFAULT '[]'"],
     ['is_popular', 'INTEGER NOT NULL DEFAULT 0 CHECK(is_popular IN (0,1))'],
     ['calories', 'INTEGER CHECK(calories IS NULL OR calories >= 0)'],
+    // Code-barres GS1 (EAN-8, UPC-A, EAN-13, GTIN-14), surtout pour l'épicerie.
+    [
+      'barcode',
+      "TEXT CHECK(barcode IS NULL OR (length(barcode) IN (8,12,13,14) AND barcode NOT GLOB '*[^0-9]*'))",
+    ],
+    ['nutri_score', `TEXT CHECK(nutri_score IS NULL OR nutri_score IN (${SCORES}))`],
+    // Liste JSON des allergènes (identifiants Open Food Facts).
+    ['allergens', "TEXT NOT NULL DEFAULT '[]'"],
   ],
 };
 
@@ -102,10 +122,30 @@ const LINK_COLUMNS = [
   'FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE',
 ];
 
+/** Réponses d'OpenStreetMap, par adresse normalisée. */
+const GEOCODE_CACHE_COLUMNS = [
+  'address_key TEXT    NOT NULL PRIMARY KEY',
+  'found       INTEGER NOT NULL CHECK(found IN (0,1))',
+  'latitude    REAL',
+  'longitude   REAL',
+  'fetched_at  TEXT    NOT NULL',
+];
+
+/** Fiches Open Food Facts, par code-barres. */
+const BARCODE_CACHE_COLUMNS = [
+  'barcode    TEXT    NOT NULL PRIMARY KEY',
+  'found      INTEGER NOT NULL CHECK(found IN (0,1))',
+  'payload    TEXT',
+  'fetched_at TEXT    NOT NULL',
+];
+
 const INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_restaurants_owner ON restaurants (owner_id)',
   'CREATE INDEX IF NOT EXISTS idx_products_restaurant ON products (restaurant_id)',
   'CREATE INDEX IF NOT EXISTS idx_restaurant_categories_category ON restaurant_categories (category_id)',
+  // Un code-barres n'apparaît qu'une fois dans le menu d'un restaurant.
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_products_restaurant_barcode
+     ON products (restaurant_id, barcode) WHERE barcode IS NOT NULL`,
 ];
 
 async function tableExists(table) {
@@ -166,6 +206,8 @@ async function migrate() {
 
   if (await createTable('categories', CATEGORY_COLUMNS)) await seedCategories();
   await createTable('restaurant_categories', LINK_COLUMNS);
+  await createTable('geocode_cache', GEOCODE_CACHE_COLUMNS);
+  await createTable('barcode_lookups', BARCODE_CACHE_COLUMNS);
 
   for (const sql of INDEXES) await query(sql);
 }

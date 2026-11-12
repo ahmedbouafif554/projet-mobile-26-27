@@ -12,6 +12,25 @@ enum RestaurantStatus {
   final String label;
 }
 
+/// Localisation de l'adresse du restaurant (OpenStreetMap, côté serveur).
+/// [code] est la valeur JSON envoyée par l'API.
+enum RestaurantLocationStatus {
+  pending('pending', 'À localiser'),
+  ok('ok', 'Localisé sur la carte'),
+  notFound('not_found', 'Adresse introuvable'),
+  error('error', 'Localisation à réessayer'),
+  manual('manual', 'Position saisie à la main');
+
+  const RestaurantLocationStatus(this.code, this.label);
+  final String code;
+  final String label;
+
+  static RestaurantLocationStatus fromCode(Object? code) => values.firstWhere(
+    (status) => status.code == code,
+    orElse: () => pending,
+  );
+}
+
 /// Restaurant ou commerce (épicerie) proposant ses produits à la livraison.
 class Restaurant {
   const Restaurant({
@@ -32,6 +51,10 @@ class Restaurant {
     required this.phone,
     this.menuSections = const [],
     this.menuImageUrl,
+    this.latitude,
+    this.longitude,
+    this.locationStatus = RestaurantLocationStatus.pending,
+    this.estimatedMinutes,
     this.isOpen = true,
     this.isPopular = false,
     this.promo,
@@ -66,6 +89,15 @@ class Restaurant {
 
   /// Photo de la carte importée depuis le téléphone (data URI) ou lien web.
   final String? menuImageUrl;
+
+  /// Position GPS de l'adresse (trouvée par OpenStreetMap ou saisie).
+  final double? latitude;
+  final double? longitude;
+  final RestaurantLocationStatus locationStatus;
+
+  /// Délai estimé depuis la position du client (null si elle est inconnue).
+  /// [distanceKm] est alors la distance réelle jusqu'au client.
+  final int? estimatedMinutes;
   final bool isOpen;
   final bool isPopular;
 
@@ -77,9 +109,19 @@ class Restaurant {
   /// Visible par les clients du front office.
   bool get isVisible => status == RestaurantStatus.approved;
 
-  /// « 20-30 min »
-  String get deliveryTimeLabel =>
-      '${deliveryMinutes - 5}-${deliveryMinutes + 5} min';
+  /// Coordonnées fiables : le restaurant apparaît sur la carte et dans
+  /// « Près de moi ».
+  bool get hasLocation =>
+      latitude != null &&
+      longitude != null &&
+      (locationStatus == RestaurantLocationStatus.ok ||
+          locationStatus == RestaurantLocationStatus.manual);
+
+  /// « 20-30 min » (délai estimé depuis le client quand il est connu).
+  String get deliveryTimeLabel {
+    final minutes = estimatedMinutes ?? deliveryMinutes;
+    return '${minutes - 5}-${minutes + 5} min';
+  }
 
   factory Restaurant.fromJson(Map<String, dynamic> json) => Restaurant(
     id: json['id'] as String,
@@ -99,6 +141,10 @@ class Restaurant {
     phone: json['phone'] as String? ?? '',
     menuSections: parseStrings(json['menuSections']),
     menuImageUrl: json['menuImageUrl'] as String?,
+    latitude: (json['latitude'] as num?)?.toDouble(),
+    longitude: (json['longitude'] as num?)?.toDouble(),
+    locationStatus: RestaurantLocationStatus.fromCode(json['locationStatus']),
+    estimatedMinutes: (json['estimatedMinutes'] as num?)?.toInt(),
     isOpen: json['isOpen'] as bool? ?? true,
     isPopular: json['isPopular'] as bool? ?? false,
     promo: json['promo'] as String?,
@@ -128,6 +174,10 @@ class Restaurant {
     'phone': phone,
     'menuSections': menuSections,
     'menuImageUrl': menuImageUrl,
+    'latitude': latitude,
+    'longitude': longitude,
+    'locationStatus': locationStatus.code,
+    'estimatedMinutes': estimatedMinutes,
     'isOpen': isOpen,
     'isPopular': isPopular,
     'promo': promo,
@@ -153,6 +203,10 @@ class Restaurant {
     String? phone,
     List<String>? menuSections,
     Object? menuImageUrl = keep,
+    Object? latitude = keep,
+    Object? longitude = keep,
+    RestaurantLocationStatus? locationStatus,
+    Object? estimatedMinutes = keep,
     bool? isOpen,
     bool? isPopular,
     Object? promo = keep,
@@ -178,6 +232,12 @@ class Restaurant {
     menuImageUrl: menuImageUrl == keep
         ? this.menuImageUrl
         : menuImageUrl as String?,
+    latitude: latitude == keep ? this.latitude : latitude as double?,
+    longitude: longitude == keep ? this.longitude : longitude as double?,
+    locationStatus: locationStatus ?? this.locationStatus,
+    estimatedMinutes: estimatedMinutes == keep
+        ? this.estimatedMinutes
+        : estimatedMinutes as int?,
     isOpen: isOpen ?? this.isOpen,
     isPopular: isPopular ?? this.isPopular,
     promo: promo == keep ? this.promo : promo as String?,

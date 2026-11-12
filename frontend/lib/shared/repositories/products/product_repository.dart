@@ -1,3 +1,4 @@
+import '../../models/food_info.dart';
 import '../../models/product.dart';
 import '../base/crud_repository.dart';
 
@@ -7,4 +8,8 @@ abstract interface class ProductRepository implements CrudRepository<Product> {
 
   /// Interrupteur disponible / rupture.
   Future<Product> setAvailability(String id, bool isAvailable);
+
+  /// Fiche pré-remplie par Open Food Facts pour un code-barres (rien n'est
+  /// enregistré). [ApiException] 404 si le produit est inconnu.
+  Future<BarcodeProduct> lookupBarcode(String barcode);
 }

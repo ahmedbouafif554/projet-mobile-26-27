@@ -371,7 +371,14 @@ class _InfoCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                stat(Icons.schedule_rounded, r.deliveryTimeLabel, 'Livraison'),
+                stat(
+                  Icons.schedule_rounded,
+                  r.deliveryTimeLabel,
+                  // Position du client connue : délai estimé et vraie distance.
+                  r.estimatedMinutes == null
+                      ? 'Livraison'
+                      : 'à ${Formatters.distance(r.distanceKm)}',
+                ),
                 stat(
                   Icons.delivery_dining_rounded,
                   r.deliveryFee == 0

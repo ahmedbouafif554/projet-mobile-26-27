@@ -27,4 +27,8 @@ async function remove(req, res) {
   res.status(204).send();
 }
 
-module.exports = { list, getById, create, update, updateAvailability, remove };
+async function lookupBarcode(req, res) {
+  res.json(await productService.lookupBarcode(req.params.barcode));
+}
+
+module.exports = { list, getById, create, update, updateAvailability, remove, lookupBarcode };
