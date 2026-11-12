@@ -69,7 +69,7 @@ class AppConfig {
   static const String googleServerClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',
     defaultValue:
-        '561939304792-4iaq4db1dh9mq59sdr967mgr272q3u8c.apps.googleusercontent.com',
+        '561939304792-ffjrbl8r8gi37qfqtf2phu6vl6tj9jcp.apps.googleusercontent.com',
   );
 
   /// Identifiant client OAuth « iOS » (facultatif sur Android).
