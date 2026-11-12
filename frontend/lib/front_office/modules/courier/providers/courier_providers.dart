@@ -4,6 +4,7 @@ import '../../../../core/auth/auth_service.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../shared/models/models.dart';
 import '../../../../shared/repositories/repository_providers.dart';
+import '../../../../core/network/realtime.dart';
 
 // =============================================================================
 // Module 4 (front office) : espace livreur — profil, disponibilité, courses
@@ -18,6 +19,7 @@ final myCourierProvider = AsyncNotifierProvider<MyCourierController, Courier?>(
 class MyCourierController extends AsyncNotifier<Courier?> {
   @override
   Future<Courier?> build() async {
+    watchLogistics(ref);
     final userId = ref.watch(authServiceProvider.select((a) => a.user?.id));
     if (userId == null) return null;
     return ref.watch(courierRepositoryProvider).findByUser(userId);
@@ -78,6 +80,7 @@ class AvailableDeliveriesController extends AsyncNotifier<List<Delivery>> {
 
   @override
   Future<List<Delivery>> build() async {
+    watchLogistics(ref);
     final list = await ref.watch(deliveryRepositoryProvider).available();
     return list.where((d) => !_declined.contains(d.id)).toList()
       ..sort((a, b) => b.earnings.compareTo(a.earnings));
@@ -85,8 +88,9 @@ class AvailableDeliveriesController extends AsyncNotifier<List<Delivery>> {
 
   Future<void> accept(Delivery delivery) async {
     final courier = await ref.read(myCourierProvider.future);
-    if (courier == null)
+    if (courier == null) {
       throw const ApiException('Profil livreur introuvable.');
+    }
     if (courier.status == CourierStatus.offline) {
       throw const ApiException('Passez en ligne pour accepter des courses.');
     }
@@ -123,6 +127,7 @@ final myDeliveriesProvider =
 class MyDeliveriesController extends AsyncNotifier<List<Delivery>> {
   @override
   Future<List<Delivery>> build() async {
+    watchLogistics(ref);
     final courier = await ref.watch(myCourierProvider.future);
     if (courier == null) return const [];
     return ref.watch(deliveryRepositoryProvider).forCourier(courier.id);

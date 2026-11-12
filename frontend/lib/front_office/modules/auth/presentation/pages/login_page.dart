@@ -7,6 +7,7 @@ import '../../../../../core/auth/auth_service.dart';
 import '../../../../../core/auth/biometric_login.dart';
 import '../../../../../core/auth/permissions.dart';
 import '../../../../../core/config/app_config.dart';
+import '../../../../../core/config/server_address.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_sizes.dart';
 import '../../../../../core/theme/theme_extensions.dart';
@@ -151,6 +152,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children:
                     [
+                          const Align(
+                            alignment: Alignment.centerRight,
+                            child: ServerAddressButton(),
+                          ),
                           AuthHeader(
                             title: 'Bon retour 👋',
                             subtitle: subtitle,

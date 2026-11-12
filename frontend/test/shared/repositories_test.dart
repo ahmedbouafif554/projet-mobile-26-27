@@ -225,5 +225,23 @@ void main() {
         ),
       );
     });
+
+    test('un refus métier affiche la raison donnée par le serveur', () async {
+      final adapter = FakeAdapter({
+        'error': "Le restaurant n'a pas encore accepté la commande.",
+      }, status: 409);
+      await expectLater(
+        ApiUserRepository(fakeDio(adapter)).getById('x'),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.statusCode, 'code', 409)
+              .having(
+                (e) => e.message,
+                'message',
+                "Le restaurant n'a pas encore accepté la commande.",
+              ),
+        ),
+      );
+    });
   });
 }

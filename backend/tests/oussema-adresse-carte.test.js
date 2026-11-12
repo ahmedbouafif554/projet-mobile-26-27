@@ -71,10 +71,11 @@ describe('Module 3 (Oussema) : adresse placée sur la carte et livreurs prévenu
   test('les livreurs disponibles reçoivent une notification avec l’adresse et le GPS', async () => {
     const res = await order(placedAddress);
     expect(res.status).toBe(201);
-    // Pas de course proposée tant que le restaurant n'a pas accepté.
-    const before = await request(app).get('/api/users/u-courier-1/notifications').set(KARIM);
-    expect(before.body.some((n) => n.title.startsWith('Nouvelle course'))).toBe(false);
-    expect((await accept(res.body.id)).status).toBe(200);
+    // La course est proposée dès la commande, sans attendre le restaurant :
+    // le livreur la voit dans « Courses à accepter » (même requête que l'app).
+    const offers = await request(app).get('/api/deliveries').set(KARIM).query({ status: 'waiting' });
+    expect(offers.status).toBe(200);
+    expect(offers.body.some((d) => d.orderId === res.body.id)).toBe(true);
 
     const karim = await request(app).get('/api/users/u-courier-1/notifications').set(KARIM);
     const course = karim.body.find((n) => n.title.startsWith('Nouvelle course'));
@@ -83,6 +84,11 @@ describe('Module 3 (Oussema) : adresse placée sur la carte et livreurs prévenu
     expect(course.body).toContain('24 Rue de Rivoli, 75004 Paris');
     expect(course.body).toContain('GPS 48.85561, 2.35912');
     expect(course.body).toContain(res.body.reference);
+
+    // L'acceptation du restaurant ne renvoie pas une seconde notification.
+    expect((await accept(res.body.id)).status).toBe(200);
+    const after = await request(app).get('/api/users/u-courier-1/notifications').set(KARIM);
+    expect(after.body.filter((n) => n.body.includes(res.body.reference))).toHaveLength(1);
 
     // Un livreur hors ligne n'est pas dérangé.
     const mehdi = await request(app)

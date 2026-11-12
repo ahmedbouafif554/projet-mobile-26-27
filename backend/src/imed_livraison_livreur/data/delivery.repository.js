@@ -9,6 +9,7 @@ const {
   toFront,
 } = require('../domain/livraison.constants');
 const { iso, nowIso } = require('./time');
+const { normalizeStatus: normalizeOrderStatus } = require('../../oussema_panier_commande/domain/commande.constants');
 
 /** Livraison + commande + restaurant + client + livreur. */
 const SELECT = `
@@ -104,6 +105,8 @@ function mapDelivery(row, { showOtp = false, showContact = false } = {}) {
     dropoffLng: num(row.dropoff_lng),
     courierLat: num(row.courier_lat),
     courierLng: num(row.courier_lng),
+    // Avancement côté restaurant (le livreur sait s'il peut récupérer).
+    orderStatus: row.o_status ? normalizeOrderStatus(row.o_status) || row.o_status : null,
   };
   if (showOtp) json.otpCode = row.otp_code || null;
   // Téléphone du client : pour son livreur (appel pendant la course) et l'admin.

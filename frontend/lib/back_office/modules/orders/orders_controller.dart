@@ -6,6 +6,7 @@ import '../../../shared/repositories/orders/order_repository.dart';
 import '../../../shared/repositories/repository_providers.dart';
 import '../../shared/entity_list_controller.dart';
 import '../delivery/delivery_controllers.dart';
+import '../../../core/network/realtime.dart';
 
 /// Commandes (Module 3) : toutes pour l'admin, celles de son restaurant pour
 /// un restaurateur (commandes reçues, cuisine).
@@ -18,6 +19,7 @@ class OrdersController extends EntityListController<Order> {
 
   @override
   Future<List<Order>> build() {
+    watchLogistics(ref);
     ref.watch(authServiceProvider.select((a) => a.user?.id));
     return load();
   }

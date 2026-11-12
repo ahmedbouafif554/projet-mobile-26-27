@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app/bootstrap.dart';
+import '../core/network/realtime.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/theme_mode_provider.dart';
 import '../front_office/modules/auth/providers/settings_providers.dart';
@@ -14,6 +15,8 @@ class BackOfficeApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Connexion temps réel (Socket.IO) tant qu'un compte est connecté.
+    ref.watch(realtimeConnectionProvider);
     return MaterialApp.router(
       title: 'SuperFaster • Espace Pro',
       debugShowCheckedModeBanner: false,

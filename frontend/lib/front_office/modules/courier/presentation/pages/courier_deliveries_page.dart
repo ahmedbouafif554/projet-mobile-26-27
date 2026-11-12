@@ -149,13 +149,14 @@ class CourierDeliveriesPage extends ConsumerWidget {
                             delivery: d,
                             onTap: () =>
                                 context.push(FrontRoutes.courierDelivery(d.id)),
-                            actions: nextStepLabel(d.status) == null
+                            actions: stepButtonLabel(d) == null
                                 ? null
                                 : PrimaryButton(
-                                    label: nextStepLabel(d.status)!,
+                                    label: stepButtonLabel(d)!,
                                     height: 48,
-                                    onPressed: () =>
-                                        advanceDelivery(context, ref, d),
+                                    onPressed: canAdvance(d)
+                                        ? () => advanceDelivery(context, ref, d)
+                                        : null,
                                   ),
                           ),
                       ]),

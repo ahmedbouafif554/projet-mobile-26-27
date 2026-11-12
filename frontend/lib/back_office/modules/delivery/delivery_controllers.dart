@@ -6,6 +6,7 @@ import '../../../shared/repositories/deliveries/delivery_repository.dart';
 import '../../../shared/repositories/repository_providers.dart';
 import '../../shared/entity_list_controller.dart';
 import '../orders/orders_controller.dart';
+import '../../../core/network/realtime.dart';
 
 /// Livreurs (Module 4, admin) : CRUD, justificatifs et statut en ligne.
 final couriersControllerProvider =
@@ -16,6 +17,12 @@ final couriersControllerProvider =
 class CouriersController extends EntityListController<Courier> {
   @override
   CourierRepository get repository => ref.read(courierRepositoryProvider);
+
+  @override
+  Future<List<Courier>> build() {
+    watchLogistics(ref);
+    return load();
+  }
 
   Future<void> setStatus(Courier courier, CourierStatus status) =>
       run(() => repository.setStatus(courier.id, status));
@@ -33,6 +40,12 @@ final deliveriesControllerProvider =
 class DeliveriesController extends EntityListController<Delivery> {
   @override
   DeliveryRepository get repository => ref.read(deliveryRepositoryProvider);
+
+  @override
+  Future<List<Delivery>> build() {
+    watchLogistics(ref);
+    return load();
+  }
 
   @override
   Future<List<Delivery>> load() async =>

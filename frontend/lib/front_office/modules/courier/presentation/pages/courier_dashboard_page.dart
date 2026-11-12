@@ -179,13 +179,18 @@ class CourierDashboardPage extends ConsumerWidget {
                           onTap: () => context.push(
                             FrontRoutes.courierDelivery(current.id),
                           ),
-                          actions: nextStepLabel(current.status) == null
+                          actions: stepButtonLabel(current) == null
                               ? null
                               : PrimaryButton(
-                                  label: nextStepLabel(current.status)!,
+                                  label: stepButtonLabel(current)!,
                                   height: 48,
-                                  onPressed: () =>
-                                      advanceDelivery(context, ref, current),
+                                  onPressed: canAdvance(current)
+                                      ? () => advanceDelivery(
+                                          context,
+                                          ref,
+                                          current,
+                                        )
+                                      : null,
                                 ),
                         ),
                         const SizedBox(height: AppSizes.lg),

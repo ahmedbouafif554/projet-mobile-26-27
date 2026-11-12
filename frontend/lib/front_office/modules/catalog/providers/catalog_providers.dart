@@ -5,6 +5,7 @@ import '../../../../core/auth/auth_service.dart';
 import '../../../../core/location/geocoding_service.dart';
 import '../../../../shared/models/models.dart';
 import '../../../../shared/repositories/repository_providers.dart';
+import '../../../../core/network/realtime.dart';
 
 // =============================================================================
 // Module 2 (front office) : catalogue vu par le client — catégories,
@@ -65,6 +66,7 @@ class UserLocationNotifier extends Notifier<UserLocation> {
 /// la distance et le délai estimés depuis le client quand sa position est
 /// connue.
 final restaurantsProvider = FutureProvider<List<Restaurant>>((ref) async {
+  ref.watch(realtimeRevisionProvider(RealtimeTopic.catalogue));
   final repository = ref.watch(restaurantRepositoryProvider);
   final position = ref.watch(userLocationProvider.select((l) => l.position));
   final all = position == null

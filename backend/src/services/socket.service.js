@@ -26,9 +26,30 @@ function init(httpServer) {
     transports: ['websocket', 'polling'],
   });
 
+  // Authentification par le JWT de l'application (handshake `auth.token`).
+  // Un socket sans jeton valide reste connecté mais ne reçoit que les rooms
+  // de suivi qu'il rejoint explicitement (compatibilité).
+  _io.use(async (socket, next) => {
+    try {
+      const token = socket.handshake.auth?.token || '';
+      if (!token) return next();
+      const user = await userFromToken(token);
+      if (user) socket.data.user = user;
+      return next();
+    } catch {
+      return next();
+    }
+  });
+
   _io.on('connection', (socket) => {
+    const user = socket.data.user;
+    if (user) {
+      socket.join(`user:${user.id}`);
+      socket.join(`role:${user.role}`);
+      socket.join('authenticated');
+    }
     if (process.env.NODE_ENV !== 'test') {
-      console.log(`[Socket.IO] Client connecté : ${socket.id}`);
+      console.log(`[Socket.IO] Client connecté : ${socket.id}${user ? ` (${user.role} ${user.id})` : ''}`);
     }
 
     socket.on('join:delivery', ({ deliveryId } = {}) => {
@@ -94,6 +115,67 @@ function init(httpServer) {
   return _io;
 }
 
+/** Utilisateur d'un JWT (mêmes règles que le middleware HTTP). */
+async function userFromToken(token) {
+  const config = require('../config');
+  const users = require('./users.service');
+  let userId;
+  let tokenVersion = null;
+  if (token.startsWith('mock-token-')) {
+    if (!config.allowMockTokens) return null;
+    userId = token.slice('mock-token-'.length);
+  } else {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, config.jwtSecret, { algorithms: ['HS256'] });
+    userId = decoded.sub;
+    tokenVersion = Number(decoded.tv) || 0;
+  }
+  const user = await users.findById(userId);
+  if (!user || user.status === 'blocked') return null;
+  if (tokenVersion != null && tokenVersion !== user.tokenVersion) return null;
+  return { id: user.id, role: user.role };
+}
+
+/**
+ * Signal « données modifiées » : les applications rechargent les écrans
+ * concernés (commandes, courses, livreurs…). Seul le sujet est diffusé,
+ * jamais les données : chaque app relit via l'API, qui applique les droits.
+ */
+function emitSync(topic, extra = {}) {
+  if (!_io) return;
+  _io.to('authenticated').emit('sync', { topic, ...extra, at: new Date().toISOString() });
+}
+
+/**
+ * Nouvelle position d'un livreur : envoyée au client de la commande et aux
+ * administrateurs (pas à tout le monde).
+ */
+async function emitCourierLocation({ deliveryId, latitude, longitude }) {
+  if (!_io || !deliveryId) return;
+  try {
+    const { query } = require('../data/db');
+    const rows = await query(
+      'SELECT o.id AS order_id, o.user_id FROM deliveries d LEFT JOIN orders o ON o.id = d.order_id WHERE d.id = ? LIMIT 1',
+      [deliveryId],
+    );
+    const row = rows[0];
+    if (!row) return;
+    const payload = {
+      topic: 'location',
+      deliveryId,
+      orderId: row.order_id,
+      latitude,
+      longitude,
+      at: new Date().toISOString(),
+    };
+    let target = _io.to('role:admin').to(`delivery:${deliveryId}`);
+    if (row.user_id) target = target.to(`user:${row.user_id}`);
+    target.emit('sync', payload);
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'test') console.error('[Socket.IO] position :', err.message);
+  }
+}
+
 /** Accès global à l'instance io. */
 function getIO() {
   return _io;
@@ -127,5 +209,12 @@ function emitDeliveryAssigned(deliveryId, { courierName, courierPhone, courierVe
   });
 }
 
-module.exports = { init, getIO, emitDeliveryStatus, emitDeliveryAssigned };
+module.exports = {
+  init,
+  getIO,
+  emitDeliveryStatus,
+  emitDeliveryAssigned,
+  emitSync,
+  emitCourierLocation,
+};
 

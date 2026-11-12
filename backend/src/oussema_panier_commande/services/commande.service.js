@@ -503,6 +503,7 @@ async function createOrder(actor, data = {}) {
   const note = cleanNote(data.note ?? data.notes);
   const orderId = newId('ord');
 
+  let delivery = null;
   await withTransaction(async () => {
     const reference = await nextReference();
     await query(
@@ -542,7 +543,13 @@ async function createOrder(actor, data = {}) {
     if (!staff && data.clearCart !== false) {
       await query('DELETE FROM cart_items WHERE user_id = ?', [actor.id]);
     }
+    // La course est proposée aux livreurs dès la commande (pas seulement à
+    // l'acceptation du restaurant) : ils la voient tout de suite dans
+    // « Courses à accepter ». La récupération reste bloquée tant que le
+    // restaurant n'a pas préparé la commande (voir livraison.service).
+    delivery = await livraisons().ensureForOrder(orderId, actor.id);
   });
+  await announceDelivery(orderId, delivery);
 
   return getOrderById(orderId);
 }

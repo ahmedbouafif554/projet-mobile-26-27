@@ -87,9 +87,10 @@ void main() {
     await settle(tester, 800);
     expect(find.textContaining('Code SUPER10'), findsWidgets);
 
-    // Le bouton de paiement est fixé en bas (le snackbar du code s'efface).
+    // Le bouton de validation est fixé en bas (le snackbar du code s'efface).
+    // Paiement en espèces à la livraison (seul moyen proposé) : « Commander ».
     await settle(tester, 4500);
-    await tester.tap(find.textContaining('Payer'));
+    await tester.tap(find.text('Commander'));
     await settle(tester, 3000);
     expect(app.path, startsWith('/order-confirmed/'));
     expect(find.text('Commande confirmée !'), findsOneWidget);

@@ -9,6 +9,16 @@ class ApiException implements Exception {
 
   factory ApiException.fromDio(DioException error) {
     final status = error.response?.statusCode;
+    // Erreur métier (4xx) : le serveur explique la raison en français
+    // (`{ "error": "…" }`) — on l'affiche telle quelle.
+    final serverMessage = _serverMessage(error.response?.data);
+    if (serverMessage != null &&
+        status != null &&
+        status >= 400 &&
+        status < 500 &&
+        status != 401) {
+      return ApiException(serverMessage, statusCode: status);
+    }
     final message = switch (error.type) {
       DioExceptionType.connectionTimeout ||
       DioExceptionType.sendTimeout ||
@@ -28,6 +38,14 @@ class ApiException implements Exception {
       _ => 'Une erreur inattendue est survenue.',
     };
     return ApiException(message, statusCode: status);
+  }
+
+  static String? _serverMessage(Object? data) {
+    if (data is! Map) return null;
+    final value = data['error'];
+    if (value is! String) return null;
+    final text = value.trim();
+    return text.isEmpty ? null : text;
   }
 
   @override

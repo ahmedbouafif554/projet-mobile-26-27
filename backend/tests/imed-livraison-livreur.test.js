@@ -32,14 +32,6 @@ async function placeOrder() {
   return { order, delivery };
 }
 
-/** Le restaurant prépare puis marque la commande prête. */
-async function markReady(orderId) {
-  for (const status of ['preparing', 'ready']) {
-    const res = await request(app).patch(`/api/orders/${orderId}/status`).set(ADMIN).send({ status });
-    expect(res.status).toBe(200);
-  }
-}
-
 async function courier(id) {
   return (await request(app).get(`/api/couriers/${id}`).set(ADMIN)).body;
 }
@@ -211,6 +203,24 @@ describe('Livreurs — /api/couriers', () => {
 });
 
 describe('Livraisons — /api/deliveries', () => {
+  test('récupération impossible tant que le restaurant n’a pas accepté la commande', async () => {
+    const order = (await helpers.placeOrder(app, { items: [{ product: { id: 'prod_1' }, quantity: 1 }] })).body;
+    const [delivery] = (await request(app).get('/api/deliveries').set(ADMIN).query({ orderId: order.id })).body;
+    expect(delivery.status).toBe('waiting');
+    expect(delivery.orderStatus).toBe('pending');
+
+    expect((await request(app).patch(`/api/deliveries/${delivery.id}/assign`).set(KARIM).send({ courierId: 'c-1' })).status).toBe(200);
+    const early = await request(app).patch(`/api/deliveries/${delivery.id}/status`).set(KARIM).send({ status: 'pickedUp' });
+    expect(early.status).toBe(409);
+    expect(early.body.error).toMatch(/pas encore accepté la commande/);
+
+    const ok = await request(app).patch(`/api/orders/${order.id}/status`).set(ADMIN).send({ status: 'accepted' });
+    expect(ok.status).toBe(200);
+    const picked = await request(app).patch(`/api/deliveries/${delivery.id}/status`).set(KARIM).send({ status: 'pickedUp' });
+    expect(picked.status).toBe(200);
+    expect((await request(app).get(`/api/orders/${order.id}`).set(ADMIN)).body.status).toBe('delivering');
+  });
+
   test('cycle complet côté livreur : accepter, récupérer, en route, livrer', async () => {
     const { order, delivery } = await placeOrder();
     expect(delivery.status).toBe('waiting');
@@ -238,12 +248,8 @@ describe('Livraisons — /api/deliveries', () => {
     expect(offline.status).toBe(409);
     expect(offline.body.error).toBe('Terminez votre course avant de vous déconnecter.');
 
-    // Le restaurant n'a pas fini : pas de récupération.
-    const early = await request(app).patch(`/api/deliveries/${delivery.id}/status`).set(KARIM).send({ status: 'pickedUp' });
-    expect(early.status).toBe(409);
-    expect(early.body.error).toBe("La commande n'est pas encore prête au restaurant.");
-    await markReady(order.id);
-
+    // Commande acceptée par le restaurant : la remise au livreur vaut
+    // « prête », même si le restaurant n'a pas appuyé sur « Prête ».
     const picked = await request(app).patch(`/api/deliveries/${delivery.id}/status`).set(KARIM).send({ status: 'pickedUp' });
     expect(picked.body.status).toBe('pickedUp');
     expect(picked.body.pickedUpAt).toEqual(expect.any(String));

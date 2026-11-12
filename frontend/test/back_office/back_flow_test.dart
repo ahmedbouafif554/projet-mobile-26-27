@@ -6,8 +6,10 @@ import 'package:superfaster/back_office/modules/delivery/delivery_controllers.da
 import 'package:superfaster/back_office/modules/orders/orders_controller.dart';
 import 'package:superfaster/back_office/modules/users/users_controller.dart';
 import 'package:superfaster/back_office/router/back_routes.dart';
+import 'package:superfaster/back_office/shell/back_topbar.dart';
 import 'package:superfaster/core/auth/auth_service.dart';
 import 'package:superfaster/core/widgets/app_form.dart';
+import 'package:superfaster/core/widgets/avatar.dart';
 import 'package:superfaster/shared/mock/mock_users.dart';
 import 'package:superfaster/shared/models/models.dart';
 
@@ -39,8 +41,15 @@ void main() {
     expect(find.text('Tableau de bord'), findsWidgets);
     expect(find.text('Commandes du jour'), findsOneWidget);
 
-    // Menu du compte → Déconnexion (avec confirmation).
-    await tester.tap(find.text('Sophie').first);
+    // Menu du compte (avatar de la barre du haut) → Déconnexion (avec
+    // confirmation). L'Espace Pro a une mise en page mobile : le prénom
+    // n'est pas affiché à côté de l'avatar.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(BackTopbar),
+        matching: find.byType(Avatar),
+      ),
+    );
     await settle(tester, 600);
     await tester.tap(find.text('Déconnexion').last);
     await settle(tester, 600);
@@ -67,10 +76,13 @@ void main() {
     await tester.tap(find.text('Restaurant démo'));
     await settle(tester, 2500);
     expect(app.path, BackRoutes.dashboard);
+    expect(find.text('Panier moyen'), findsOneWidget);
+    // Navigation mobile : les autres modules sont dans l'onglet « Plus ».
+    await tester.tap(find.text('Plus'));
+    await settle(tester, 800);
     expect(find.text('Mon menu'), findsOneWidget);
     expect(find.text('Cuisine'), findsOneWidget);
     expect(find.text('Utilisateurs'), findsNothing);
-    expect(find.text('Panier moyen'), findsOneWidget);
     await unmountBack(tester);
   });
 
@@ -159,14 +171,22 @@ void main() {
         .firstWhere((o) => o.reference == 'SF1074');
     expect(order().status, OrderStatus.pending);
 
+    // Colonnes en défilement horizontal sur mobile : on amène le bouton
+    // à l'écran avant de le toucher.
+    await tester.ensureVisible(filled('Accepter').first);
+    await settle(tester, 300);
     await tester.tap(filled('Accepter').first);
     await settle(tester, 1500);
     expect(order().status, OrderStatus.accepted);
 
+    await tester.ensureVisible(filled('Démarrer').first);
+    await settle(tester, 300);
     await tester.tap(filled('Démarrer').first);
     await settle(tester, 1500);
     expect(order().status, OrderStatus.preparing);
 
+    await tester.ensureVisible(filled('Prête').first);
+    await settle(tester, 300);
     await tester.tap(filled('Prête').first);
     await settle(tester, 1500);
     expect(order().status, OrderStatus.ready);

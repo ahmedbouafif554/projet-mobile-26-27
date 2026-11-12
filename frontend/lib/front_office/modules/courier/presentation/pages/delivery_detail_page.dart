@@ -8,13 +8,13 @@ import '../../../../../core/theme/theme_extensions.dart';
 import '../../../../../core/utils/formatters.dart';
 import '../../../../../core/utils/launcher.dart';
 import '../../../../../core/widgets/circle_icon_button.dart';
-import '../../../../../core/widgets/city_map.dart';
 import '../../../../../core/widgets/empty_state.dart';
 import '../../../../../core/widgets/page_title.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../../shared/models/models.dart';
 import '../../../../../shared/widgets/status_chips.dart';
 import '../../providers/courier_providers.dart';
+import '../widgets/course_map.dart';
 import '../widgets/delivery_widgets.dart';
 
 /// Détail d'une course : plan, trajet, étapes, client et action suivante.
@@ -45,31 +45,14 @@ class DeliveryDetailPage extends ConsumerWidget {
   }
 }
 
-class _DetailView extends ConsumerStatefulWidget {
+class _DetailView extends ConsumerWidget {
   const _DetailView({required this.delivery});
 
   final Delivery delivery;
 
   @override
-  ConsumerState<_DetailView> createState() => _DetailViewState();
-}
-
-class _DetailViewState extends ConsumerState<_DetailView>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _dash = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 3),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _dash.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final d = widget.delivery;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final d = delivery;
     final next = nextStepLabel(d.status);
     final steps = [
       (DeliveryStatus.assigned, 'Assignée', d.assignedAt),
@@ -93,47 +76,23 @@ class _DetailViewState extends ConsumerState<_DetailView>
                   ],
                 ),
                 const SizedBox(height: AppSizes.md),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-                  child: SizedBox(
-                    height: 190,
-                    child: LayoutBuilder(
-                      builder: (context, c) {
-                        final from = Offset(
-                          c.maxWidth * 0.2,
-                          c.maxHeight * 0.3,
-                        );
-                        final to = Offset(c.maxWidth * 0.8, c.maxHeight * 0.72);
-                        return AnimatedBuilder(
-                          animation: _dash,
-                          builder: (context, _) => Stack(
-                            children: [
-                              Positioned.fill(
-                                child: CustomPaint(
-                                  painter: CityMapPainter(
-                                    dark: context.isDark,
-                                    routes: [(from, to)],
-                                    dash: _dash.value,
-                                  ),
-                                ),
-                              ),
-                              _pin(
-                                from,
-                                Icons.storefront_rounded,
-                                AppColors.primary,
-                              ),
-                              _pin(
-                                to,
-                                Icons.location_on_rounded,
-                                AppColors.success,
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                CourseMap(delivery: d),
+                if (d.status.isActive) ...[
+                  const SizedBox(height: AppSizes.md),
+                  Container(
+                    padding: const EdgeInsets.all(AppSizes.md),
+                    decoration: BoxDecoration(
+                      color: context.colors.surface,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                      boxShadow: context.palette.softShadow,
                     ),
+                    child: NextStopBanner(delivery: d),
                   ),
-                ),
+                ],
+                if (d.status == DeliveryStatus.assigned) ...[
+                  const SizedBox(height: AppSizes.sm),
+                  RestaurantProgress(delivery: d),
+                ],
                 const SizedBox(height: AppSizes.md),
                 Container(
                   padding: const EdgeInsets.all(AppSizes.md),
@@ -252,9 +211,11 @@ class _DetailViewState extends ConsumerState<_DetailView>
                 if (next != null) ...[
                   const SizedBox(height: AppSizes.lg),
                   PrimaryButton(
-                    label: next,
+                    label: stepButtonLabel(d)!,
                     icon: Icons.check_rounded,
-                    onPressed: () => advanceDelivery(context, ref, d),
+                    onPressed: canAdvance(d)
+                        ? () => advanceDelivery(context, ref, d)
+                        : null,
                   ),
                 ],
               ]
@@ -263,21 +224,6 @@ class _DetailViewState extends ConsumerState<_DetailView>
               .slideY(begin: 0.05, end: 0),
     );
   }
-
-  Widget _pin(Offset at, IconData icon, Color color) => Positioned(
-    left: at.dx - 18,
-    top: at.dy - 18,
-    child: Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 3),
-      ),
-      child: Icon(icon, color: Colors.white, size: 18),
-    ),
-  );
 }
 
 class _Figure extends StatelessWidget {

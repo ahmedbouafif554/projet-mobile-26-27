@@ -1,13 +1,16 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../../../core/config/app_config.dart';
+import '../../../../../core/location/road_route.dart';
 import '../../../../../core/network/api_client.dart';
+import '../../../../../core/network/realtime.dart';
 import '../../../../../core/utils/launcher.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_sizes.dart';
@@ -17,12 +20,12 @@ import '../../../../../core/widgets/app_snackbar.dart';
 import '../../../../../core/widgets/async_value_view.dart';
 import '../../../../../core/widgets/avatar.dart';
 import '../../../../../core/widgets/circle_icon_button.dart';
-import '../../../../../core/widgets/city_map.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../../shared/mock/mock_users.dart';
 import '../../../../../shared/models/models.dart';
 import '../../../../../shared/repositories/repository_providers.dart';
 import '../../../../router/front_routes.dart';
+import '../../../auth/presentation/widgets/address_map_field.dart';
 import '../../../communication/providers/communication_providers.dart';
 import '../../providers/orders_providers.dart';
 
@@ -47,40 +50,132 @@ class TrackedCourier {
   };
 }
 
-/// Livreur de la commande, lu sur `GET /orders/:id/tracking` (rechargé avec
-/// la commande). Données mock : le livreur de démonstration.
-final trackedCourierProvider = FutureProvider.autoDispose
-    .family<TrackedCourier?, String>((ref, orderId) async {
-      ref.watch(myOrdersProvider);
+/// Données de suivi d'une commande (`GET /orders/:id/tracking`) : positions
+/// réelles du restaurant, du client et du livreur, temps restant.
+class TrackingData {
+  const TrackingData({
+    this.pickup,
+    this.dropoff,
+    this.courierPosition,
+    this.courier,
+    this.remainingMinutes,
+    this.remainingKm,
+    this.estimatedArrivalAt,
+    this.phase,
+    this.toRestaurantKm,
+  });
+
+  final LatLng? pickup;
+  final LatLng? dropoff;
+  final LatLng? courierPosition;
+  final TrackedCourier? courier;
+  final int? remainingMinutes;
+  final double? remainingKm;
+
+  /// Heure d'arrivée estimée par le serveur (préparation restante, trajet du
+  /// livreur jusqu'au restaurant puis jusqu'au client).
+  final DateTime? estimatedArrivalAt;
+
+  /// searchingCourier | toRestaurant | toCustomer
+  final String? phase;
+
+  /// Distance du livreur au restaurant (avant le retrait).
+  final double? toRestaurantKm;
+
+  /// Minutes restantes à l'instant présent.
+  int? get minutesLeft {
+    final arrival = estimatedArrivalAt;
+    if (arrival == null) return remainingMinutes;
+    final seconds = arrival.difference(DateTime.now()).inSeconds;
+    return seconds <= 60 ? 1 : (seconds / 60).ceil();
+  }
+
+  /// Précision affichée sous le statut (« Votre livreur est à 1,2 km… »).
+  String? get detail => switch (phase) {
+    'searchingCourier' => 'Recherche d’un livreur à proximité…',
+    'toRestaurant' when toRestaurantKm != null =>
+      'Votre livreur est à ${Formatters.distance(toRestaurantKm!)} du restaurant.',
+    'toRestaurant' => 'Votre livreur se rend au restaurant.',
+    'toCustomer' when remainingKm != null =>
+      'Votre livreur est à ${Formatters.distance(remainingKm!)} de chez vous.',
+    _ => null,
+  };
+}
+
+LatLng? _point(dynamic raw) {
+  if (raw is! Map) return null;
+  final lat = (raw['latitude'] as num?)?.toDouble();
+  final lng = (raw['longitude'] as num?)?.toDouble();
+  if (lat == null || lng == null || (lat == 0 && lng == 0)) return null;
+  return LatLng(lat, lng);
+}
+
+/// Suivi relu à chaque changement côté serveur (statut, livreur assigné) et
+/// à chaque nouvelle position GPS du livreur (Socket.IO).
+final orderTrackingProvider = FutureProvider.autoDispose
+    .family<TrackingData, String>((ref, orderId) async {
+      watchLogistics(ref);
+      ref.watch(realtimeRevisionProvider(RealtimeTopic.location(orderId)));
+      // Estimation recalculée régulièrement (la préparation avance même
+      // quand personne ne bouge).
+      final refresh = Timer(const Duration(seconds: 30), ref.invalidateSelf);
+      ref.onDispose(refresh.cancel);
       if (AppConfig.useMockData && !AppConfig.useApiOrders) {
         final demo = MockUsers.byId('u-courier-1');
-        return TrackedCourier(
-          name: demo.firstName,
-          phone: demo.phone,
-          rating: 4.9,
+        return TrackingData(
+          courier: TrackedCourier(
+            name: demo.firstName,
+            phone: demo.phone,
+            rating: 4.9,
+          ),
         );
       }
       try {
         final response = await ref
             .read(dioProvider)
             .get('/orders/$orderId/tracking');
-        final courier = (response.data as Map)['courier'];
-        if (courier is! Map) return null;
-        return TrackedCourier(
-          name: '${courier['name'] ?? 'Votre livreur'}',
-          phone: courier['phone'] as String?,
-          vehicle: courier['vehicle'] as String?,
-          rating: (courier['rating'] as num?)?.toDouble(),
+        final data = response.data as Map;
+        final positions = data['positions'];
+        final courier = data['courier'];
+        return TrackingData(
+          pickup: positions is Map ? _point(positions['pickup']) : null,
+          dropoff: positions is Map ? _point(positions['dropoff']) : null,
+          courierPosition: positions is Map
+              ? _point(positions['courier'])
+              : null,
+          courier: courier is Map
+              ? TrackedCourier(
+                  name: '${courier['name'] ?? 'Votre livreur'}',
+                  phone: courier['phone'] as String?,
+                  vehicle: courier['vehicle'] as String?,
+                  rating: (courier['rating'] as num?)?.toDouble(),
+                )
+              : null,
+          remainingMinutes: (data['remainingMinutes'] as num?)?.round(),
+          remainingKm: (data['remainingDistanceKm'] as num?)?.toDouble(),
+          estimatedArrivalAt: DateTime.tryParse(
+            '${data['estimatedArrivalAt'] ?? ''}',
+          )?.toLocal(),
+          phase: (data['eta'] as Map?)?['phase'] as String?,
+          toRestaurantKm: ((data['eta'] as Map?)?['toRestaurantKm'] as num?)
+              ?.toDouble(),
         );
       } catch (_) {
-        return null;
+        return const TrackingData();
       }
     });
 
-/// Suivi en temps réel : plan animé (restaurant → domicile), étape en
-/// cours, heure d'arrivée et livreur. Avec l'API, la commande est relue
-/// régulièrement (le restaurant et le livreur la font avancer) ; en
-/// démonstration hors ligne, elle avance toute seule.
+/// Livreur de la commande (panneau du bas).
+final trackedCourierProvider = Provider.autoDispose
+    .family<AsyncValue<TrackedCourier?>, String>(
+      (ref, orderId) =>
+          ref.watch(orderTrackingProvider(orderId)).whenData((t) => t.courier),
+    );
+
+/// Suivi en temps réel : vraie carte (OpenStreetMap) avec le restaurant, le
+/// domicile et la position GPS du livreur, mise à jour en direct par
+/// Socket.IO. L'étape et le livreur changent dès que le restaurant ou le
+/// livreur font avancer la commande.
 class OrderTrackingPage extends ConsumerWidget {
   const OrderTrackingPage({super.key, required this.orderId});
 
@@ -108,25 +203,23 @@ class _TrackingView extends ConsumerStatefulWidget {
   ConsumerState<_TrackingView> createState() => _TrackingViewState();
 }
 
-class _TrackingViewState extends ConsumerState<_TrackingView>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _motion = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 6),
-  )..repeat();
+class _TrackingViewState extends ConsumerState<_TrackingView> {
+  final _map = MapController();
 
-  /// Toutes les 6 secondes tant que la page est ouverte : relecture de la
-  /// commande (API) ou étape suivante simulée (données mock).
+  /// Démonstration hors ligne seulement : la commande avance toute seule.
   Timer? _progression;
 
-  /// Commandes en mémoire (aucun serveur ne les fait avancer).
+  /// La caméra suit le livreur tant que le client ne déplace pas la carte.
+  bool _follow = true;
+  bool _fitted = false;
+
   static bool get _offlineDemo =>
       AppConfig.useMockData && !AppConfig.useApiOrders;
 
   @override
   void initState() {
     super.initState();
-    if (!widget.order.status.isFinal) {
+    if (_offlineDemo && !widget.order.status.isFinal) {
       _progression = Timer.periodic(const Duration(seconds: 6), (_) => _step());
     }
   }
@@ -139,136 +232,163 @@ class _TrackingViewState extends ConsumerState<_TrackingView>
 
   Future<void> _step() async {
     if (!mounted) return;
-    if (_offlineDemo) {
-      final next = await advanceOrderDemo(
-        ref.read(orderRepositoryProvider),
-        widget.order.id,
-      );
-      if (!mounted) return;
-      if (next == null || next == OrderStatus.delivered) _progression?.cancel();
-      ref.invalidate(myOrdersProvider);
-      return;
-    }
-    // Relit la commande (et la liste « Mes commandes »).
+    final next = await advanceOrderDemo(
+      ref.read(orderRepositoryProvider),
+      widget.order.id,
+    );
+    if (!mounted) return;
+    if (next == null || next == OrderStatus.delivered) _progression?.cancel();
     ref.invalidate(myOrdersProvider);
   }
-
-  // Positions relatives du restaurant et du domicile sur le plan.
-  static const _restaurant = Offset(0.24, 0.32);
-  static const _home = Offset(0.74, 0.68);
 
   @override
   void dispose() {
     _progression?.cancel();
-    _motion.dispose();
+    _map.dispose();
     super.dispose();
   }
 
-  /// Avancement du livreur sur le trajet (0 = restaurant, 1 = domicile).
-  double _progress(double t) => switch (widget.order.status) {
-    OrderStatus.delivering => 0.15 + 0.75 * t,
-    OrderStatus.delivered => 1,
-    _ => 0,
-  };
-
-  Offset _along(double p) {
-    // Trajet en L arrondi : vers l'est puis vers le sud.
-    final corner = Offset(_home.dx, _restaurant.dy);
-    if (p < 0.5) return Offset.lerp(_restaurant, corner, p * 2)!;
-    return Offset.lerp(corner, _home, (p - 0.5) * 2)!;
+  /// Cadre la carte sur les points connus (au premier affichage).
+  void _fit(List<LatLng> points, double bottomInset) {
+    if (_fitted || points.isEmpty) return;
+    _fitted = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        if (points.length == 1) {
+          _map.move(points.first, 15);
+        } else {
+          _map.fitCamera(
+            CameraFit.coordinates(
+              coordinates: points,
+              padding: EdgeInsets.fromLTRB(60, 120, 60, bottomInset + 40),
+              maxZoom: 17,
+            ),
+          );
+        }
+      } catch (_) {}
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final o = widget.order;
-    final delivering = o.status == OrderStatus.delivering;
-    final delivered = o.status == OrderStatus.delivered;
+    final tracking = ref.watch(orderTrackingProvider(o.id)).value;
+    final live = ref.watch(liveCourierPositionProvider(o.id));
+    final showCourier =
+        o.status == OrderStatus.delivering ||
+        o.status == OrderStatus.ready ||
+        o.status == OrderStatus.preparing ||
+        o.status == OrderStatus.accepted;
+
+    final pickup = tracking?.pickup;
+    final dropoff = tracking?.dropoff;
+    final courier = live != null
+        ? LatLng(live.lat, live.lng)
+        : tracking?.courierPosition;
+
+    final remaining = tracking?.minutesLeft;
+    // Estimation du serveur (préparation + trajets) ; valeurs indicatives
+    // seulement en mode démo hors ligne.
     final minutesLeft = switch (o.status) {
+      _ when remaining != null && o.status.isActive => remaining,
+      OrderStatus.delivering when remaining != null => remaining,
       OrderStatus.pending || OrderStatus.accepted => 30,
       OrderStatus.preparing => 22,
-      OrderStatus.ready => 15,
+      OrderStatus.ready => remaining != null ? remaining + 5 : 15,
       OrderStatus.delivering => 8,
       _ => 0,
     };
 
+    final route = pickup != null && dropoff != null
+        ? ref.watch(roadRouteProvider((pickup, dropoff))).value
+        : null;
+
+    final size = MediaQuery.sizeOf(context);
+    final bottomInset = size.height * 0.42;
+    final points = [?pickup, ?dropoff, if (showCourier) ?courier];
+    _fit(points, bottomInset);
+
+    // Suit le livreur pendant la livraison.
+    if (_follow &&
+        _fitted &&
+        courier != null &&
+        o.status == OrderStatus.delivering) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        try {
+          _map.move(courier, _map.camera.zoom);
+        } catch (_) {}
+      });
+    }
+
     return Stack(
       children: [
         Positioned.fill(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final size = constraints.biggest;
-              // Le panneau du bas recouvre le plan : les repères restent
-              // dans la partie visible.
-              final mapHeight = size.height;
-              final visible = size.height * 0.6;
-              Offset px(Offset rel) =>
-                  Offset(rel.dx * size.width, rel.dy * visible);
-              return AnimatedBuilder(
-                animation: _motion,
-                builder: (context, _) {
-                  final courier = px(_along(_progress(_motion.value)));
-                  return Stack(
-                    children: [
-                      SizedBox(
-                        height: mapHeight,
-                        width: size.width,
-                        child: CustomPaint(
-                          painter: CityMapPainter(
-                            dark: context.isDark,
-                            routes: [
-                              (
-                                px(_restaurant),
-                                px(Offset(_home.dx, _restaurant.dy)),
-                              ),
-                              (px(Offset(_home.dx, _restaurant.dy)), px(_home)),
-                            ],
-                            dash: _motion.value,
-                          ),
-                        ),
-                      ),
-                      _marker(
-                        px(_restaurant),
+          child: FlutterMap(
+            mapController: _map,
+            options: MapOptions(
+              initialCenter:
+                  courier ??
+                  dropoff ??
+                  pickup ??
+                  AddressMapField.fallbackCenter,
+              initialZoom: 14,
+              minZoom: 3,
+              maxZoom: 19,
+              onPositionChanged: (_, hasGesture) {
+                if (hasGesture && _follow) setState(() => _follow = false);
+              },
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.superfaster.app',
+              ),
+              if (route != null)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: route,
+                      strokeWidth: 5,
+                      color: AppColors.primary.withValues(alpha: 0.8),
+                    ),
+                  ],
+                ),
+              MarkerLayer(
+                markers: [
+                  if (pickup != null)
+                    Marker(
+                      point: pickup,
+                      width: 44,
+                      height: 44,
+                      child: _marker(
                         Icons.storefront_rounded,
                         AppColors.primary,
                       ),
-                      _marker(px(_home), Icons.home_rounded, AppColors.success),
-                      if (delivering || delivered)
-                        Positioned(
-                          left: courier.dx - 24,
-                          top: courier.dy - 24,
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  blurRadius: 16,
-                                  spreadRadius:
-                                      2 +
-                                      3 *
-                                          math
-                                              .sin(_motion.value * 2 * math.pi)
-                                              .abs(),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.delivery_dining_rounded,
-                              color: AppColors.primary,
-                              size: 28,
-                            ),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              );
-            },
+                    ),
+                  if (dropoff != null)
+                    Marker(
+                      point: dropoff,
+                      width: 44,
+                      height: 44,
+                      child: _marker(Icons.home_rounded, AppColors.success),
+                    ),
+                  if (showCourier && courier != null)
+                    Marker(
+                      point: courier,
+                      width: 52,
+                      height: 52,
+                      child: _courierMarker(),
+                    ),
+                ],
+              ),
+              const RichAttributionWidget(
+                attributions: [
+                  TextSourceAttribution('© les contributeurs d’OpenStreetMap'),
+                ],
+              ),
+            ],
           ),
         ),
         SafeArea(
@@ -285,6 +405,19 @@ class _TrackingViewState extends ConsumerState<_TrackingView>
                       : context.go(FrontRoutes.orders),
                 ),
                 const Spacer(),
+                if (!_follow && courier != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: CircleIconButton(
+                      icon: Icons.my_location_rounded,
+                      elevated: true,
+                      tooltip: 'Suivre le livreur',
+                      onTap: () {
+                        setState(() => _follow = true);
+                        _map.move(courier, 16);
+                      },
+                    ),
+                  ),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -312,21 +445,37 @@ class _TrackingViewState extends ConsumerState<_TrackingView>
     );
   }
 
-  Widget _marker(Offset at, IconData icon, Color color) => Positioned(
-    left: at.dx - 20,
-    top: at.dy - 20,
-    child: Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 3),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
-      ),
-      child: Icon(icon, color: Colors.white, size: 20),
+  Widget _marker(IconData icon, Color color) => Container(
+    decoration: BoxDecoration(
+      color: color,
+      shape: BoxShape.circle,
+      border: Border.all(color: Colors.white, width: 3),
+      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
     ),
+    child: Icon(icon, color: Colors.white, size: 20),
   );
+
+  Widget _courierMarker() =>
+      Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.5),
+                  blurRadius: 16,
+                  spreadRadius: 3,
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.delivery_dining_rounded,
+              color: AppColors.primary,
+              size: 30,
+            ),
+          )
+          .animate(onPlay: (c) => c.repeat(reverse: true))
+          .scaleXY(begin: 0.92, end: 1.06, duration: 900.ms);
 }
 
 class _BottomPanel extends ConsumerWidget {
@@ -360,7 +509,11 @@ class _BottomPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final (title, subtitle) = _labels[order.status]!;
+    final (title, defaultSubtitle) = _labels[order.status]!;
+    final detail = order.status.isActive
+        ? ref.watch(orderTrackingProvider(order.id)).value?.detail
+        : null;
+    final subtitle = detail ?? defaultSubtitle;
     final step = order.status.index.clamp(0, OrderStatus.delivered.index);
     final courier = ref.watch(trackedCourierProvider(order.id)).value;
     final showCourier = courier != null && order.status.isActive;

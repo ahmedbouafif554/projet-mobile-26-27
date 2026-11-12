@@ -31,6 +31,7 @@ Future<void> setUpAppTestEnvironment() async {
   AppTheme.useGoogleFonts = false;
   AppConfig.useApiAuth = false;
   AppConfig.useApiCatalogue = false;
+  AppConfig.useApiOrders = false;
   AppConfig.useApiAvisNotifications = false;
   AppConfig.mockLatencyMin = Duration.zero;
   AppConfig.mockLatencyMax = Duration.zero;

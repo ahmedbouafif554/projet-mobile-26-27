@@ -265,8 +265,10 @@ describe('Commandes — création', () => {
     expect(order.history.map((e) => e.status)).toEqual(['pending']);
 
     expect((await request(app).get('/api/cart/items').set(ALEX)).body).toEqual([]);
-    // Pas de course tant que le restaurant n'a pas accepté.
-    expect((await request(app).get('/api/deliveries').set(ADMIN).query({ orderId: order.id })).body).toEqual([]);
+    // La course est proposée aux livreurs dès la commande.
+    const deliveries = (await request(app).get('/api/deliveries').set(ADMIN).query({ orderId: order.id })).body;
+    expect(deliveries).toHaveLength(1);
+    expect(deliveries[0]).toMatchObject({ status: 'waiting', courierId: null });
 
     // Espèces uniquement : carte et Apple Pay refusés.
     for (const paymentMethod of ['card', 'applePay']) {

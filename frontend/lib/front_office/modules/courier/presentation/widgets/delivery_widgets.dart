@@ -18,6 +18,15 @@ String? nextStepLabel(DeliveryStatus status) => switch (status) {
   _ => null,
 };
 
+/// Le livreur peut passer à l'étape suivante (récupération impossible tant
+/// que le restaurant n'a pas accepté la commande).
+bool canAdvance(Delivery d) =>
+    !(d.status == DeliveryStatus.assigned && d.awaitingRestaurant);
+
+/// Libellé du bouton d'étape d'une course (null : rien à faire).
+String? stepButtonLabel(Delivery d) =>
+    canAdvance(d) ? nextStepLabel(d.status) : 'En attente du restaurant';
+
 /// Fait avancer une course (avec message de confirmation).
 Future<void> advanceDelivery(
   BuildContext context,
@@ -177,19 +186,38 @@ class DeliveryCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               RouteSummary(delivery: d),
+              if (d.status == DeliveryStatus.waiting ||
+                  d.status == DeliveryStatus.assigned) ...[
+                const SizedBox(height: 10),
+                RestaurantProgress(delivery: d),
+              ],
               const SizedBox(height: 12),
               Row(
                 children: [
-                  _Pill(
-                    icon: Icons.route_rounded,
-                    label: Formatters.distance(d.distanceKm),
+                  Expanded(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        if (d.toPickupKm != null &&
+                            d.status == DeliveryStatus.waiting)
+                          _Pill(
+                            icon: Icons.near_me_rounded,
+                            label:
+                                'À ${Formatters.distance(d.toPickupKm!)} de vous',
+                          ),
+                        _Pill(
+                          icon: Icons.route_rounded,
+                          label: Formatters.distance(d.distanceKm),
+                        ),
+                        _Pill(
+                          icon: Icons.schedule_rounded,
+                          label: '~${d.estimatedMinutes} min',
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  _Pill(
-                    icon: Icons.schedule_rounded,
-                    label: '~${d.estimatedMinutes} min',
-                  ),
-                  const Spacer(),
                   Text(
                     Formatters.relative(d.deliveredAt ?? d.createdAt),
                     style: context.text.labelSmall?.copyWith(
@@ -227,6 +255,61 @@ class _Pill extends StatelessWidget {
           Icon(icon, size: 14, color: context.palette.textSecondary),
           const SizedBox(width: 4),
           Text(label, style: context.text.labelMedium),
+        ],
+      ),
+    );
+  }
+}
+
+/// Avancement de la commande au restaurant, vu par le livreur : il sait s'il
+/// peut déjà la récupérer.
+class RestaurantProgress extends StatelessWidget {
+  const RestaurantProgress({super.key, required this.delivery});
+
+  final Delivery delivery;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = delivery.orderStatus;
+    if (status == null) return const SizedBox.shrink();
+    final (icon, color, text) = switch (status) {
+      OrderStatus.pending => (
+        Icons.hourglass_top_rounded,
+        AppColors.warning,
+        'Le restaurant n’a pas encore accepté la commande',
+      ),
+      OrderStatus.accepted || OrderStatus.preparing => (
+        Icons.soup_kitchen_rounded,
+        AppColors.primary,
+        'En préparation au restaurant',
+      ),
+      OrderStatus.ready => (
+        Icons.check_circle_rounded,
+        AppColors.success,
+        'Prête : à récupérer au restaurant',
+      ),
+      _ => (
+        Icons.info_outline_rounded,
+        context.palette.textSecondary,
+        status.label,
+      ),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: context.text.labelMedium?.copyWith(color: color),
+            ),
+          ),
         ],
       ),
     );

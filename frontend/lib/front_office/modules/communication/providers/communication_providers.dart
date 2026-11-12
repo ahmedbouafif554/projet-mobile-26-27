@@ -7,6 +7,7 @@ import '../../../../core/config/app_config.dart';
 import '../../../../shared/models/models.dart';
 import '../../../../shared/providers/chat_providers.dart';
 import '../../../../shared/repositories/repository_providers.dart';
+import '../../../../core/network/realtime.dart';
 
 // =============================================================================
 // Module 5 (front office) : notifications, conversations et avis du client
@@ -23,6 +24,7 @@ final notificationsProvider =
 class NotificationsController extends AsyncNotifier<List<AppNotification>> {
   @override
   Future<List<AppNotification>> build() async {
+    ref.watch(realtimeRevisionProvider(RealtimeTopic.notifications));
     final userId = ref.watch(authServiceProvider.select((a) => a.user?.id));
     if (userId == null) return const [];
     return ref.watch(notificationRepositoryProvider).forUser(userId);

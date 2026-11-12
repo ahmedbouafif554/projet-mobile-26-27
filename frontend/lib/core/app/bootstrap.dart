@@ -4,12 +4,15 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/session_store.dart';
+import '../config/server_address.dart';
 import '../utils/formatters.dart';
 
 /// Démarrage commun aux deux applications (main_front.dart, main_back.dart).
 Future<void> bootstrap(Widget app) async {
   WidgetsFlutterBinding.ensureInitialized();
   await Formatters.init();
+  // Adresse du serveur choisie sur l'appareil (sinon celle de la compilation).
+  await loadServerAddress();
   // Session enregistrée : l'utilisateur reste connecté entre deux lancements.
   await loadSession();
   SystemChrome.setSystemUIOverlayStyle(

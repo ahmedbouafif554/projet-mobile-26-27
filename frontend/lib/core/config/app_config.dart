@@ -32,7 +32,7 @@ class AppConfig {
   );
 
   /// Commandes et livraisons lues et écrites dans SQLite via l'API.
-  static const bool useApiOrders = bool.fromEnvironment(
+  static bool useApiOrders = const bool.fromEnvironment(
     'USE_API_ORDERS',
     defaultValue: true,
   );
@@ -52,11 +52,16 @@ class AppConfig {
     defaultValue: true,
   );
 
-  /// URL de base de l'API REST.
-  static const String apiBaseUrl = String.fromEnvironment(
+  /// URL de base de l'API REST fixée à la compilation (valeur par défaut).
+  static const String defaultApiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://localhost:3001/api',
   );
+
+  /// URL de base de l'API REST utilisée à l'exécution. Modifiable depuis
+  /// l'écran de connexion (bouton « Serveur ») et enregistrée sur l'appareil :
+  /// pas besoin de recompiler l'APK quand l'adresse du serveur change.
+  static String apiBaseUrl = defaultApiBaseUrl;
 
   /// Connexion Google : identifiant client OAuth « Web » (audience de l'ID
   /// token vérifié par le serveur, dans GOOGLE_CLIENT_IDS du backend).

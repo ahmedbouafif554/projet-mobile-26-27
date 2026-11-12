@@ -24,12 +24,35 @@ const {
 const { documentStatusOf } = require('../domain/livreur.constants');
 const { isAdmin, isTrusted, forbid, requireAdmin, withCourier } = require('./access');
 const { isCoordinate, distanceKm, etaMinutes } = require('./geo.utils');
+const eta = require('./eta');
+const { normalizeStatus: normalizeOrderStatus } = require('../../oussema_panier_commande/domain/commande.constants');
 const livreurs = require('./livreur.service');
 
 // ── Lecture & droits ────────────────────────────────────────────────────────
 
-/** Commandes que le restaurant n'a pas encore marquées prêtes. */
-const NOT_READY_ORDER_STATUSES = Object.freeze(['pending', 'accepted', 'preparing']);
+/**
+ * Commandes que le livreur ne peut pas encore récupérer : le restaurant ne les
+ * a pas acceptées. Une fois acceptée, la remise au livreur vaut « prête »
+ * (comme sur les plateformes de livraison : le restaurant ne pense pas
+ * toujours à appuyer sur « Prête »).
+ */
+const NOT_READY_ORDER_STATUSES = Object.freeze(['pending']);
+
+/**
+ * Dernière position GPS du livreur si elle est récente (sinon null) : une
+ * vieille position (données de démo, livreur resté hors ligne) n'est jamais
+ * montrée au client ni utilisée pour les estimations.
+ */
+async function freshCourierPosition(courierId) {
+  if (!courierId) return null;
+  const rows = await query(
+    'SELECT latitude, longitude, created_at FROM courier_locations WHERE courier_id = ? ORDER BY created_at DESC LIMIT 1',
+    [courierId],
+  );
+  const row = rows[0];
+  if (!row || !eta.isFresh(row.created_at) || !isCoordinate(row.latitude, row.longitude)) return null;
+  return { latitude: Number(row.latitude), longitude: Number(row.longitude), at: row.created_at };
+}
 
 /** Le code de remise est donné au client : jamais au livreur. */
 function canSeeOtp(actor, row) {
@@ -128,7 +151,19 @@ async function list(filters = {}, rawActor) {
   }
   if (filters.unassigned === 'true') where.push('d.courier_id IS NULL');
   const rows = await repo.listRows(where, params);
-  return rows.map((row) => present(row, actor));
+  const list = rows.map((row) => present(row, actor));
+  // Livreur : distance de sa position actuelle au restaurant (« à 1,2 km »).
+  if (actor.role === 'courier' && actor.courierId) {
+    const me = await freshCourierPosition(actor.courierId);
+    if (me) {
+      for (const d of list) {
+        const km = distanceKm(me.latitude, me.longitude, d.pickupLat, d.pickupLng);
+        d.toPickupKm = km;
+        d.toPickupMinutes = km == null ? null : eta.travelMinutes(km);
+      }
+    }
+  }
+  return list;
 }
 
 async function get(id, rawActor) {
@@ -391,6 +426,7 @@ async function assign(id, requestedCourierId, rawActor) {
   }
 
   const now = nowIso();
+  const position = await freshCourierPosition(courierId);
   await withTransaction(async () => {
     const previous = reassign ? row.courier_id : null;
     await query(
@@ -398,7 +434,7 @@ async function assign(id, requestedCourierId, rawActor) {
           SET courier_id = ?, status = 'assigned', assigned_at = ?, started_at = ?,
               courier_lat = ?, courier_lng = ?, updated_at = ?
         WHERE id = ? AND (status = 'waiting' OR (status = 'assigned' AND ? = 1))`,
-      [courierId, now, now, courier.latitude, courier.longitude, now, id, reassign ? 1 : 0],
+      [courierId, now, now, position?.latitude ?? null, position?.longitude ?? null, now, id, reassign ? 1 : 0],
     );
     const check = await query('SELECT courier_id FROM deliveries WHERE id = ?', [id]);
     if (check[0]?.courier_id !== courierId) {
@@ -491,7 +527,10 @@ async function updateStatus(id, { status, otpCode, note, reason, courierId } = {
     // Le livreur ne récupère la commande que lorsque le restaurant l'a
     // marquée prête (l'admin peut forcer l'étape).
     if (next === 'pickedUp' && row.o_status && NOT_READY_ORDER_STATUSES.includes(row.o_status)) {
-      throw new HttpError(409, "La commande n'est pas encore prête au restaurant.");
+      throw new HttpError(
+        409,
+        "Le restaurant n'a pas encore accepté la commande : attendez sa confirmation avant de la récupérer.",
+      );
     }
   } else if (!isTrusted(actor)) {
     forbid();
@@ -655,14 +694,32 @@ async function tracking(id, rawActor) {
   const delivery = present(row, actor);
   const pickup = { latitude: delivery.pickupLat, longitude: delivery.pickupLng };
   const dropoff = { latitude: delivery.dropoffLat, longitude: delivery.dropoffLng };
-  const courierPos = delivery.courierLat != null
-    ? { latitude: delivery.courierLat, longitude: delivery.courierLng }
-    : null;
-  const target = delivery.status === 'assigned' ? pickup : dropoff;
-  const from = courierPos || pickup;
-  const remaining = ['delivered', 'cancelled'].includes(delivery.status)
-    ? 0
-    : distanceKm(from.latitude, from.longitude, target.latitude, target.longitude);
+  // Position du livreur : seulement si elle est récente (GPS du téléphone).
+  const active = ['assigned', 'pickedUp', 'inTransit'].includes(delivery.status);
+  const fresh = active ? await freshCourierPosition(delivery.courierId) : null;
+  const courierPos = fresh ? { latitude: fresh.latitude, longitude: fresh.longitude } : null;
+
+  // Délai annoncé par le restaurant et début de la préparation.
+  const orderRows = row.order_id
+    ? await query('SELECT status, estimated_time, created_at FROM orders WHERE id = ? LIMIT 1', [row.order_id])
+    : [];
+  const orderRow = orderRows[0] || {};
+  const accepted = row.order_id
+    ? await query(
+      "SELECT created_at FROM order_events WHERE order_id = ? AND status = 'accepted' ORDER BY id ASC LIMIT 1",
+      [row.order_id],
+    )
+    : [];
+  const estimation = eta.estimate({
+    deliveryStatus: delivery.status,
+    orderStatus: normalizeOrderStatus(orderRow.status) || 'pending',
+    courier: courierPos,
+    pickup,
+    dropoff,
+    vehicle: delivery.courierVehicle || 'scooter',
+    announcedMinutes: orderRow.estimated_time,
+    prepStartedAt: accepted[0]?.created_at || null,
+  });
   const order = ['waiting', 'assigned', 'pickedUp', 'inTransit', 'delivered'];
   const reached = (s) => delivery.status !== 'cancelled' && order.indexOf(delivery.status) >= order.indexOf(s);
 
@@ -678,8 +735,11 @@ async function tracking(id, rawActor) {
       }
       : null,
     positions: { courier: courierPos, pickup, dropoff },
-    remainingDistanceKm: remaining,
-    remainingMinutes: remaining == null ? delivery.estimatedMinutes : remaining === 0 ? 0 : etaMinutes(remaining, delivery.courierVehicle || 'scooter'),
+    remainingDistanceKm: estimation.remainingDistanceKm,
+    remainingMinutes: estimation.remainingMinutes,
+    estimatedArrivalAt: estimation.estimatedArrivalAt,
+    eta: estimation,
+    courierPositionAt: fresh?.at || null,
     steps: [
       { status: 'waiting', title: 'Recherche d’un livreur', done: true, at: delivery.createdAt },
       { status: 'assigned', title: 'Livreur assigné', done: reached('assigned'), at: delivery.assignedAt },

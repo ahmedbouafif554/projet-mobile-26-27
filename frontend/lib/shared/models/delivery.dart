@@ -1,4 +1,5 @@
 import 'json_utils.dart';
+import 'order.dart';
 
 enum DeliveryStatus {
   waiting('À assigner'),
@@ -39,6 +40,9 @@ class Delivery {
     this.pickupLng,
     this.dropoffLat,
     this.dropoffLng,
+    this.orderStatus,
+    this.toPickupKm,
+    this.toPickupMinutes,
   });
 
   final String id;
@@ -72,7 +76,19 @@ class Delivery {
   final double? dropoffLat;
   final double? dropoffLng;
 
+  /// Avancement de la commande au restaurant (le livreur ne peut la
+  /// récupérer qu'une fois acceptée par le restaurant).
+  final OrderStatus? orderStatus;
+
+  /// Distance et trajet entre la position actuelle du livreur et le
+  /// restaurant (courses proposées ; null sans GPS récent).
+  final double? toPickupKm;
+  final int? toPickupMinutes;
+
   double get earnings => fee + tip;
+
+  /// Le restaurant n'a pas encore accepté : récupération impossible.
+  bool get awaitingRestaurant => orderStatus == OrderStatus.pending;
 
   factory Delivery.fromJson(Map<String, dynamic> json) => Delivery(
     id: json['id'] as String,
@@ -101,6 +117,15 @@ class Delivery {
     pickupLng: _coordinate(json['pickupLng']),
     dropoffLat: _coordinate(json['dropoffLat']),
     dropoffLng: _coordinate(json['dropoffLng']),
+    orderStatus: json['orderStatus'] == null
+        ? null
+        : parseEnum(
+            OrderStatus.values,
+            json['orderStatus'],
+            OrderStatus.pending,
+          ),
+    toPickupKm: _coordinate(json['toPickupKm']),
+    toPickupMinutes: (json['toPickupMinutes'] as num?)?.round(),
   );
 
   static double? _coordinate(Object? value) =>
@@ -129,6 +154,9 @@ class Delivery {
     'pickupLng': pickupLng,
     'dropoffLat': dropoffLat,
     'dropoffLng': dropoffLng,
+    'orderStatus': orderStatus?.name,
+    'toPickupKm': toPickupKm,
+    'toPickupMinutes': toPickupMinutes,
   };
 
   Delivery copyWith({
@@ -174,5 +202,8 @@ class Delivery {
     pickupLng: pickupLng,
     dropoffLat: dropoffLat,
     dropoffLng: dropoffLng,
+    orderStatus: orderStatus,
+    toPickupKm: toPickupKm,
+    toPickupMinutes: toPickupMinutes,
   );
 }

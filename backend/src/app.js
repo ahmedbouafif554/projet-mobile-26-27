@@ -55,6 +55,32 @@ app.use(express.json({ limit: '12mb' }));
 app.use(express.urlencoded({ extended: true, limit: '12mb' }));
 app.use(globalLimiter);
 
+// ── Temps réel ──────────────────────────────────────────────────────────────
+// Après chaque écriture réussie (commande, course, livreur…), les applications
+// connectées en Socket.IO reçoivent un signal « sync » et rechargent leurs
+// écrans : nouvelle commande chez le restaurant, nouvelle course chez les
+// livreurs, avancement chez le client, sans tirer pour actualiser.
+const REALTIME_TOPICS = [
+  [/^\/api\/(orders|oussema\/commandes)/, 'orders'],
+  [/^\/api\/(deliveries|imed\/livraisons|oussema\/livraisons)/, 'deliveries'],
+  [/^\/api\/(couriers|imed\/livreurs)/, 'couriers'],
+  [/^\/api\/(restaurants|products|categories)/, 'catalogue'],
+  [/^\/api\/(notifications|users\/[^/]+\/notifications)/, 'notifications'],
+  [/^\/api\/reviews/, 'reviews'],
+];
+app.use((req, res, next) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  const path = req.originalUrl.split('?')[0];
+  // Positions GPS : diffusées à part (client de la commande seulement).
+  if (/\/location$/.test(path)) return next();
+  const match = REALTIME_TOPICS.find(([re]) => re.test(path));
+  if (!match) return next();
+  res.on('finish', () => {
+    if (res.statusCode < 400) socketService.emitSync(match[1], { method: req.method, path });
+  });
+  return next();
+});
+
 // ── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 

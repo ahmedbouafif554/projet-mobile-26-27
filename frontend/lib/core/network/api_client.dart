@@ -26,10 +26,10 @@ final dioProvider = Provider<Dio>((ref) => createDio(ref));
 
 /// Crée le client Dio : URL de base, délais, en-têtes, jeton d'authentification
 /// et journalisation en mode debug.
-Dio createDio(Ref ref, {String baseUrl = AppConfig.apiBaseUrl}) {
+Dio createDio(Ref ref, {String? baseUrl}) {
   final dio = Dio(
     BaseOptions(
-      baseUrl: baseUrl,
+      baseUrl: baseUrl ?? AppConfig.apiBaseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 15),
       headers: {'Accept': 'application/json', 'Accept-Language': 'fr'},
@@ -39,6 +39,9 @@ Dio createDio(Ref ref, {String baseUrl = AppConfig.apiBaseUrl}) {
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) {
+        // Adresse du serveur lue à chaque requête : un changement fait depuis
+        // l'écran de connexion s'applique tout de suite.
+        if (baseUrl == null) options.baseUrl = AppConfig.apiBaseUrl;
         final token = ref.read(authTokenProvider);
         if (token != null) options.headers['Authorization'] = 'Bearer $token';
         handler.next(options);

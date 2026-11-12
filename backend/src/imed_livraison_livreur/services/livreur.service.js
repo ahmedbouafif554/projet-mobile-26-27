@@ -319,6 +319,10 @@ async function updateLocation(id, body, actor) {
     }
   });
 
+  if (active) {
+    require('../../services/socket.service').emitCourierLocation({ deliveryId: active.id, latitude: lat, longitude: lng });
+  }
+
   const result = { courierId: id, latitude: lat, longitude: lng, recordedAt, deliveryId: active?.id || null };
   if (active) {
     // Avant récupération on vise le restaurant, ensuite le client.

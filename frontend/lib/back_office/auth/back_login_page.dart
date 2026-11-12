@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/permissions.dart';
 import '../../core/config/app_config.dart';
+import '../../core/config/server_address.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../core/theme/theme_extensions.dart';
@@ -106,14 +107,22 @@ class _BackLoginPageState extends ConsumerState<BackLoginPage> {
                   Positioned(
                     top: 12,
                     right: 12,
-                    child: IconButton(
-                      tooltip: 'Thème clair / sombre',
-                      onPressed: ref.read(themeModeProvider.notifier).toggle,
-                      icon: Icon(
-                        context.isDark
-                            ? Icons.light_mode_rounded
-                            : Icons.dark_mode_rounded,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const ServerAddressButton(),
+                        IconButton(
+                          tooltip: 'Thème clair / sombre',
+                          onPressed: ref
+                              .read(themeModeProvider.notifier)
+                              .toggle,
+                          icon: Icon(
+                            context.isDark
+                                ? Icons.light_mode_rounded
+                                : Icons.dark_mode_rounded,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

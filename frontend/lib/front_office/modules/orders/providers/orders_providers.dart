@@ -6,6 +6,7 @@ import '../../../../shared/models/models.dart';
 import '../../../../shared/repositories/orders/order_repository.dart';
 import '../../../../shared/repositories/repository_providers.dart';
 import 'cart_controller.dart';
+import '../../../../core/network/realtime.dart';
 
 /// Commandes du client connecté (Module 3), les plus récentes d'abord :
 /// passer une commande, annuler, recommander.
@@ -16,6 +17,7 @@ final myOrdersProvider = AsyncNotifierProvider<MyOrdersController, List<Order>>(
 class MyOrdersController extends AsyncNotifier<List<Order>> {
   @override
   Future<List<Order>> build() async {
+    watchLogistics(ref);
     final userId = ref.watch(authServiceProvider.select((a) => a.user?.id));
     if (userId == null) return const [];
     return ref.watch(orderRepositoryProvider).forUser(userId);
